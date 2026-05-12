@@ -3,12 +3,20 @@ import { createTheme } from '@mui/material/styles';
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#D51F51',
+      main: '#ed213c',
     },
   },
   typography: {
     fontFamily: '"Nunito", "Roboto", "Helvetica", "Arial", sans-serif',
   },
+  shape: {
+    borderRadius: 16,
+  },
+  shadows: [
+    'none',
+    '2px 2px 3px rgba(0, 0, 0, .35)',
+    ...createTheme().shadows.slice(2),
+  ] as any,
   components: {
     MuiButton: {
       styleOverrides: {
@@ -17,12 +25,23 @@ const theme = createTheme({
         },
         contained: {
           color: '#FFFFFF',
+          boxShadow: '2px 2px 3px rgba(0, 0, 0, .35)',
+          '&:hover': {
+            boxShadow: '2px 2px 4px rgba(0, 0, 0, .4)',
+          },
         },
         outlined: {
           color: '#000000',
           '&:hover': {
-            backgroundColor: 'rgba(213, 31, 81, 0.04)',
+            backgroundColor: 'rgba(237, 33, 60, 0.04)',
           },
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          boxShadow: '2px 2px 4px rgba(0, 0, 0, .35)',
         },
       },
     },
@@ -30,7 +49,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#D51F51',
+            borderColor: '#ed213c',
           },
         },
       },
@@ -39,7 +58,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           '&.Mui-focused': {
-            color: '#D51F51',
+            color: '#ed213c',
           },
         },
       },

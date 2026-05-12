@@ -4,6 +4,10 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Divider from '@mui/material/Divider';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -21,10 +25,15 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs, { Dayjs } from 'dayjs';
+import 'dayjs/locale/fr';
 
+dayjs.locale('fr');
 export type TalkStatus = 'Draft' | 'Idea' | 'Submitted' | 'Accepted' | 'Replayed';
 
 export interface TalkData {
+  id: string;
   title: string;
   speaker: string;
   cospeaker: string;
@@ -35,6 +44,7 @@ export interface TalkData {
   visibility: string;
   language: string;
   conference: string;
+  date?: string;
   notes: string;
   status: TalkStatus;
 }
@@ -85,6 +95,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
   const [language, setLanguage] = React.useState('');
   const [agency, setAgency] = React.useState('');
   const [conference, setConference] = React.useState('');
+  const [date, setDate] = React.useState<Dayjs | null>(null);
   const [notes, setNotes] = React.useState('');
   const [toastOpen, setToastOpen] = React.useState(false);
 
@@ -99,6 +110,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
     setLanguage('');
     setAgency('');
     setConference('');
+    setDate(null);
     setNotes('');
   };
 
@@ -124,6 +136,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
     }
 
     onSubmit({
+      id: crypto.randomUUID(),
       title: title.trim(),
       speaker: speaker.trim(),
       cospeaker: cospeaker.trim(),
@@ -134,6 +147,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
       visibility,
       language,
       conference: conference.trim(),
+      date: date ? date.format('DD-MM-YYYY') : '',
       notes: notes.trim(),
       status,
     });
@@ -319,6 +333,17 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
           </Grid>
 
           <Grid size={12}>
+            <DatePicker
+              label="Date (optionnel)"
+              value={date}
+              onChange={(newValue) => setDate(newValue)}
+              views={['year', 'month', 'day']}
+              format="DD/MM/YYYY"
+              slotProps={{ textField: { fullWidth: true } }}
+            />
+          </Grid>
+
+          <Grid size={12}>
             <TextField
               label="Notes / Commentaires"
               id="notes"
@@ -389,9 +414,118 @@ function StatusTag({ status }: { status: TalkStatus }) {
   );
 }
 
+interface TalkDetailsDialogProps {
+  talk: TalkData | null;
+  open: boolean;
+  onClose: () => void;
+  onUpdate: (talk: TalkData) => void;
+  onDelete: (id: string) => void;
+}
+
+export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: TalkDetailsDialogProps) {
+  if (!talk) return null;
+
+  const handleStatusChange = (event: SelectChangeEvent) => {
+    onUpdate({ ...talk, status: event.target.value as TalkStatus });
+  };
+
+  const handleVisibilityToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdate({ ...talk, visibility: event.target.checked ? 'external' : 'internal' });
+  };
+
+  const handleDelete = () => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce talk ?')) {
+      onDelete(talk.id);
+      onClose();
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>
+        {talk.title}
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          <Grid container spacing={2}>
+            <Grid size={6}>
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Speaker</Typography>
+                  <Typography variant="body1">{talk.speaker}{talk.cospeaker ? ` & ${talk.cospeaker}` : ''}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Conférence</Typography>
+                  <Typography variant="body1">{talk.conference || '—'}</Typography>
+                </Box>
+              </Stack>
+            </Grid>
+            <Grid size={6}>
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Agence</Typography>
+                  <Typography variant="body1">{agencyLabels[talk.agency] || talk.agency}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Date</Typography>
+                  <Typography variant="body1">{talk.date || '—'}</Typography>
+                </Box>
+              </Stack>
+            </Grid>
+          </Grid>
+
+          <Divider />
+
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <FormControl fullWidth>
+              <InputLabel id="status-select-label">Statut</InputLabel>
+              <Select
+                labelId="status-select-label"
+                value={talk.status}
+                label="Statut"
+                onChange={handleStatusChange}
+                size="small"
+              >
+                {Object.keys(statusConfig).map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {status}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+          </Box>
+
+          <Box>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={talk.visibility === 'external'}
+                  onChange={handleVisibilityToggle}
+                  color="primary"
+                />
+              }
+              label={talk.visibility === 'external' ? 'Externe' : 'Interne'}
+            />
+          </Box>
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ p: 3, justifyContent: 'space-between' }}>
+        <Button color="error" variant="contained" onClick={handleDelete}>
+          Supprimer
+        </Button>
+        <Button onClick={onClose} variant="outlined">
+          Fermer
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export default function TalkDashboard() {
   const [open, setOpen] = React.useState(false);
   const [talks, setTalks] = React.useState<TalkData[]>([]);
+  const [selectedTalkId, setSelectedTalkId] = React.useState<string | null>(null);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -399,6 +533,16 @@ export default function TalkDashboard() {
   const handleSubmit = (talk: TalkData) => {
     setTalks((prev) => [...prev, talk]);
   };
+
+  const handleUpdateTalk = (updatedTalk: TalkData) => {
+    setTalks((prev) => prev.map((t) => (t.id === updatedTalk.id ? updatedTalk : t)));
+  };
+
+  const handleDeleteTalk = (id: string) => {
+    setTalks((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const selectedTalk = talks.find((t) => t.id === selectedTalkId) || null;
 
   return (
     <Box sx={{ p: 4 }}>
@@ -412,12 +556,23 @@ export default function TalkDashboard() {
         Manage the lifecycle of talks from idea to replay.
       </Typography>
         </Box>
-        <Button variant="contained" onClick={handleOpen} sx={{ fontWeight: 'bold' }}>
+        <Button 
+          variant="contained" 
+          onClick={handleOpen} 
+          sx={{ 
+            fontWeight: 'bold',
+            background: 'linear-gradient(135deg, #ed213c 0%, #BF1D67 100%)',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              transition: 'transform 0.2s ease-in-out',
+            }
+          }}
+        >
           + New Talk
         </Button>
       </Box>
 
-      <TableContainer component={Paper} variant="outlined" sx={{ border: '1px solid #D51F51'}}>
+      <TableContainer component={Paper} variant="outlined" sx={{ border: '1px solid #ed213c', overflow: 'hidden', borderRadius: 1 }}>
         <Table>
           <TableHead sx={{ backgroundColor: '#ececec'}}>
             <TableRow>
@@ -430,7 +585,7 @@ export default function TalkDashboard() {
               <TableCell><strong>Actions</strong></TableCell>
             </TableRow>
           </TableHead>
-          <TableBody>
+          <TableBody sx={{ '& tr:last-child td': { borderBottom: 0 } }}>
             {talks.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} align="center" sx={{ py: 4, color: 'text.secondary' }}>
@@ -438,9 +593,23 @@ export default function TalkDashboard() {
                 </TableCell>
               </TableRow>
             ) : (
-              talks.map((talk, index) => (
-                <TableRow key={index} hover>
-                  <TableCell>{talk.title}</TableCell>
+              talks.map((talk) => (
+                <TableRow key={talk.id} hover>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        cursor: 'pointer',
+                        color: 'primary.main',
+                        textDecoration: 'underline',
+                        fontWeight: 'medium',
+                        '&:hover': { color: 'primary.dark' }
+                      }}
+                      onClick={() => setSelectedTalkId(talk.id)}
+                    >
+                      {talk.title}
+                    </Typography>
+                  </TableCell>
                   <TableCell>{talk.speaker}</TableCell>
                   <TableCell>{agencyLabels[talk.agency] || '—'}</TableCell>
                   <TableCell>{talk.conference || '—'}</TableCell>
@@ -457,6 +626,14 @@ export default function TalkDashboard() {
       </TableContainer>
 
       <CreateTalkDialog open={open} onClose={handleClose} onSubmit={handleSubmit} />
+
+      <TalkDetailsDialog
+        talk={selectedTalk}
+        open={!!selectedTalkId}
+        onClose={() => setSelectedTalkId(null)}
+        onUpdate={handleUpdateTalk}
+        onDelete={handleDeleteTalk}
+      />
     </Box>
   );
 }

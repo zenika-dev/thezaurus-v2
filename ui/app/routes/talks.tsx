@@ -1,13 +1,13 @@
-import type { Route } from "./+types/home";
+import type { Route } from "./+types/talks";
 import TalkDashboard from "~/components/CreateTalkForm";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Thezaurus — Talks" },
+    { title: "Talks" },
     { name: "description", content: "Gestion des talks Zenika" },
   ];
 }
 
-export default function Home() {
+export default function TalksPage() {
   return <TalkDashboard />;
 }
