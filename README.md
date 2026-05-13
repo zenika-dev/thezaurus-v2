@@ -54,8 +54,8 @@ Vous pouvez lancer l'ensemble de l'application (UI, API et un émulateur Firesto
    ```
 3. L'application sera disponible aux adresses suivantes :
    - **Frontend** : `http://localhost:3000`
-   - **API** : `http://localhost:8081`
-   - **Swagger UI** : `http://localhost:8081/q/swagger-ui/`
-   - **Firestore Emulator** : `http://localhost:8080` (utilisé automatiquement par l'API)
+   - **API** : `http://localhost:8080`
+   - **Swagger UI** : `http://localhost:8080/q/swagger-ui/`
+   - **Firestore Emulator** : `http://localhost:9000` (utilisé automatiquement par l'API)
 
 Made with ❤️ by Zenika
