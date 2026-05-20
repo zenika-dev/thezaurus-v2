@@ -714,7 +714,7 @@ export default function TalkDashboard() {
         <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
           Talks
         </Typography>
-      <Typography variant="caption">
+      <Typography variant="body2">
         Manage the lifecycle of talks from idea to replay.
       </Typography>
         </Box>
@@ -723,10 +723,14 @@ export default function TalkDashboard() {
           onClick={handleOpen} 
           sx={{ 
             fontWeight: 'bold',
+            py: 1,
+            boxShadow: 'none',
+            borderRadius: '20px',
             background: 'linear-gradient(135deg, #ed213c 0%, #BF1D67 100%)',
+            transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
             '&:hover': {
+              boxShadow: 'none',
               transform: 'translateY(-2px)',
-              transition: 'transform 0.2s ease-in-out',
             }
           }}
         >
@@ -738,13 +742,13 @@ export default function TalkDashboard() {
         <Table>
           <TableHead sx={{ backgroundColor: '#ececec'}}>
             <TableRow>
-              <TableCell><strong>Title</strong></TableCell>
+              <TableCell><strong>Titre</strong></TableCell>
               <TableCell><strong>Speaker</strong></TableCell>
-              <TableCell><strong>Office</strong></TableCell>
-              <TableCell><strong>Conference</strong></TableCell>
-              <TableCell><strong>Status</strong></TableCell>
-              <TableCell><strong>Visibilité</strong></TableCell>
-              <TableCell><strong>Actions</strong></TableCell>
+              <TableCell><strong>Agence</strong></TableCell>
+              <TableCell><strong>Conférence</strong></TableCell>
+              <TableCell><strong>Statut</strong></TableCell>
+              <TableCell align="center"><strong>Visibilité</strong></TableCell>
+              <TableCell align="center"><strong>Actions</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody sx={{ '& tr:last-child td': { borderBottom: 0 } }}>
@@ -778,10 +782,10 @@ export default function TalkDashboard() {
                   <TableCell>
                     <StatusTag status={talk.status} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell align="center">
                     <VisibilityTag visibility={talk.visibility} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell align="center">
                     {(talk.status === 'Accepted' || talk.status === 'Replayed') && (
                       <Box
                         onClick={() => setSelectedTalkId(talk.id)}
