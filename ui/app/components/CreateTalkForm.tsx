@@ -5,7 +5,6 @@ import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Switch from '@mui/material/Switch';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -26,8 +25,12 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
+import type { Dayjs } from 'dayjs';
 import 'dayjs/locale/fr';
+import { useTheme } from '@mui/material/styles';
+import IconButton from '@mui/material/IconButton';
+import { Lock, Globe, Eye, X, User, MapPin, Mic, Calendar } from 'lucide-react';
 
 dayjs.locale('fr');
 export type TalkStatus = 'Draft' | 'Idea' | 'Submitted' | 'Accepted' | 'Replayed';
@@ -98,6 +101,8 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
   const [date, setDate] = React.useState<Dayjs | null>(null);
   const [notes, setNotes] = React.useState('');
   const [toastOpen, setToastOpen] = React.useState(false);
+
+  const theme = useTheme();
 
   const resetForm = () => {
     setTitle('');
@@ -390,7 +395,7 @@ const statusConfig: Record<TalkStatus, { text: string; bg: string }> = {
   Draft: { text: '#757575', bg: 'rgba(117, 117, 117, 0.12)' },
   Idea: { text: '#0288d1', bg: 'rgba(2, 136, 209, 0.12)' },
   Submitted: { text: '#ed6c02', bg: 'rgba(237, 108, 2, 0.12)' },
-  Accepted: { text: '#2e7d32', bg: 'rgba(46, 125, 50, 0.12)' },
+  Accepted: { text: '#21c45d', bg: 'rgba(33, 196, 93, 0.12)' },
   Replayed: { text: '#d32f2f', bg: 'rgba(211, 47, 47, 0.12)' },
 };
 
@@ -410,6 +415,34 @@ function StatusTag({ status }: { status: TalkStatus }) {
       }}
     >
       {status}
+    </Box>
+  );
+}
+
+function VisibilityTag({ visibility }: { visibility: string }) {
+  const isExternal = visibility === 'external';
+  const label = visibilityLabels[visibility] || visibility;
+  const config = isExternal
+    ? { text: '#21c45d', bg: 'rgba(33, 196, 93, 0.12)', Icon: Globe }
+    : { text: '#757575', bg: 'rgba(117, 117, 117, 0.12)', Icon: Lock };
+
+  return (
+    <Box
+      sx={{
+        px: 1.5,
+        py: 0.8,
+        borderRadius: 1,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 0.5,
+        fontSize: '0.75rem',
+        lineHeight: 1,
+        color: config.text,
+        backgroundColor: config.bg,
+      }}
+    >
+      <config.Icon size={12} />
+      <span>{label}</span>
     </Box>
   );
 }
@@ -440,35 +473,43 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
     }
   };
 
+  const theme = useTheme();
+  
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>
+      <DialogTitle sx={{ fontWeight: 'bold', pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {talk.title}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <StatusTag status={talk.status} />
+          <IconButton onClick={onClose} size="small" sx={{ ml: 1 }}>
+            <X size={20} />
+          </IconButton>
+        </Box>
       </DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ pb: 1 }}>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Grid container spacing={2}>
             <Grid size={6}>
               <Stack spacing={2}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Speaker</Typography>
-                  <Typography variant="body1">{talk.speaker}{talk.cospeaker ? ` & ${talk.cospeaker}` : ''}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <User size={14} color={theme.palette.text.secondary} />
+                  <Typography variant="body2">{talk.speaker}{talk.cospeaker ? ` & ${talk.cospeaker}` : ''}</Typography>
                 </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Conférence</Typography>
-                  <Typography variant="body1">{talk.conference || '—'}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Mic size={14} color={theme.palette.text.secondary} />
+                  <Typography variant="body2">{talk.conference || '—'}</Typography>
                 </Box>
               </Stack>
             </Grid>
             <Grid size={6}>
               <Stack spacing={2}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Agence</Typography>
-                  <Typography variant="body1">{agencyLabels[talk.agency] || talk.agency}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <MapPin size={14} color={theme.palette.text.secondary} />
+                  <Typography variant="body2">{agencyLabels[talk.agency] || talk.agency}</Typography>
                 </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Date</Typography>
-                  <Typography variant="body1">{talk.date || '—'}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Calendar size={14} color={theme.palette.text.secondary} />
+                  <Typography variant="body2">{talk.date || '—'}</Typography>
                 </Box>
               </Stack>
             </Grid>
@@ -476,13 +517,11 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
 
           <Divider />
 
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ display: 'block', mb: 1 }}>Changer le statut</Typography>
             <FormControl fullWidth>
-              <InputLabel id="status-select-label">Statut</InputLabel>
               <Select
-                labelId="status-select-label"
                 value={talk.status}
-                label="Statut"
                 onChange={handleStatusChange}
                 size="small"
               >
@@ -493,28 +532,86 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
                 ))}
               </Select>
             </FormControl>
-
           </Box>
 
-          <Box>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={talk.visibility === 'external'}
-                  onChange={handleVisibilityToggle}
-                  color="primary"
-                />
-              }
-              label={talk.visibility === 'external' ? 'Externe' : 'Interne'}
+          <Divider />
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box>
+              <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center' }}>
+                {talk.visibility === 'external' ? <Globe size={16} /> : <Lock size={16} />}
+                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                  {talk.visibility === 'external' ? 'Visibilité externe' : 'Visibilité interne'}
+                </Typography>
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                {talk.visibility === 'external' ? 'Visible publiquement.' : 'Réservé en interne.'}
+              </Typography>
+            </Box>
+            <Switch
+              checked={talk.visibility === 'external'}
+              onChange={handleVisibilityToggle}
+              sx={{
+                width: 50,
+                height: 26,
+                padding: 0,
+                '& .MuiSwitch-switchBase': {
+                  padding: 0,
+                  margin: '2px',
+                  transitionDuration: '300ms',
+                  '&.Mui-checked': {
+                    transform: 'translateX(24px)',
+                    color: '#fff',
+                    '& + .MuiSwitch-track': {
+                      backgroundColor: 'primary.main',
+                      opacity: 1,
+                      border: 0,
+                    },
+                  },
+                },
+                '& .MuiSwitch-thumb': {
+                  boxSizing: 'border-box',
+                  width: 22,
+                  height: 22,
+                },
+                '& .MuiSwitch-track': {
+                  borderRadius: 13,
+                  backgroundColor: '#E9E9EA',
+                  opacity: 1,
+                },
+              }}
             />
           </Box>
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ p: 3, justifyContent: 'space-between' }}>
-        <Button color="error" variant="contained" onClick={handleDelete}>
+      <DialogActions sx={{ px: 3, pb: 3, pt: 2, justifyContent: 'space-between' }}>
+        <Button 
+          variant="contained" 
+          onClick={handleDelete} 
+          sx={{ 
+            borderRadius: '12px', 
+            backgroundColor: theme.palette.primary.main,
+            '&:hover': {
+              backgroundColor: theme.palette.primary.light,
+            }
+          }}
+        >
           Supprimer
         </Button>
-        <Button onClick={onClose} variant="outlined">
+        <Button
+          onClick={onClose}
+          variant="outlined"
+          sx={{
+            borderRadius: '12px',
+            color: 'text.primary',
+            borderColor: 'divider',
+            '&:hover': {
+              borderColor: 'divider',
+              backgroundColor: 'rgba(237, 33, 60, 0.12)',
+              color: 'primary.main'
+            }
+          }}
+        >
           Fermer
         </Button>
       </DialogActions>
@@ -524,7 +621,72 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
 
 export default function TalkDashboard() {
   const [open, setOpen] = React.useState(false);
-  const [talks, setTalks] = React.useState<TalkData[]>([]);
+  const [talks, setTalks] = React.useState<TalkData[]>([
+    {
+      id: '1',
+      title: 'Introduction to React 19',
+      speaker: 'John Doe',
+      cospeaker: '',
+      email: 'john.doe@zenika.com',
+      agency: 'paris',
+      abstract: 'Discover the new features of React 19, including React Server Components and more.',
+      format: 'public',
+      visibility: 'external',
+      language: 'francais',
+      conference: 'Devoxx France',
+      date: '15-04-2026',
+      notes: 'Premier talk sur React 19',
+      status: 'Accepted',
+    },
+    {
+      id: '2',
+      title: 'Mastering Remix for v2',
+      speaker: 'Jane Smith',
+      cospeaker: 'Alice Brown',
+      email: 'jane.smith@zenika.com',
+      agency: 'nantes',
+      abstract: 'Deep dive into Remix v2 and its powerful routing system.',
+      format: 'training',
+      visibility: 'internal',
+      language: 'english',
+      conference: 'Mix-IT',
+      date: '20-05-2026',
+      notes: 'Besoin d\'une salle avec projecteur',
+      status: 'Idea',
+    },
+    {
+      id: '3',
+      title: 'Web Performance Tips',
+      speaker: 'Bob Wilson',
+      cospeaker: '',
+      email: 'bob.wilson@zenika.com',
+      agency: 'lyon',
+      abstract: 'Learn how to optimize your web applications for better performance and Core Web Vitals.',
+      format: 'video',
+      visibility: 'external',
+      language: 'francais',
+      conference: 'Web2Day',
+      date: '10-06-2026',
+      notes: 'Session de 45 minutes',
+      status: 'Submitted',
+    },
+    {
+      id: '4',
+      title: 'The Future of AI in Web Dev',
+      speaker: 'Alice Brown',
+      cospeaker: '',
+      email: 'alice.brown@zenika.com',
+      agency: 'bordeaux',
+      abstract: 'Exploring how AI and LLMs are transforming the way we build web applications.',
+      format: 'public',
+      visibility: 'external',
+      language: 'english',
+      conference: 'Sunny Tech',
+      date: '05-07-2026',
+      notes: 'Draft initial',
+      status: 'Draft',
+    }
+  ]);
   const [selectedTalkId, setSelectedTalkId] = React.useState<string | null>(null);
 
   const handleOpen = () => setOpen(true);
@@ -616,8 +778,38 @@ export default function TalkDashboard() {
                   <TableCell>
                     <StatusTag status={talk.status} />
                   </TableCell>
-                  <TableCell>{visibilityLabels[talk.visibility] || '—'}</TableCell>
-                  <TableCell>{'TODO Actions'}</TableCell>
+                  <TableCell>
+                    <VisibilityTag visibility={talk.visibility} />
+                  </TableCell>
+                  <TableCell>
+                    {(talk.status === 'Accepted' || talk.status === 'Replayed') && (
+                      <Box
+                        onClick={() => setSelectedTalkId(talk.id)}
+                        sx={{
+                          px: 1.5,
+                          py: 0.8,
+                          borderRadius: 0.5,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          fontSize: '0.75rem',
+                          lineHeight: 1,
+                          color: 'text.primary',
+                          backgroundColor: 'common.white',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            backgroundColor: 'rgba(237, 33, 60, 0.12)',
+                            color: 'primary.main'
+                          }
+                        }}
+                      >
+                        <Eye size={12} />
+                        <span>Détail</span>
+                      </Box>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))
             )}

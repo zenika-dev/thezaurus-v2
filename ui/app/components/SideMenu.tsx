@@ -33,9 +33,9 @@ const StyledDrawer = styled(Drawer, { shouldForwardProp: (prop) => prop !== 'ope
         duration: theme.transitions.duration.enteringScreen,
       }),
       overflow: 'visible',
-      borderRight: '1px solid rgba(0, 0, 0, 0.06)',
-      background: 'linear-gradient(180deg, #FFFFFF 0%, #FDFDFD 100%)',
-      boxShadow: open ? '10px 0 30px rgba(0, 0, 0, 0.02)' : 'none',
+      borderRight: '1px solid rgba(0, 0, 0, 0.08)',
+      background: '#ffffff',
+      boxShadow: 'none',
     },
   }),
 );

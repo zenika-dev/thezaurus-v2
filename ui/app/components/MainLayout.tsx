@@ -6,7 +6,7 @@ const LayoutRoot = styled(Box)({
   display: 'flex',
   minHeight: '100vh',
   width: '100%',
-  backgroundColor: '#f8fafc',
+  backgroundColor: '#fff',
 });
 
 const ContentWrapper = styled(Box)({
