@@ -10,6 +10,8 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import { ThemeProvider, CssBaseline } from "@mui/material";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import theme from "./theme";
 
 export const links: Route.LinksFunction = () => [
@@ -44,14 +46,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 
+import MainLayout from "./components/MainLayout";
+
 export default function App() {
   return (
     <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Outlet />
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <CssBaseline />
+        <MainLayout>
+          <Outlet />
+        </MainLayout>
+      </LocalizationProvider>
     </ThemeProvider>
   );
 }
+
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let message = "Oops!";
