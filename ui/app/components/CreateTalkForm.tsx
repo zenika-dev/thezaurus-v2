@@ -24,13 +24,14 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
+import InputAdornment from '@mui/material/InputAdornment';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import 'dayjs/locale/fr';
 import { useTheme } from '@mui/material/styles';
 import IconButton from '@mui/material/IconButton';
-import { Lock, Globe, Eye, X, User, MapPin, Mic, Calendar } from 'lucide-react';
+import { Lock, Globe, Eye, X, User, MapPin, Mic, Calendar, Link as LinkIcon, Play as PlayIcon, ExternalLink as ExternalLinkIcon } from 'lucide-react';
 
 dayjs.locale('fr');
 export type TalkStatus = 'Draft' | 'Idea' | 'Submitted' | 'Accepted' | 'Replayed';
@@ -50,7 +51,14 @@ export interface TalkData {
   date?: string;
   notes: string;
   status: TalkStatus;
+  slides?: string;
+  replay?: string;
 }
+
+const isValidUrl = (url: string) => {
+  if (!url) return false;
+  return url.startsWith('http://') || url.startsWith('https://');
+};
 
 export const agencyLabels: Record<string, string> = {
   paris: 'Paris',
@@ -155,6 +163,8 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
       date: date ? date.format('DD-MM-YYYY') : '',
       notes: notes.trim(),
       status,
+      slides: '',
+      replay: '',
     });
     resetForm();
     onClose();
@@ -393,8 +403,8 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
 
 const statusConfig: Record<TalkStatus, { text: string; bg: string }> = {
   Draft: { text: '#757575', bg: 'rgba(117, 117, 117, 0.12)' },
-  Idea: { text: '#0288d1', bg: 'rgba(2, 136, 209, 0.12)' },
-  Submitted: { text: '#ed6c02', bg: 'rgba(237, 108, 2, 0.12)' },
+  Idea: { text: '#007fff', bg: 'rgba(0, 127, 255, 0.12)' },
+  Submitted: { text: '#f59f0a', bg: 'rgba(245, 159, 10, 0.12)' },
   Accepted: { text: '#21c45d', bg: 'rgba(33, 196, 93, 0.12)' },
   Replayed: { text: '#d32f2f', bg: 'rgba(211, 47, 47, 0.12)' },
 };
@@ -410,6 +420,7 @@ function StatusTag({ status }: { status: TalkStatus }) {
         display: 'inline-block',
         fontSize: '0.75rem',
         fontWeight: 'bold',
+        border: `1px solid ${config.bg}`,
         color: config.text,
         backgroundColor: config.bg,
       }}
@@ -432,6 +443,7 @@ function VisibilityTag({ visibility }: { visibility: string }) {
         px: 1.5,
         py: 0.8,
         borderRadius: 1,
+        border: `1px solid ${config.bg}`,
         display: 'inline-flex',
         alignItems: 'center',
         gap: 0.5,
@@ -458,12 +470,44 @@ interface TalkDetailsDialogProps {
 export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: TalkDetailsDialogProps) {
   if (!talk) return null;
 
+  const [slides, setSlides] = React.useState(talk.slides || '');
+  const [replay, setReplay] = React.useState(talk.replay || '');
+
+  React.useEffect(() => {
+    setSlides(talk.slides || '');
+    setReplay(talk.replay || '');
+  }, [talk.id, talk.slides, talk.replay]);
+
   const handleStatusChange = (event: SelectChangeEvent) => {
     onUpdate({ ...talk, status: event.target.value as TalkStatus });
   };
 
   const handleVisibilityToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
     onUpdate({ ...talk, visibility: event.target.checked ? 'external' : 'internal' });
+  };
+
+  const handleSlidesBlur = () => {
+    if (slides !== (talk.slides || '')) {
+      onUpdate({ ...talk, slides });
+    }
+  };
+
+  const handleReplayBlur = () => {
+    if (replay !== (talk.replay || '')) {
+      onUpdate({ ...talk, replay });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, field: 'slides' | 'replay') => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (field === 'slides') {
+        onUpdate({ ...talk, slides });
+      } else {
+        onUpdate({ ...talk, replay });
+      }
+      (e.target as HTMLInputElement).blur();
+    }
   };
 
   const handleDelete = () => {
@@ -477,9 +521,9 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
   
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 'bold', pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <DialogTitle sx={{ fontWeight: 600, pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', letterSpacing: '-0.75px' }}>
         {talk.title}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, letterSpacing: 'normal' }}>
           <StatusTag status={talk.status} />
           <IconButton onClick={onClose} size="small" sx={{ ml: 1 }}>
             <X size={20} />
@@ -487,6 +531,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
         </Box>
       </DialogTitle>
       <DialogContent sx={{ pb: 1 }}>
+        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 3 }}>Détails du talk</Typography>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Grid container spacing={2}>
             <Grid size={6}>
@@ -582,17 +627,110 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
               }}
             />
           </Box>
+
+          {(talk.status === 'Accepted' || talk.status === 'Replayed') && (
+            <>
+              <Divider />
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                  Liens du talk (optionnels)
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid size={6}>
+                    <TextField
+                      label="Slides"
+                      placeholder="https://..."
+                      value={slides}
+                      onChange={(e) => setSlides(e.target.value)}
+                      onBlur={handleSlidesBlur}
+                      onKeyDown={(e) => handleKeyDown(e, 'slides')}
+                      fullWidth
+                      size="small"
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <LinkIcon size={16} />
+                            </InputAdornment>
+                          ),
+                          endAdornment: slides && isValidUrl(slides) ? (
+                            <InputAdornment position="end">
+                              <IconButton
+                                size="small"
+                                href={slides}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{ 
+                                  color: 'primary.main',
+                                  p: 0.5,
+                                  '&:hover': { backgroundColor: 'rgba(237, 33, 60, 0.08)' }
+                                }}
+                              >
+                                <ExternalLinkIcon size={14} />
+                              </IconButton>
+                            </InputAdornment>
+                          ) : null
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={6}>
+                    <TextField
+                      label="Replay"
+                      placeholder="https://..."
+                      value={replay}
+                      onChange={(e) => setReplay(e.target.value)}
+                      onBlur={handleReplayBlur}
+                      onKeyDown={(e) => handleKeyDown(e, 'replay')}
+                      fullWidth
+                      size="small"
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <PlayIcon size={16} />
+                            </InputAdornment>
+                          ),
+                          endAdornment: replay && isValidUrl(replay) ? (
+                            <InputAdornment position="end">
+                              <IconButton
+                                size="small"
+                                href={replay}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{ 
+                                  color: 'primary.main',
+                                  p: 0.5,
+                                  '&:hover': { backgroundColor: 'rgba(237, 33, 60, 0.08)' }
+                                }}
+                              >
+                                <ExternalLinkIcon size={14} />
+                              </IconButton>
+                            </InputAdornment>
+                          ) : null
+                        }
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+            </>
+          )}
+
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3, pt: 2, justifyContent: 'space-between' }}>
+      <DialogActions sx={{ px: 3, pb: 3, pt: 2.5, justifyContent: 'space-between' }}>
         <Button 
           variant="contained" 
           onClick={handleDelete} 
           sx={{ 
-            borderRadius: '12px', 
+            fontWeight: 600,
+            boxShadow: 'none',
+            borderRadius: '8px', 
             backgroundColor: theme.palette.primary.main,
             '&:hover': {
               backgroundColor: theme.palette.primary.light,
+              boxShadow: 'none'
             }
           }}
         >
@@ -602,7 +740,8 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
           onClick={onClose}
           variant="outlined"
           sx={{
-            borderRadius: '12px',
+            fontWeight: 600,
+            borderRadius: '8px',
             color: 'text.primary',
             borderColor: 'divider',
             '&:hover': {
@@ -637,6 +776,8 @@ export default function TalkDashboard() {
       date: '15-04-2026',
       notes: 'Premier talk sur React 19',
       status: 'Accepted',
+      slides: 'https://slides.com/johndoe/react-19',
+      replay: 'https://youtube.com/watch?v=react19',
     },
     {
       id: '2',
@@ -705,6 +846,7 @@ export default function TalkDashboard() {
   };
 
   const selectedTalk = talks.find((t) => t.id === selectedTalkId) || null;
+  const theme = useTheme();
 
   return (
     <Box sx={{ p: 4 }}>
@@ -714,7 +856,7 @@ export default function TalkDashboard() {
         <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
           Talks
         </Typography>
-      <Typography variant="body2">
+      <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
         Manage the lifecycle of talks from idea to replay.
       </Typography>
         </Box>
