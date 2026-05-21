@@ -236,7 +236,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
               label="Co-speaker"
               id="cospeaker"
               fullWidth
-              placeholder="Prénom Nom (optionnel)"
+              placeholder="Prénom Nom"
               value={cospeaker}
               onChange={(e) => setCospeaker(e.target.value)}
             />
@@ -349,7 +349,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
 
           <Grid size={12}>
             <DatePicker
-              label="Date (optionnel)"
+              label="Date"
               value={date}
               onChange={(newValue) => setDate(newValue)}
               views={['year', 'month', 'day']}
@@ -379,7 +379,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
           Annuler
         </Button>
         <Box sx={{ flexGrow: 1 }} />
-        <Button variant="outlined" onClick={handleDraft} sx={{ color: "#bbbbbbff"}}>
+        <Button variant="outlined" onClick={handleDraft} sx={{ color: "#bbbbbbff" }}>
           Sauvegarder en brouillon
         </Button>
         <Button variant="contained" onClick={handleSubmit}>
@@ -394,7 +394,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert onClose={handleToastClose} severity="error" variant="filled">
-          {!isEmailValid(email) ? 'Le format de l\'email est incorrect' : !title.trim() ? 'Le titre est obligatoire, même pour un brouillon' : 'Merci de remplir tous les champs obligatoires'}
+          {'Merci de remplir tous les champs obligatoires.'}
         </Alert>
       </Snackbar>
     </Dialog>
@@ -518,7 +518,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
   };
 
   const theme = useTheme();
-  
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 600, pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', letterSpacing: '-0.75px' }}>
@@ -633,7 +633,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
               <Divider />
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-                  Liens du talk (optionnels)
+                  Liens du talk
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid size={6}>
@@ -660,7 +660,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
                                 href={slides}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                sx={{ 
+                                sx={{
                                   color: 'primary.main',
                                   p: 0.5,
                                   '&:hover': { backgroundColor: 'rgba(237, 33, 60, 0.08)' }
@@ -698,7 +698,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
                                 href={replay}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                sx={{ 
+                                sx={{
                                   color: 'primary.main',
                                   p: 0.5,
                                   '&:hover': { backgroundColor: 'rgba(237, 33, 60, 0.08)' }
@@ -720,13 +720,13 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3, pt: 2.5, justifyContent: 'space-between' }}>
-        <Button 
-          variant="contained" 
-          onClick={handleDelete} 
-          sx={{ 
+        <Button
+          variant="contained"
+          onClick={handleDelete}
+          sx={{
             fontWeight: 600,
             boxShadow: 'none',
-            borderRadius: '8px', 
+            borderRadius: '8px',
             backgroundColor: theme.palette.primary.main,
             '&:hover': {
               backgroundColor: theme.palette.primary.light,
@@ -853,17 +853,17 @@ export default function TalkDashboard() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
 
-        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-          Talks
-        </Typography>
-      <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-        Manage the lifecycle of talks from idea to replay.
-      </Typography>
+          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+            Talks
+          </Typography>
+          <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+            Manage the lifecycle of talks from idea to replay.
+          </Typography>
         </Box>
-        <Button 
-          variant="contained" 
-          onClick={handleOpen} 
-          sx={{ 
+        <Button
+          variant="contained"
+          onClick={handleOpen}
+          sx={{
             fontWeight: 'bold',
             py: 1,
             boxShadow: 'none',
@@ -882,7 +882,7 @@ export default function TalkDashboard() {
 
       <TableContainer component={Paper} variant="outlined" sx={{ border: '1px solid #ed213c', overflow: 'hidden', borderRadius: 1 }}>
         <Table>
-          <TableHead sx={{ backgroundColor: '#ececec'}}>
+          <TableHead sx={{ backgroundColor: '#ececec' }}>
             <TableRow>
               <TableCell><strong>Titre</strong></TableCell>
               <TableCell><strong>Speaker</strong></TableCell>
