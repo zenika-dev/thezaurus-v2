@@ -9,6 +9,12 @@ public class Conference {
 
     public Conference() {}
 
+    public Conference(String id, String name, String date) {
+        this.id = id;
+        this.name = name;
+        this.date = date;
+    }
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     

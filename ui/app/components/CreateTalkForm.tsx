@@ -758,84 +758,172 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
   );
 }
 
+function mapBackendToFrontend(t: any): TalkData {
+  const speakers = t.speakers || [];
+  return {
+    id: t.id || '',
+    title: t.title || '',
+    speaker: speakers[0] || '',
+    cospeaker: speakers[1] || '',
+    email: '',
+    agency: t.office || '',
+    abstract: t.description || '',
+    format: 'public',
+    visibility: t.visibility === 'PUBLIC' ? 'external' : 'internal',
+    language: 'francais',
+    conference: t.conference?.name || '',
+    date: '',
+    notes: '',
+    status: t.status === 'DONE' ? 'Replayed' :
+      t.status === 'ACCEPTED' ? 'Accepted' :
+        t.status === 'SUBMITTED' ? 'Submitted' : 'Idea',
+    slides: '',
+    replay: '',
+  };
+}
+
+function mapFrontendToBackend(t: TalkData): any {
+  const speakers = [];
+  if (t.speaker.trim()) speakers.push(t.speaker.trim());
+  if (t.cospeaker.trim()) speakers.push(t.cospeaker.trim());
+
+  let backendStatus = 'PLANNED';
+  if (t.status === 'Submitted') backendStatus = 'SUBMITTED';
+  else if (t.status === 'Accepted') backendStatus = 'ACCEPTED';
+  else if (t.status === 'Replayed') backendStatus = 'DONE';
+
+  return {
+    id: t.id,
+    title: t.title,
+    description: t.abstract,
+    speakers: speakers,
+    office: t.agency,
+    conference: t.conference ? { name: t.conference } : null,
+    status: backendStatus,
+    visibility: t.visibility === 'external' ? 'PUBLIC' : 'PRIVATE',
+  };
+}
+
+const API_URL = 'http://localhost:8080/talks';
+
+
 export default function TalkDashboard() {
   const [open, setOpen] = React.useState(false);
   const [talks, setTalks] = React.useState<TalkData[]>([
-    {
-      id: '1',
-      title: 'Introduction to React 19',
-      speaker: 'John Doe',
-      cospeaker: '',
-      email: 'john.doe@zenika.com',
-      agency: 'paris',
-      abstract: 'Discover the new features of React 19, including React Server Components and more.',
-      format: 'public',
-      visibility: 'external',
-      language: 'francais',
-      conference: 'Devoxx France',
-      date: '15-04-2026',
-      notes: 'Premier talk sur React 19',
-      status: 'Accepted',
-      slides: 'https://slides.com/johndoe/react-19',
-      replay: 'https://youtube.com/watch?v=react19',
-    },
-    {
-      id: '2',
-      title: 'Mastering Remix for v2',
-      speaker: 'Jane Smith',
-      cospeaker: 'Alice Brown',
-      email: 'jane.smith@zenika.com',
-      agency: 'nantes',
-      abstract: 'Deep dive into Remix v2 and its powerful routing system.',
-      format: 'training',
-      visibility: 'internal',
-      language: 'english',
-      conference: 'Mix-IT',
-      date: '20-05-2026',
-      notes: 'Besoin d\'une salle avec projecteur',
-      status: 'Idea',
-    },
-    {
-      id: '3',
-      title: 'Web Performance Tips',
-      speaker: 'Bob Wilson',
-      cospeaker: '',
-      email: 'bob.wilson@zenika.com',
-      agency: 'lyon',
-      abstract: 'Learn how to optimize your web applications for better performance and Core Web Vitals.',
-      format: 'video',
-      visibility: 'external',
-      language: 'francais',
-      conference: 'Web2Day',
-      date: '10-06-2026',
-      notes: 'Session de 45 minutes',
-      status: 'Submitted',
-    },
-    {
-      id: '4',
-      title: 'The Future of AI in Web Dev',
-      speaker: 'Alice Brown',
-      cospeaker: '',
-      email: 'alice.brown@zenika.com',
-      agency: 'bordeaux',
-      abstract: 'Exploring how AI and LLMs are transforming the way we build web applications.',
-      format: 'public',
-      visibility: 'external',
-      language: 'english',
-      conference: 'Sunny Tech',
-      date: '05-07-2026',
-      notes: 'Draft initial',
-      status: 'Draft',
-    }
+    // {
+    //   id: '1',
+    //   title: 'Introduction to React 19',
+    //   speaker: 'John Doe',
+    //   cospeaker: '',
+    //   email: 'john.doe@zenika.com',
+    //   agency: 'paris',
+    //   abstract: 'Discover the new features of React 19, including React Server Components and more.',
+    //   format: 'public',
+    //   visibility: 'external',
+    //   language: 'francais',
+    //   conference: 'Devoxx France',
+    //   date: '15-04-2026',
+    //   notes: 'Premier talk sur React 19',
+    //   status: 'Accepted',
+    //   slides: 'https://slides.com/johndoe/react-19',
+    //   replay: 'https://youtube.com/watch?v=react19',
+    // },
+    // {
+    //   id: '2',
+    //   title: 'Mastering Remix for v2',
+    //   speaker: 'Jane Smith',
+    //   cospeaker: 'Alice Brown',
+    //   email: 'jane.smith@zenika.com',
+    //   agency: 'nantes',
+    //   abstract: 'Deep dive into Remix v2 and its powerful routing system.',
+    //   format: 'training',
+    //   visibility: 'internal',
+    //   language: 'english',
+    //   conference: 'Mix-IT',
+    //   date: '20-05-2026',
+    //   notes: 'Besoin d\'une salle avec projecteur',
+    //   status: 'Idea',
+    // },
+    // {
+    //   id: '3',
+    //   title: 'Web Performance Tips',
+    //   speaker: 'Bob Wilson',
+    //   cospeaker: '',
+    //   email: 'bob.wilson@zenika.com',
+    //   agency: 'lyon',
+    //   abstract: 'Learn how to optimize your web applications for better performance and Core Web Vitals.',
+    //   format: 'video',
+    //   visibility: 'external',
+    //   language: 'francais',
+    //   conference: 'Web2Day',
+    //   date: '10-06-2026',
+    //   notes: 'Session de 45 minutes',
+    //   status: 'Submitted',
+    // },
+    // {
+    //   id: '4',
+    //   title: 'The Future of AI in Web Dev',
+    //   speaker: 'Alice Brown',
+    //   cospeaker: '',
+    //   email: 'alice.brown@zenika.com',
+    //   agency: 'bordeaux',
+    //   abstract: 'Exploring how AI and LLMs are transforming the way we build web applications.',
+    //   format: 'public',
+    //   visibility: 'external',
+    //   language: 'english',
+    //   conference: 'Sunny Tech',
+    //   date: '05-07-2026',
+    //   notes: 'Draft initial',
+    //   status: 'Draft',
+    // }
   ]);
+
+  const [loading, setLoading] = React.useState(true);
   const [selectedTalkId, setSelectedTalkId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const fetchTalks = async () => {
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Failed to fetch talks');
+        const data = await response.json();
+        console.log("API fetch data", data);
+        setTalks(data.map(mapBackendToFrontend));
+      } catch (error) {
+        console.error('Error fetching talks:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTalks();
+  }, []);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  const handleSubmit = (talk: TalkData) => {
-    setTalks((prev) => [...prev, talk]);
-  };
+
+  const handleSubmit = async (talk: TalkData) => {
+      console.log('handleSubmit')
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(mapFrontendToBackend(talk)),
+        });
+        if (!response.ok) throw new Error('Failed to create talk');
+        const data = await response.json();
+        setTalks((prev) => [...prev, mapBackendToFrontend(data)]);
+      } catch (error) {
+        console.error('Error creating talk:', error);
+        alert('Erreur lors de la création du talk');
+      }
+    };
+
+  // const handleSubmit = (talk: TalkData) => {
+  //   setTalks((prev) => [...prev, talk]);
+  // };
 
   const handleUpdateTalk = (updatedTalk: TalkData) => {
     setTalks((prev) => prev.map((t) => (t.id === updatedTalk.id ? updatedTalk : t)));

@@ -14,6 +14,12 @@ public class Talk {
 
     public Talk() {}
 
+    public Talk(String id, String title, String description) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+    }
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     
