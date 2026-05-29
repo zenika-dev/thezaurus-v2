@@ -1,93 +1,63 @@
-import * as React from 'react';
-import Button from '@mui/material/Button';
-import DialogTitle from '@mui/material/DialogTitle';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Switch from '@mui/material/Switch';
-import Divider from '@mui/material/Divider';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select, { type SelectChangeEvent } from '@mui/material/Select';
-import Grid from '@mui/material/Grid';
-import TextField from '@mui/material/TextField';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
-import Box from '@mui/material/Box';
-import InputAdornment from '@mui/material/InputAdornment';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import dayjs from 'dayjs';
-import type { Dayjs } from 'dayjs';
-import 'dayjs/locale/fr';
-import { useTheme } from '@mui/material/styles';
-import IconButton from '@mui/material/IconButton';
-import { Lock, Globe, Eye, X, User, MapPin, Mic, Calendar, Link as LinkIcon, Play as PlayIcon, ExternalLink as ExternalLinkIcon } from 'lucide-react';
+import * as React from "react";
+import Button from "@mui/material/Button";
+import DialogTitle from "@mui/material/DialogTitle";
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import Switch from "@mui/material/Switch";
+import Divider from "@mui/material/Divider";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import Select, { type SelectChangeEvent } from "@mui/material/Select";
+import Grid from "@mui/material/Grid";
+import TextField from "@mui/material/TextField";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import Box from "@mui/material/Box";
+import InputAdornment from "@mui/material/InputAdornment";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs from "dayjs";
+import type { Dayjs } from "dayjs";
+import "dayjs/locale/fr";
+import { useTheme } from "@mui/material/styles";
+import IconButton from "@mui/material/IconButton";
+import {
+  Lock,
+  Globe,
+  Eye,
+  X,
+  User,
+  MapPin,
+  Mic,
+  Calendar,
+  Link as LinkIcon,
+  Play as PlayIcon,
+  ExternalLink as ExternalLinkIcon,
+  Plus,
+} from "lucide-react";
 
-dayjs.locale('fr');
-export type TalkStatus = 'Draft' | 'Idea' | 'Submitted' | 'Accepted' | 'Replayed';
+import {
+  type TalkData,
+  type TalkStatus,
+  agencyLabels,
+  visibilityLabels,
+  formatLabels,
+  languageLabels,
+} from "../types/talk";
+import { useTalks } from "../hooks/useTalks";
+import { isValidUrl } from "~/lib/utils";
 
-export interface TalkData {
-  id: string;
-  title: string;
-  speaker: string;
-  cospeaker: string;
-  email: string;
-  agency: string;
-  abstract: string;
-  format: string;
-  visibility: string;
-  language: string;
-  conference: string;
-  date?: string;
-  notes: string;
-  status: TalkStatus;
-  slides?: string;
-  replay?: string;
-}
-
-const isValidUrl = (url: string) => {
-  if (!url) return false;
-  return url.startsWith('http://') || url.startsWith('https://');
-};
-
-export const agencyLabels: Record<string, string> = {
-  paris: 'Paris',
-  nantes: 'Nantes',
-  rennes: 'Rennes',
-  bordeaux: 'Bordeaux',
-  lyon: 'Lyon',
-  lille: 'Lille',
-  grenoble: 'Grenoble',
-  singapour: 'Singapour',
-  montreal: 'Montréal',
-};
-
-export const visibilityLabels: Record<string, string> = {
-  internal: 'Interne',
-  external: 'Externe',
-};
-
-export const formatLabels: Record<string, string> = {
-  video: 'Vidéo',
-  training: 'Formation',
-  public: 'Public',
-  other: 'Autre',
-};
-
-export const languageLabels: Record<string, string> = {
-  francais: 'Français',
-  english: 'English',
-};
+dayjs.locale("fr");
 
 interface CreateTalkDialogProps {
   open: boolean;
@@ -95,36 +65,40 @@ interface CreateTalkDialogProps {
   onSubmit: (talk: TalkData) => void;
 }
 
-export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogProps) {
-  const [title, setTitle] = React.useState('');
-  const [speaker, setSpeaker] = React.useState('');
-  const [cospeaker, setCospeaker] = React.useState('');
-  const [email, setEmail] = React.useState('');
-  const [abstract, setAbstract] = React.useState('');
-  const [format, setFormat] = React.useState('');
-  const [visibility, setVisibility] = React.useState('');
-  const [language, setLanguage] = React.useState('');
-  const [agency, setAgency] = React.useState('');
-  const [conference, setConference] = React.useState('');
+export function CreateTalkDialog({
+  open,
+  onClose,
+  onSubmit,
+}: CreateTalkDialogProps) {
+  const [title, setTitle] = React.useState("");
+  const [speaker, setSpeaker] = React.useState("");
+  const [cospeaker, setCospeaker] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [abstract, setAbstract] = React.useState("");
+  const [format, setFormat] = React.useState("");
+  const [visibility, setVisibility] = React.useState("");
+  const [language, setLanguage] = React.useState("");
+  const [agency, setAgency] = React.useState("");
+  const [conference, setConference] = React.useState("");
   const [date, setDate] = React.useState<Dayjs | null>(null);
-  const [notes, setNotes] = React.useState('');
+  const [notes, setNotes] = React.useState("");
   const [toastOpen, setToastOpen] = React.useState(false);
 
   const theme = useTheme();
 
   const resetForm = () => {
-    setTitle('');
-    setSpeaker('');
-    setCospeaker('');
-    setEmail('');
-    setAbstract('');
-    setFormat('');
-    setVisibility('');
-    setLanguage('');
-    setAgency('');
-    setConference('');
+    setTitle("");
+    setSpeaker("");
+    setCospeaker("");
+    setEmail("");
+    setAbstract("");
+    setFormat("");
+    setVisibility("");
+    setLanguage("");
+    setAgency("");
+    setConference("");
     setDate(null);
-    setNotes('');
+    setNotes("");
   };
 
   const isEmailValid = (emailStr: string) => {
@@ -133,8 +107,14 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
   };
 
   const handleSave = (status: TalkStatus) => {
-    if (status !== 'Draft') {
-      const requiredFieldsMissing = !title.trim() || !speaker.trim() || !abstract.trim() || !agency || !format || !visibility;
+    if (status !== "Draft") {
+      const requiredFieldsMissing =
+        !title.trim() ||
+        !speaker.trim() ||
+        !abstract.trim() ||
+        !agency ||
+        !format ||
+        !visibility;
       const emailInvalid = !isEmailValid(email);
 
       if (requiredFieldsMissing || emailInvalid) {
@@ -160,26 +140,29 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
       visibility,
       language,
       conference: conference.trim(),
-      date: date ? date.format('DD-MM-YYYY') : '',
+      date: date ? date.format("DD-MM-YYYY") : "",
       notes: notes.trim(),
       status,
-      slides: '',
-      replay: '',
+      slides: "",
+      replay: "",
     });
     resetForm();
     onClose();
   };
 
-  const handleSubmit = () => handleSave('Idea');
-  const handleDraft = () => handleSave('Draft');
+  const handleSubmit = () => handleSave("Idea");
+  const handleDraft = () => handleSave("Draft");
 
   const handleCancel = () => {
     resetForm();
     onClose();
   };
 
-  const handleToastClose = (_event?: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason === 'clickaway') return;
+  const handleToastClose = (
+    _event?: React.SyntheticEvent | Event,
+    reason?: string,
+  ) => {
+    if (reason === "clickaway") return;
     setToastOpen(false);
   };
 
@@ -251,8 +234,12 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              error={email.trim() !== '' && !isEmailValid(email)}
-              helperText={email.trim() !== '' && !isEmailValid(email) ? 'Format d\'email invalide' : ''}
+              error={email.trim() !== "" && !isEmailValid(email)}
+              helperText={
+                email.trim() !== "" && !isEmailValid(email)
+                  ? "Format d'email invalide"
+                  : ""
+              }
             />
           </Grid>
           <Grid size={6}>
@@ -266,7 +253,9 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
                 onChange={handleAgencyChange}
               >
                 {Object.entries(agencyLabels).map(([value, label]) => (
-                  <MenuItem key={value} value={value}>{label}</MenuItem>
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -283,7 +272,9 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
               required
               value={abstract}
               onChange={(e) => setAbstract(e.target.value)}
-              slotProps={{ input: { sx: { '& textarea': { resize: 'vertical' } } } }}
+              slotProps={{
+                input: { sx: { "& textarea": { resize: "vertical" } } },
+              }}
             />
           </Grid>
 
@@ -298,7 +289,9 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
                 onChange={handleFormatChange}
               >
                 {Object.entries(formatLabels).map(([value, label]) => (
-                  <MenuItem key={value} value={value}>{label}</MenuItem>
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -314,7 +307,9 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
                 onChange={handleVisibilityChange}
               >
                 {Object.entries(visibilityLabels).map(([value, label]) => (
-                  <MenuItem key={value} value={value}>{label}</MenuItem>
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -330,7 +325,9 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
                 onChange={handleLanguageChange}
               >
                 {Object.entries(languageLabels).map(([value, label]) => (
-                  <MenuItem key={value} value={value}>{label}</MenuItem>
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -352,7 +349,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
               label="Date"
               value={date}
               onChange={(newValue) => setDate(newValue)}
-              views={['year', 'month', 'day']}
+              views={["year", "month", "day"]}
               format="DD/MM/YYYY"
               slotProps={{ textField: { fullWidth: true } }}
             />
@@ -368,7 +365,9 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
               placeholder="Informations complémentaires..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              slotProps={{ input: { sx: { '& textarea': { resize: 'vertical' } } } }}
+              slotProps={{
+                input: { sx: { "& textarea": { resize: "vertical" } } },
+              }}
             />
           </Grid>
         </Grid>
@@ -379,7 +378,11 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
           Annuler
         </Button>
         <Box sx={{ flexGrow: 1 }} />
-        <Button variant="outlined" onClick={handleDraft} sx={{ color: "#bbbbbbff" }}>
+        <Button
+          variant="outlined"
+          onClick={handleDraft}
+          sx={{ color: "#bbbbbbff" }}
+        >
           Sauvegarder en brouillon
         </Button>
         <Button variant="contained" onClick={handleSubmit}>
@@ -391,10 +394,10 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
         open={toastOpen}
         autoHideDuration={4000}
         onClose={handleToastClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert onClose={handleToastClose} severity="error" variant="filled">
-          {'Merci de remplir tous les champs obligatoires.'}
+          {"Merci de remplir tous les champs obligatoires."}
         </Alert>
       </Snackbar>
     </Dialog>
@@ -402,11 +405,11 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
 }
 
 const statusConfig: Record<TalkStatus, { text: string; bg: string }> = {
-  Draft: { text: '#757575', bg: 'rgba(117, 117, 117, 0.12)' },
-  Idea: { text: '#007fff', bg: 'rgba(0, 127, 255, 0.12)' },
-  Submitted: { text: '#f59f0a', bg: 'rgba(245, 159, 10, 0.12)' },
-  Accepted: { text: '#21c45d', bg: 'rgba(33, 196, 93, 0.12)' },
-  Replayed: { text: '#d32f2f', bg: 'rgba(211, 47, 47, 0.12)' },
+  Draft: { text: "#757575", bg: "rgba(117, 117, 117, 0.12)" },
+  Idea: { text: "#007fff", bg: "rgba(0, 127, 255, 0.12)" },
+  Submitted: { text: "#f59f0a", bg: "rgba(245, 159, 10, 0.12)" },
+  Accepted: { text: "#21c45d", bg: "rgba(33, 196, 93, 0.12)" },
+  Replayed: { text: "#d32f2f", bg: "rgba(211, 47, 47, 0.12)" },
 };
 
 function StatusTag({ status }: { status: TalkStatus }) {
@@ -417,9 +420,9 @@ function StatusTag({ status }: { status: TalkStatus }) {
         px: 1.5,
         py: 0.5,
         borderRadius: 1,
-        display: 'inline-block',
-        fontSize: '0.75rem',
-        fontWeight: 'bold',
+        display: "inline-block",
+        fontSize: "0.75rem",
+        fontWeight: "bold",
         border: `1px solid ${config.bg}`,
         color: config.text,
         backgroundColor: config.bg,
@@ -431,11 +434,11 @@ function StatusTag({ status }: { status: TalkStatus }) {
 }
 
 function VisibilityTag({ visibility }: { visibility: string }) {
-  const isExternal = visibility === 'external';
+  const isExternal = visibility === "external";
   const label = visibilityLabels[visibility] || visibility;
   const config = isExternal
-    ? { text: '#21c45d', bg: 'rgba(33, 196, 93, 0.12)', Icon: Globe }
-    : { text: '#757575', bg: 'rgba(117, 117, 117, 0.12)', Icon: Lock };
+    ? { text: "#21c45d", bg: "rgba(33, 196, 93, 0.12)", Icon: Globe }
+    : { text: "#757575", bg: "rgba(117, 117, 117, 0.12)", Icon: Lock };
 
   return (
     <Box
@@ -444,10 +447,10 @@ function VisibilityTag({ visibility }: { visibility: string }) {
         py: 0.8,
         borderRadius: 1,
         border: `1px solid ${config.bg}`,
-        display: 'inline-flex',
-        alignItems: 'center',
+        display: "inline-flex",
+        alignItems: "center",
         gap: 0.5,
-        fontSize: '0.75rem',
+        fontSize: "0.75rem",
         lineHeight: 1,
         color: config.text,
         backgroundColor: config.bg,
@@ -467,41 +470,55 @@ interface TalkDetailsDialogProps {
   onDelete: (id: string) => void;
 }
 
-export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: TalkDetailsDialogProps) {
+export function TalkDetailsDialog({
+  talk,
+  open,
+  onClose,
+  onUpdate,
+  onDelete,
+}: TalkDetailsDialogProps) {
   if (!talk) return null;
 
-  const [slides, setSlides] = React.useState(talk.slides || '');
-  const [replay, setReplay] = React.useState(talk.replay || '');
+  const [slides, setSlides] = React.useState(talk.slides || "");
+  const [replay, setReplay] = React.useState(talk.replay || "");
 
   React.useEffect(() => {
-    setSlides(talk.slides || '');
-    setReplay(talk.replay || '');
+    setSlides(talk.slides || "");
+    setReplay(talk.replay || "");
   }, [talk.id, talk.slides, talk.replay]);
 
   const handleStatusChange = (event: SelectChangeEvent) => {
     onUpdate({ ...talk, status: event.target.value as TalkStatus });
   };
 
-  const handleVisibilityToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdate({ ...talk, visibility: event.target.checked ? 'external' : 'internal' });
+  const handleVisibilityToggle = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    onUpdate({
+      ...talk,
+      visibility: event.target.checked ? "external" : "internal",
+    });
   };
 
   const handleSlidesBlur = () => {
-    if (slides !== (talk.slides || '')) {
+    if (slides !== (talk.slides || "")) {
       onUpdate({ ...talk, slides });
     }
   };
 
   const handleReplayBlur = () => {
-    if (replay !== (talk.replay || '')) {
+    if (replay !== (talk.replay || "")) {
       onUpdate({ ...talk, replay });
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, field: 'slides' | 'replay') => {
-    if (e.key === 'Enter') {
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLDivElement>,
+    field: "slides" | "replay",
+  ) => {
+    if (e.key === "Enter") {
       e.preventDefault();
-      if (field === 'slides') {
+      if (field === "slides") {
         onUpdate({ ...talk, slides });
       } else {
         onUpdate({ ...talk, replay });
@@ -511,7 +528,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
   };
 
   const handleDelete = () => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce talk ?')) {
+    if (confirm("Êtes-vous sûr de vouloir supprimer ce talk ?")) {
       onDelete(talk.id);
       onClose();
     }
@@ -521,9 +538,25 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 600, pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', letterSpacing: '-0.75px' }}>
+      <DialogTitle
+        sx={{
+          fontWeight: 600,
+          pb: 1,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          letterSpacing: "-0.75px",
+        }}
+      >
         {talk.title}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, letterSpacing: 'normal' }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            letterSpacing: "normal",
+          }}
+        >
           <StatusTag status={talk.status} />
           <IconButton onClick={onClose} size="small" sx={{ ml: 1 }}>
             <X size={20} />
@@ -531,30 +564,42 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
         </Box>
       </DialogTitle>
       <DialogContent sx={{ pb: 1 }}>
-        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 3 }}>Détails du talk</Typography>
+        <Typography
+          variant="body2"
+          sx={{ color: theme.palette.text.secondary, mb: 3 }}
+        >
+          Détails du talk
+        </Typography>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Grid container spacing={2}>
             <Grid size={6}>
               <Stack spacing={2}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <User size={14} color={theme.palette.text.secondary} />
-                  <Typography variant="body2">{talk.speaker}{talk.cospeaker ? ` & ${talk.cospeaker}` : ''}</Typography>
+                  <Typography variant="body2">
+                    {talk.speaker}
+                    {talk.cospeaker ? ` & ${talk.cospeaker}` : ""}
+                  </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Mic size={14} color={theme.palette.text.secondary} />
-                  <Typography variant="body2">{talk.conference || '—'}</Typography>
+                  <Typography variant="body2">
+                    {talk.conference || "—"}
+                  </Typography>
                 </Box>
               </Stack>
             </Grid>
             <Grid size={6}>
               <Stack spacing={2}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <MapPin size={14} color={theme.palette.text.secondary} />
-                  <Typography variant="body2">{agencyLabels[talk.agency] || talk.agency}</Typography>
+                  <Typography variant="body2">
+                    {agencyLabels[talk.agency] || talk.agency}
+                  </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Calendar size={14} color={theme.palette.text.secondary} />
-                  <Typography variant="body2">{talk.date || '—'}</Typography>
+                  <Typography variant="body2">{talk.date || "—"}</Typography>
                 </Box>
               </Stack>
             </Grid>
@@ -563,7 +608,13 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
           <Divider />
 
           <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ display: 'block', mb: 1 }}>Changer le statut</Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ display: "block", mb: 1 }}
+            >
+              Changer le statut
+            </Typography>
             <FormControl fullWidth>
               <Select
                 value={talk.status}
@@ -581,58 +632,80 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
 
           <Divider />
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Box>
-              <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center' }}>
-                {talk.visibility === 'external' ? <Globe size={16} /> : <Lock size={16} />}
-                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                  {talk.visibility === 'external' ? 'Visibilité externe' : 'Visibilité interne'}
+              <Box sx={{ display: "flex", gap: 0.75, alignItems: "center" }}>
+                {talk.visibility === "external" ? (
+                  <Globe size={16} />
+                ) : (
+                  <Lock size={16} />
+                )}
+                <Typography variant="body2" sx={{ fontWeight: "medium" }}>
+                  {talk.visibility === "external"
+                    ? "Visibilité externe"
+                    : "Visibilité interne"}
                 </Typography>
               </Box>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                {talk.visibility === 'external' ? 'Visible publiquement.' : 'Réservé en interne.'}
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block" }}
+              >
+                {talk.visibility === "external"
+                  ? "Visible publiquement."
+                  : "Réservé en interne."}
               </Typography>
             </Box>
             <Switch
-              checked={talk.visibility === 'external'}
+              checked={talk.visibility === "external"}
               onChange={handleVisibilityToggle}
               sx={{
                 width: 50,
                 height: 26,
                 padding: 0,
-                '& .MuiSwitch-switchBase': {
+                "& .MuiSwitch-switchBase": {
                   padding: 0,
-                  margin: '2px',
-                  transitionDuration: '300ms',
-                  '&.Mui-checked': {
-                    transform: 'translateX(24px)',
-                    color: '#fff',
-                    '& + .MuiSwitch-track': {
-                      backgroundColor: 'primary.main',
+                  margin: "2px",
+                  transitionDuration: "300ms",
+                  "&.Mui-checked": {
+                    transform: "translateX(24px)",
+                    color: "#fff",
+                    "& + .MuiSwitch-track": {
+                      backgroundColor: "primary.main",
                       opacity: 1,
                       border: 0,
                     },
                   },
                 },
-                '& .MuiSwitch-thumb': {
-                  boxSizing: 'border-box',
+                "& .MuiSwitch-thumb": {
+                  boxSizing: "border-box",
                   width: 22,
                   height: 22,
                 },
-                '& .MuiSwitch-track': {
+                "& .MuiSwitch-track": {
                   borderRadius: 13,
-                  backgroundColor: '#E9E9EA',
+                  backgroundColor: "#E9E9EA",
                   opacity: 1,
                 },
               }}
             />
           </Box>
 
-          {(talk.status === 'Accepted' || talk.status === 'Replayed') && (
+          {(talk.status === "Accepted" || talk.status === "Replayed") && (
             <>
               <Divider />
               <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ display: "block", mb: 1.5 }}
+                >
                   Liens du talk
                 </Typography>
                 <Grid container spacing={2}>
@@ -643,7 +716,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
                       value={slides}
                       onChange={(e) => setSlides(e.target.value)}
                       onBlur={handleSlidesBlur}
-                      onKeyDown={(e) => handleKeyDown(e, 'slides')}
+                      onKeyDown={(e) => handleKeyDown(e, "slides")}
                       fullWidth
                       size="small"
                       slotProps={{
@@ -653,24 +726,28 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
                               <LinkIcon size={16} />
                             </InputAdornment>
                           ),
-                          endAdornment: slides && isValidUrl(slides) ? (
-                            <InputAdornment position="end">
-                              <IconButton
-                                size="small"
-                                href={slides}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                sx={{
-                                  color: 'primary.main',
-                                  p: 0.5,
-                                  '&:hover': { backgroundColor: 'rgba(237, 33, 60, 0.08)' }
-                                }}
-                              >
-                                <ExternalLinkIcon size={14} />
-                              </IconButton>
-                            </InputAdornment>
-                          ) : null
-                        }
+                          endAdornment:
+                            slides && isValidUrl(slides) ? (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  size="small"
+                                  href={slides}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  sx={{
+                                    color: "primary.main",
+                                    p: 0.5,
+                                    "&:hover": {
+                                      backgroundColor:
+                                        "rgba(237, 33, 60, 0.08)",
+                                    },
+                                  }}
+                                >
+                                  <ExternalLinkIcon size={14} />
+                                </IconButton>
+                              </InputAdornment>
+                            ) : null,
+                        },
                       }}
                     />
                   </Grid>
@@ -681,7 +758,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
                       value={replay}
                       onChange={(e) => setReplay(e.target.value)}
                       onBlur={handleReplayBlur}
-                      onKeyDown={(e) => handleKeyDown(e, 'replay')}
+                      onKeyDown={(e) => handleKeyDown(e, "replay")}
                       fullWidth
                       size="small"
                       slotProps={{
@@ -691,24 +768,28 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
                               <PlayIcon size={16} />
                             </InputAdornment>
                           ),
-                          endAdornment: replay && isValidUrl(replay) ? (
-                            <InputAdornment position="end">
-                              <IconButton
-                                size="small"
-                                href={replay}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                sx={{
-                                  color: 'primary.main',
-                                  p: 0.5,
-                                  '&:hover': { backgroundColor: 'rgba(237, 33, 60, 0.08)' }
-                                }}
-                              >
-                                <ExternalLinkIcon size={14} />
-                              </IconButton>
-                            </InputAdornment>
-                          ) : null
-                        }
+                          endAdornment:
+                            replay && isValidUrl(replay) ? (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  size="small"
+                                  href={replay}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  sx={{
+                                    color: "primary.main",
+                                    p: 0.5,
+                                    "&:hover": {
+                                      backgroundColor:
+                                        "rgba(237, 33, 60, 0.08)",
+                                    },
+                                  }}
+                                >
+                                  <ExternalLinkIcon size={14} />
+                                </IconButton>
+                              </InputAdornment>
+                            ) : null,
+                        },
                       }}
                     />
                   </Grid>
@@ -716,22 +797,23 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
               </Box>
             </>
           )}
-
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3, pt: 2.5, justifyContent: 'space-between' }}>
+      <DialogActions
+        sx={{ px: 3, pb: 3, pt: 2.5, justifyContent: "space-between" }}
+      >
         <Button
           variant="contained"
           onClick={handleDelete}
           sx={{
             fontWeight: 600,
-            boxShadow: 'none',
-            borderRadius: '8px',
+            boxShadow: "none",
+            borderRadius: "8px",
             backgroundColor: theme.palette.primary.main,
-            '&:hover': {
+            "&:hover": {
               backgroundColor: theme.palette.primary.light,
-              boxShadow: 'none'
-            }
+              boxShadow: "none",
+            },
           }}
         >
           Supprimer
@@ -741,14 +823,14 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
           variant="outlined"
           sx={{
             fontWeight: 600,
-            borderRadius: '8px',
-            color: 'text.primary',
-            borderColor: 'divider',
-            '&:hover': {
-              borderColor: 'divider',
-              backgroundColor: 'rgba(237, 33, 60, 0.12)',
-              color: 'primary.main'
-            }
+            borderRadius: "8px",
+            color: "text.primary",
+            borderColor: "divider",
+            "&:hover": {
+              borderColor: "divider",
+              backgroundColor: "rgba(237, 33, 60, 0.12)",
+              color: "primary.main",
+            },
           }}
         >
           Fermer
@@ -758,179 +840,39 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
   );
 }
 
-function mapBackendToFrontend(t: any): TalkData {
-  const speakers = t.speakers || [];
-  return {
-    id: t.id || '',
-    title: t.title || '',
-    speaker: speakers[0] || '',
-    cospeaker: speakers[1] || '',
-    email: '',
-    agency: t.office || '',
-    abstract: t.description || '',
-    format: 'public',
-    visibility: t.visibility === 'PUBLIC' ? 'external' : 'internal',
-    language: 'francais',
-    conference: t.conference?.name || '',
-    date: '',
-    notes: '',
-    status: t.status === 'DONE' ? 'Replayed' :
-      t.status === 'ACCEPTED' ? 'Accepted' :
-        t.status === 'SUBMITTED' ? 'Submitted' : 'Idea',
-    slides: '',
-    replay: '',
-  };
-}
-
-function mapFrontendToBackend(t: TalkData): any {
-  const speakers = [];
-  if (t.speaker.trim()) speakers.push(t.speaker.trim());
-  if (t.cospeaker.trim()) speakers.push(t.cospeaker.trim());
-
-  let backendStatus = 'PLANNED';
-  if (t.status === 'Submitted') backendStatus = 'SUBMITTED';
-  else if (t.status === 'Accepted') backendStatus = 'ACCEPTED';
-  else if (t.status === 'Replayed') backendStatus = 'DONE';
-
-  return {
-    id: t.id,
-    title: t.title,
-    description: t.abstract,
-    speakers: speakers,
-    office: t.agency,
-    conference: t.conference ? { name: t.conference } : null,
-    status: backendStatus,
-    visibility: t.visibility === 'external' ? 'PUBLIC' : 'PRIVATE',
-  };
-}
-
-const API_URL = 'http://localhost:8080/talks';
-
-
 export default function TalkDashboard() {
   const [open, setOpen] = React.useState(false);
-  const [talks, setTalks] = React.useState<TalkData[]>([
-    // {
-    //   id: '1',
-    //   title: 'Introduction to React 19',
-    //   speaker: 'John Doe',
-    //   cospeaker: '',
-    //   email: 'john.doe@zenika.com',
-    //   agency: 'paris',
-    //   abstract: 'Discover the new features of React 19, including React Server Components and more.',
-    //   format: 'public',
-    //   visibility: 'external',
-    //   language: 'francais',
-    //   conference: 'Devoxx France',
-    //   date: '15-04-2026',
-    //   notes: 'Premier talk sur React 19',
-    //   status: 'Accepted',
-    //   slides: 'https://slides.com/johndoe/react-19',
-    //   replay: 'https://youtube.com/watch?v=react19',
-    // },
-    // {
-    //   id: '2',
-    //   title: 'Mastering Remix for v2',
-    //   speaker: 'Jane Smith',
-    //   cospeaker: 'Alice Brown',
-    //   email: 'jane.smith@zenika.com',
-    //   agency: 'nantes',
-    //   abstract: 'Deep dive into Remix v2 and its powerful routing system.',
-    //   format: 'training',
-    //   visibility: 'internal',
-    //   language: 'english',
-    //   conference: 'Mix-IT',
-    //   date: '20-05-2026',
-    //   notes: 'Besoin d\'une salle avec projecteur',
-    //   status: 'Idea',
-    // },
-    // {
-    //   id: '3',
-    //   title: 'Web Performance Tips',
-    //   speaker: 'Bob Wilson',
-    //   cospeaker: '',
-    //   email: 'bob.wilson@zenika.com',
-    //   agency: 'lyon',
-    //   abstract: 'Learn how to optimize your web applications for better performance and Core Web Vitals.',
-    //   format: 'video',
-    //   visibility: 'external',
-    //   language: 'francais',
-    //   conference: 'Web2Day',
-    //   date: '10-06-2026',
-    //   notes: 'Session de 45 minutes',
-    //   status: 'Submitted',
-    // },
-    // {
-    //   id: '4',
-    //   title: 'The Future of AI in Web Dev',
-    //   speaker: 'Alice Brown',
-    //   cospeaker: '',
-    //   email: 'alice.brown@zenika.com',
-    //   agency: 'bordeaux',
-    //   abstract: 'Exploring how AI and LLMs are transforming the way we build web applications.',
-    //   format: 'public',
-    //   visibility: 'external',
-    //   language: 'english',
-    //   conference: 'Sunny Tech',
-    //   date: '05-07-2026',
-    //   notes: 'Draft initial',
-    //   status: 'Draft',
-    // }
-  ]);
+  const [selectedTalkId, setSelectedTalkId] = React.useState<string | null>(
+    null,
+  );
 
-  const [loading, setLoading] = React.useState(true);
-  const [selectedTalkId, setSelectedTalkId] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    const fetchTalks = async () => {
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Failed to fetch talks');
-        const data = await response.json();
-        console.log("API fetch data", data);
-        setTalks(data.map(mapBackendToFrontend));
-      } catch (error) {
-        console.error('Error fetching talks:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTalks();
-  }, []);
+  const { talks, loading, createTalk, updateTalk, deleteTalk } = useTalks();
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-
   const handleSubmit = async (talk: TalkData) => {
-      console.log('handleSubmit')
-      try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(mapFrontendToBackend(talk)),
-        });
-        if (!response.ok) throw new Error('Failed to create talk');
-        const data = await response.json();
-        setTalks((prev) => [...prev, mapBackendToFrontend(data)]);
-      } catch (error) {
-        console.error('Error creating talk:', error);
-        alert('Erreur lors de la création du talk');
-      }
-    };
-
-  // const handleSubmit = (talk: TalkData) => {
-  //   setTalks((prev) => [...prev, talk]);
-  // };
-
-  const handleUpdateTalk = (updatedTalk: TalkData) => {
-    setTalks((prev) => prev.map((t) => (t.id === updatedTalk.id ? updatedTalk : t)));
+    try {
+      await createTalk(talk);
+    } catch (error) {
+      alert("Erreur lors de la création du talk");
+    }
   };
 
-  const handleDeleteTalk = (id: string) => {
-    setTalks((prev) => prev.filter((t) => t.id !== id));
+  const handleUpdateTalk = async (updatedTalk: TalkData) => {
+    try {
+      await updateTalk(updatedTalk);
+    } catch (error) {
+      alert("Erreur lors de la mise à jour du talk");
+    }
+  };
+
+  const handleDeleteTalk = async (id: string) => {
+    try {
+      await deleteTalk(id);
+    } catch (error) {
+      alert("Erreur lors de la suppression du talk");
+    }
   };
 
   const selectedTalk = talks.find((t) => t.id === selectedTalkId) || null;
@@ -938,13 +880,22 @@ export default function TalkDashboard() {
 
   return (
     <Box sx={{ p: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+        }}
+      >
         <Box>
-
-          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+          <Typography variant="h4" sx={{ fontWeight: "bold" }}>
             Talks
           </Typography>
-          <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+          <Typography
+            variant="body2"
+            sx={{ color: theme.palette.text.secondary }}
+          >
             Manage the lifecycle of talks from idea to replay.
           </Typography>
         </Box>
@@ -952,39 +903,68 @@ export default function TalkDashboard() {
           variant="contained"
           onClick={handleOpen}
           sx={{
-            fontWeight: 'bold',
+            fontWeight: "bold",
             py: 1,
-            boxShadow: 'none',
-            borderRadius: '20px',
-            background: 'linear-gradient(135deg, #ed213c 0%, #BF1D67 100%)',
-            transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-            '&:hover': {
-              boxShadow: 'none',
-              transform: 'translateY(-2px)',
-            }
+            gap: 1,
+            boxShadow: "none",
+            borderRadius: "20px",
+            background: "linear-gradient(135deg, #ed213c 0%, #BF1D67 100%)",
+            transition:
+              "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+            "&:hover": {
+              boxShadow: "none",
+              transform: "translateY(-2px)",
+            },
           }}
         >
-          + New Talk
+          <Plus size={16} />
+          New Talk
         </Button>
       </Box>
 
-      <TableContainer component={Paper} variant="outlined" sx={{ border: '1px solid #ed213c', overflow: 'hidden', borderRadius: 1 }}>
+      <TableContainer
+        component={Paper}
+        variant="outlined"
+        sx={{
+          border: "1px solid #ed213c",
+          overflow: "hidden",
+          borderRadius: 1,
+        }}
+      >
         <Table>
-          <TableHead sx={{ backgroundColor: '#ececec' }}>
+          <TableHead sx={{ backgroundColor: "#ececec" }}>
             <TableRow>
-              <TableCell><strong>Titre</strong></TableCell>
-              <TableCell><strong>Speaker</strong></TableCell>
-              <TableCell><strong>Agence</strong></TableCell>
-              <TableCell><strong>Conférence</strong></TableCell>
-              <TableCell><strong>Statut</strong></TableCell>
-              <TableCell align="center"><strong>Visibilité</strong></TableCell>
-              <TableCell align="center"><strong>Actions</strong></TableCell>
+              <TableCell>
+                <strong>Titre</strong>
+              </TableCell>
+              <TableCell>
+                <strong>Speaker</strong>
+              </TableCell>
+              <TableCell>
+                <strong>Agence</strong>
+              </TableCell>
+              <TableCell>
+                <strong>Conférence</strong>
+              </TableCell>
+              <TableCell>
+                <strong>Statut</strong>
+              </TableCell>
+              <TableCell align="center">
+                <strong>Visibilité</strong>
+              </TableCell>
+              <TableCell align="center">
+                <strong>Actions</strong>
+              </TableCell>
             </TableRow>
           </TableHead>
-          <TableBody sx={{ '& tr:last-child td': { borderBottom: 0 } }}>
+          <TableBody sx={{ "& tr:last-child td": { borderBottom: 0 } }}>
             {talks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                <TableCell
+                  colSpan={9}
+                  align="center"
+                  sx={{ py: 4, color: "text.secondary" }}
+                >
                   Aucun talk pour le moment. Créez-en-un avec "New Talk" !
                 </TableCell>
               </TableRow>
@@ -995,11 +975,11 @@ export default function TalkDashboard() {
                     <Typography
                       variant="body2"
                       sx={{
-                        cursor: 'pointer',
-                        color: 'primary.main',
-                        textDecoration: 'underline',
-                        fontWeight: 'medium',
-                        '&:hover': { color: 'primary.dark' }
+                        cursor: "pointer",
+                        color: "primary.main",
+                        textDecoration: "underline",
+                        fontWeight: "medium",
+                        "&:hover": { color: "primary.dark" },
                       }}
                       onClick={() => setSelectedTalkId(talk.id)}
                     >
@@ -1007,8 +987,8 @@ export default function TalkDashboard() {
                     </Typography>
                   </TableCell>
                   <TableCell>{talk.speaker}</TableCell>
-                  <TableCell>{agencyLabels[talk.agency] || '—'}</TableCell>
-                  <TableCell>{talk.conference || '—'}</TableCell>
+                  <TableCell>{agencyLabels[talk.agency] || "—"}</TableCell>
+                  <TableCell>{talk.conference || "—"}</TableCell>
                   <TableCell>
                     <StatusTag status={talk.status} />
                   </TableCell>
@@ -1016,27 +996,28 @@ export default function TalkDashboard() {
                     <VisibilityTag visibility={talk.visibility} />
                   </TableCell>
                   <TableCell align="center">
-                    {(talk.status === 'Accepted' || talk.status === 'Replayed') && (
+                    {(talk.status === "Accepted" ||
+                      talk.status === "Replayed") && (
                       <Box
                         onClick={() => setSelectedTalkId(talk.id)}
                         sx={{
                           px: 1.5,
                           py: 0.8,
                           borderRadius: 0.5,
-                          display: 'inline-flex',
-                          alignItems: 'center',
+                          display: "inline-flex",
+                          alignItems: "center",
                           gap: 0.5,
-                          fontSize: '0.75rem',
+                          fontSize: "0.75rem",
                           lineHeight: 1,
-                          color: 'text.primary',
-                          backgroundColor: 'common.white',
-                          border: '1px solid',
-                          borderColor: 'divider',
-                          cursor: 'pointer',
-                          '&:hover': {
-                            backgroundColor: 'rgba(237, 33, 60, 0.12)',
-                            color: 'primary.main'
-                          }
+                          color: "text.primary",
+                          backgroundColor: "common.white",
+                          border: "1px solid",
+                          borderColor: "divider",
+                          cursor: "pointer",
+                          "&:hover": {
+                            backgroundColor: "rgba(237, 33, 60, 0.12)",
+                            color: "primary.main",
+                          },
                         }}
                       >
                         <Eye size={12} />
@@ -1051,7 +1032,11 @@ export default function TalkDashboard() {
         </Table>
       </TableContainer>
 
-      <CreateTalkDialog open={open} onClose={handleClose} onSubmit={handleSubmit} />
+      <CreateTalkDialog
+        open={open}
+        onClose={handleClose}
+        onSubmit={handleSubmit}
+      />
 
       <TalkDetailsDialog
         talk={selectedTalk}
