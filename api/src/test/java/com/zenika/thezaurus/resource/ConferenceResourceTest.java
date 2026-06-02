@@ -29,7 +29,7 @@ public class ConferenceResourceTest {
              .statusCode(200)
              .body("size()", is(1))
              .body("[0].id", is("1"))
-             .body("[0].title", is("Titre"));
+             .body("[0].name", is("Titre"));
     }
 
     @Test
@@ -56,6 +56,6 @@ public class ConferenceResourceTest {
           .then()
              .statusCode(201)
              .body("id", is("new-id"))
-             .body("title", is("New Conf"));
+             .body("name", is("New Conf"));
     }
 }

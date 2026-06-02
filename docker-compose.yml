@@ -25,9 +25,13 @@ services:
       - QUARKUS_GOOGLE_CLOUD_FIRESTORE_DATABASE_ID=thezaurus-dev
       - FIRESTORE_EMULATOR_HOST=firestore:9000
       - QUARKUS_HTTP_PORT=8080
+      - QUARKUS_PROFILE=dev
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
     depends_on:
       firestore:
         condition: service_healthy
+    volumes:
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/credentials.json:ro
 
   # UI Frontend (React Router / Vite)
   ui:

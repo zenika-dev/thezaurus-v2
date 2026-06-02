@@ -1,76 +1,44 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
-  Box,
   Dialog,
-  Typography,
-  Button,
-  Paper,
-  Stack,
-  useTheme,
   DialogTitle,
   DialogContent,
+  DialogActions,
+  Button,
   Grid,
   TextField,
-  DialogActions,
-  Snackbar,
-  Alert,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   InputAdornment,
   IconButton,
+  Typography,
+  Box,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
-import { ExternalLinkIcon, FileText, Library, PenLine } from "lucide-react";
-import { isValidUrl } from "~/lib/utils";
+import { ExternalLinkIcon, FileText, Library, Trash2 } from "lucide-react";
+import dayjs, { type Dayjs } from "dayjs";
 import { type BlogPostData, blogPostTags } from "~/types/post";
-import { usePosts } from "~/hooks/usePosts";
-import type { Dayjs } from "dayjs";
-import dayjs from "dayjs";
-import "dayjs/locale/fr";
-import { BlogPostDetailsDialog } from "./BlogPostDetailsDialog";
+import { isValidUrl } from "~/lib/utils";
 
-const statusConfig: Record<
-  "Draft" | "Published",
-  { text: string; bg: string }
-> = {
-  Draft: { text: "#757575", bg: "rgba(117, 117, 117, 0.12)" },
-  Published: { text: "#21c45d", bg: "rgba(33, 196, 93, 0.12)" },
-};
-
-function StatusTag({ status }: { status: "Draft" | "Published" }) {
-  const config = statusConfig[status];
-  return (
-    <Box
-      sx={{
-        px: 1.5,
-        py: 0.5,
-        borderRadius: 1,
-        display: "inline-block",
-        fontSize: "0.75rem",
-        fontWeight: "bold",
-        border: `1px solid ${config.bg}`,
-        color: config.text,
-        backgroundColor: config.bg,
-      }}
-    >
-      {status}
-    </Box>
-  );
-}
-
-interface CreateBlogPostProps {
+interface BlogPostDetailsDialogProps {
+  post: BlogPostData | null;
   open: boolean;
   onClose: () => void;
-  onSubmit: (post: BlogPostData) => void;
+  onUpdate: (post: BlogPostData) => void;
+  onDelete: (id: string) => void;
 }
 
-export function CreateBlogPostDialog({
+export function BlogPostDetailsDialog({
+  post,
   open,
   onClose,
-  onSubmit,
-}: CreateBlogPostProps) {
+  onUpdate,
+  onDelete,
+}: BlogPostDetailsDialogProps) {
   const [title, setTitle] = React.useState("");
   const [author, setAuthor] = React.useState("");
   const [creationDate, setCreationDate] = React.useState<Dayjs | null>(null);
@@ -82,18 +50,26 @@ export function CreateBlogPostDialog({
   const [googleDocDraftLink, setGoogleDocDraftLink] = React.useState("");
   const [toastOpen, setToastOpen] = React.useState(false);
 
-  const theme = useTheme();
+  useEffect(() => {
+    if (post && open) {
+      setTitle(post.title || "");
+      setAuthor(post.author || "");
+      setCreationDate(
+        post.creationDate ? dayjs(post.creationDate, "DD-MM-YYYY") : null,
+      );
+      setExpectedPublicationDate(
+        post.expectedPublicationDate
+          ? dayjs(post.expectedPublicationDate, "DD-MM-YYYY")
+          : null,
+      );
+      setTags(post.tags || []);
+      setStatus(post.status || "Draft");
+      setZenikaBlogLink(post.zenikaBlogLink || "");
+      setGoogleDocDraftLink(post.googleDocDraftLink || "");
+    }
+  }, [post, open]);
 
-  const resetForm = () => {
-    setTitle("");
-    setAuthor("");
-    setCreationDate(null);
-    setExpectedPublicationDate(null);
-    setTags([]);
-    setStatus("Draft");
-  };
-
-  const handleSave = (status: "Draft" | "Published") => {
+  const handleSave = () => {
     const requiredFieldsMissing =
       !title.trim() ||
       !author.trim() ||
@@ -117,27 +93,31 @@ export function CreateBlogPostDialog({
       return;
     }
 
-    onSubmit({
-      id: crypto.randomUUID(),
-      title: title.trim(),
-      author: author.trim(),
-      creationDate: creationDate ? creationDate.format("DD-MM-YYYY") : "",
-      expectedPublicationDate: expectedPublicationDate
-        ? expectedPublicationDate.format("DD-MM-YYYY")
-        : "",
-      tags,
-      zenikaBlogLink,
-      googleDocDraftLink,
-      status: status,
-    });
-    resetForm();
-    onClose();
+    if (post) {
+      onUpdate({
+        ...post,
+        title: title.trim(),
+        author: author.trim(),
+        creationDate: creationDate ? creationDate.format("DD-MM-YYYY") : "",
+        expectedPublicationDate: expectedPublicationDate
+          ? expectedPublicationDate.format("DD-MM-YYYY")
+          : "",
+        tags,
+        status,
+        zenikaBlogLink,
+        googleDocDraftLink,
+      });
+      onClose();
+    }
   };
 
-  const handleSubmit = () => handleSave(status);
-  const handleCancel = () => {
-    resetForm();
-    onClose();
+  const handleDelete = () => {
+    if (post) {
+      if (window.confirm("Êtes-vous sûr de vouloir supprimer ce post ?")) {
+        onDelete(post.id);
+        onClose();
+      }
+    }
   };
 
   const handleToastClose = (
@@ -148,8 +128,10 @@ export function CreateBlogPostDialog({
     setToastOpen(false);
   };
 
+  if (!post) return null;
+
   return (
-    <Dialog onClose={handleCancel} open={open} maxWidth="md" fullWidth>
+    <Dialog onClose={onClose} open={open} maxWidth="md" fullWidth>
       <DialogTitle
         sx={{
           pb: 0,
@@ -158,7 +140,7 @@ export function CreateBlogPostDialog({
           alignItems: "center",
         }}
       >
-        Nouvel article de blog
+        Détails de l'article de blog
         <Box>
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <Select
@@ -183,19 +165,16 @@ export function CreateBlogPostDialog({
           </FormControl>
         </Box>
       </DialogTitle>
-      <DialogContent sx={{ pt: 2 }}>
+      <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Saisir un article de blog
+          Modifier les détails de l'article
         </Typography>
-
         <Grid container spacing={2}>
           <Grid size={12}>
             <TextField
               label="Titre du post"
-              id="post-title"
               required
               fullWidth
-              placeholder="Ex: Building Resilient Microservices"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
@@ -204,10 +183,8 @@ export function CreateBlogPostDialog({
           <Grid size={6}>
             <TextField
               label="Auteur"
-              id="author"
               required
               fullWidth
-              placeholder="Prénom Nom"
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
             />
@@ -215,10 +192,9 @@ export function CreateBlogPostDialog({
 
           <Grid size={6}>
             <FormControl fullWidth required>
-              <InputLabel id="select-tags-label">Tags</InputLabel>
+              <InputLabel id="edit-select-tags-label">Tags</InputLabel>
               <Select
-                labelId="select-tags-label"
-                id="select-tags"
+                labelId="edit-select-tags-label"
                 multiple
                 fullWidth
                 value={tags}
@@ -265,9 +241,7 @@ export function CreateBlogPostDialog({
               slotProps={{ textField: { fullWidth: true } }}
             />
           </Grid>
-          {/* </Grid>
 
-        <Grid container spacing={2}> */}
           <Grid size={6}>
             <TextField
               label="Lien blog Zenika"
@@ -290,13 +264,7 @@ export function CreateBlogPostDialog({
                           href={zenikaBlogLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          sx={{
-                            color: "primary.main",
-                            p: 0.5,
-                            "&:hover": {
-                              backgroundColor: "rgba(237, 33, 60, 0.08)",
-                            },
-                          }}
+                          sx={{ color: "primary.main", p: 0.5 }}
                         >
                           <ExternalLinkIcon size={14} />
                         </IconButton>
@@ -306,6 +274,7 @@ export function CreateBlogPostDialog({
               }}
             />
           </Grid>
+
           <Grid size={6}>
             <TextField
               label="Lien draft Google Doc"
@@ -328,13 +297,7 @@ export function CreateBlogPostDialog({
                           href={googleDocDraftLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          sx={{
-                            color: "primary.main",
-                            p: 0.5,
-                            "&:hover": {
-                              backgroundColor: "rgba(237, 33, 60, 0.08)",
-                            },
-                          }}
+                          sx={{ color: "primary.main", p: 0.5 }}
                         >
                           <ExternalLinkIcon size={14} />
                         </IconButton>
@@ -348,12 +311,20 @@ export function CreateBlogPostDialog({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button variant="outlined" onClick={handleCancel}>
-          Annuler
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={handleDelete}
+          startIcon={<Trash2 size={16} />}
+        >
+          Supprimer
         </Button>
         <Box sx={{ flexGrow: 1 }} />
-        <Button variant="contained" onClick={handleSubmit}>
-          Créer le post
+        <Button variant="outlined" onClick={onClose}>
+          Annuler
+        </Button>
+        <Button variant="contained" onClick={handleSave}>
+          Enregistrer
         </Button>
       </DialogActions>
 
@@ -375,177 +346,3 @@ export function CreateBlogPostDialog({
     </Dialog>
   );
 }
-
-//
-//
-//
-//
-//
-
-const BlogPosts: React.FC = () => {
-  const [open, setOpen] = React.useState(false);
-  const [selectedPostId, setSelectedPostId] = React.useState<string | null>(
-    null,
-  );
-
-  const theme = useTheme();
-
-  const { posts, loading, createPost, updatePost, deletePost } = usePosts();
-
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-
-  const handleSubmit = async (post: BlogPostData) => {
-    try {
-      await createPost(post);
-    } catch (error) {
-      alert("Erreur lors de la création du post");
-    }
-  };
-
-  const handleUpdateBlogPost = async (updatedPost: BlogPostData) => {
-    try {
-      await updatePost(updatedPost);
-    } catch (error) {
-      alert("Erreur lors de la mise à jour du post");
-    }
-  };
-
-  const handleDeleteBlogPost = async (id: string) => {
-    try {
-      await deletePost(id);
-    } catch (error) {
-      alert("Erreur lors de la suppression du post");
-    }
-  };
-
-  const selectedPost = posts.find((p) => p.id === selectedPostId) || null;
-
-  return (
-    <Box sx={{ p: 4 }}>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
-      >
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-            Blog Posts
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{ color: theme.palette.text.secondary }}
-          >
-            Manage Zenika blog articles and publications.
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          onClick={handleOpen}
-          sx={{
-            fontWeight: "bold",
-            py: 1,
-            gap: 1,
-            boxShadow: "none",
-            borderRadius: "20px",
-            background: "linear-gradient(135deg, #ed213c 0%, #BF1D67 100%)",
-            transition:
-              "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
-            "&:hover": {
-              boxShadow: "none",
-              transform: "translateY(-2px)",
-            },
-          }}
-        >
-          <PenLine size={16} />
-          New Post
-        </Button>
-      </Box>
-
-      <Stack spacing={2}>
-        {posts.map((post) => (
-          <Paper
-            key={post.id}
-            variant="outlined"
-            sx={{
-              p: 2,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              border: "1px solid",
-              borderColor: "#ed213c",
-              borderRadius: 1,
-              transition: "border-color 0.2s ease-in-out",
-              cursor: "pointer",
-            }}
-            onClick={() => setSelectedPostId(post.id)}
-          >
-            <Box sx={{ display: "flex", flexDirection: "column" }}>
-              <Typography
-                variant="subtitle1"
-                sx={{ fontWeight: "bold", color: "#1e293b" }}
-              >
-                {post.title}
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#64748b" }}>
-                {post.author} • {post.creationDate}
-              </Typography>
-              <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
-                {post.tags.slice(0, 5).map((tag) => (
-                  <Box
-                    key={tag}
-                    sx={{
-                      px: 1,
-                      py: 0.25,
-                      borderRadius: 1,
-                      fontSize: "0.7rem",
-                      backgroundColor: "#f1f5f9",
-                      color: "#475569",
-                      fontWeight: "medium",
-                    }}
-                  >
-                    {tag}
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-            <Box>
-              <StatusTag status={post.status} />
-            </Box>
-          </Paper>
-        ))}
-        {posts.length === 0 && (
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 4,
-              textAlign: "center",
-              color: "text.secondary",
-              borderRadius: 1,
-            }}
-          >
-            Aucun article de blog pour le moment. Créez-en un avec "New Post" !
-          </Paper>
-        )}
-      </Stack>
-      <CreateBlogPostDialog
-        open={open}
-        onClose={handleClose}
-        onSubmit={handleSubmit}
-      />
-
-      <BlogPostDetailsDialog
-        post={selectedPost}
-        open={!!selectedPostId}
-        onClose={() => setSelectedPostId(null)}
-        onUpdate={handleUpdateBlogPost}
-        onDelete={handleDeleteBlogPost}
-      />
-    </Box>
-  );
-};
-
-export default BlogPosts;

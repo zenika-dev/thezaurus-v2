@@ -1,5 +1,5 @@
 import type { Route } from "./+types/talks";
-import TalkDashboard from "~/components/CreateTalkForm";
+import TalkDashboard from "~/components/TalkDashboard";
 
 export function meta({}: Route.MetaArgs) {
   return [
