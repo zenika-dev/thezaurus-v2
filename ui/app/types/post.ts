@@ -1,3 +1,5 @@
+export type BlogPostStatus = "Idea" | "Draft" | "Review" | "Published";
+
 export interface BlogPostData {
   id: string;
   title: string;
@@ -7,7 +9,7 @@ export interface BlogPostData {
   tags: string[];
   zenikaBlogLink?: string;
   googleDocDraftLink?: string;
-  status: "Draft" | "Published";
+  status: BlogPostStatus;
 }
 
 export const blogPostTags: Record<string, string> = {

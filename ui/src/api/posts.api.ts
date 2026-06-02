@@ -1,10 +1,30 @@
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import type { BlogPostData } from '../../app/types/post';
+import type { BlogPostData, BlogPostStatus } from '../../app/types/post';
 
 dayjs.extend(customParseFormat);
 
 const API_URL = 'http://localhost:8080/blog-posts';
+
+function toFrontendStatus(s: string): BlogPostStatus {
+  switch (s) {
+    case 'DRAFT': return 'Draft';
+    case 'PUBLISHED': return 'Published';
+    case 'IDEA': return 'Idea';
+    case 'REVIEW': return 'Review';
+    default: return 'Idea';
+  }
+}
+
+function toBackendStatus(s: BlogPostStatus): string {
+  switch (s) {
+    case 'Draft': return 'DRAFT';
+    case 'Published': return 'PUBLISHED';
+    case 'Idea': return 'IDEA';
+    case 'Review': return 'REVIEW';
+    default: return 'IDEA';
+  }
+}
 
 function toFrontendDate(dateStr: string | undefined | null): string {
   if (!dateStr) return '';
@@ -22,7 +42,7 @@ export function mapBackendToFrontend(p: any): BlogPostData {
     tags: p.tags || [],
     creationDate: toFrontendDate(p.creationDate),
     expectedPublicationDate: toFrontendDate(p.publicationDate),
-    status: p.status === 'DRAFT' ? 'Draft' : 'Published',
+    status: toFrontendStatus(p.status),
     zenikaBlogLink: p.link || '',
     googleDocDraftLink: p.link || '',
   };
@@ -46,7 +66,7 @@ export function mapFrontendToBackend(p: BlogPostData): any {
     id: p.id,
     title: p.title,
     writers: [p.author],
-    status: p.status === 'Draft' ? 'DRAFT' : 'PUBLISHED',
+    status: toBackendStatus(p.status),
     tags: p.tags,
     creationDate: toLocalDateTime(p.creationDate),
     publicationDate: toLocalDateTime(p.expectedPublicationDate) || null,
