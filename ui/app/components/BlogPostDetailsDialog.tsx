@@ -77,7 +77,18 @@ export function BlogPostDetailsDialog({
       tags.length === 0 ||
       !status;
 
-    if (requiredFieldsMissing) {
+    // TODO RENAME / refacto
+    const dateProblem =
+      expectedPublicationDate && expectedPublicationDate.isBefore(creationDate);
+
+    const creationDateCannotBeAfterToday =
+      creationDate && creationDate.isAfter(dayjs());
+
+    if (
+      requiredFieldsMissing ||
+      dateProblem ||
+      creationDateCannotBeAfterToday
+    ) {
       setToastOpen(true);
       return;
     }
@@ -324,7 +335,12 @@ export function BlogPostDetailsDialog({
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert onClose={handleToastClose} severity="error" variant="filled">
-          {"Merci de remplir tous les champs obligatoires."}
+          {expectedPublicationDate &&
+          expectedPublicationDate.isBefore(creationDate)
+            ? "La date de publication doit être supérieure à la date de création."
+            : creationDate && creationDate.isAfter(dayjs())
+              ? "La date de création ne peut pas être après aujourd'hui."
+              : "Merci de remplir tous les champs obligatoires."}
         </Alert>
       </Snackbar>
     </Dialog>

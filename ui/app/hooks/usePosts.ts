@@ -1,5 +1,3 @@
-// TODO CHANGE TALKS TO POSTS
-
 import { useState, useEffect, useCallback } from 'react';
 import { postApi } from '../../src/api/posts.api';
 import type { BlogPostData } from '~/types/post';

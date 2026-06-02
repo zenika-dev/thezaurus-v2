@@ -31,29 +31,6 @@ import dayjs from "dayjs";
 import "dayjs/locale/fr";
 import { BlogPostDetailsDialog } from "./BlogPostDetailsDialog";
 
-const mockPosts: BlogPostData[] = [
-  {
-    id: "1",
-    title: "Les nouveautés de React 19",
-    author: "John Doe",
-    creationDate: "2026-05-29",
-    tags: [blogPostTags.react, blogPostTags.frontend, blogPostTags.web],
-    status: "Published",
-  },
-  {
-    id: "2",
-    title: "Architecture hexagonale en Node.js",
-    author: "Jane Smith",
-    creationDate: "2026-04-01",
-    tags: [
-      blogPostTags.backend,
-      blogPostTags.security,
-      blogPostTags.architecture,
-    ],
-    status: "Draft",
-  },
-];
-
 const statusConfig: Record<
   "Draft" | "Published",
   { text: string; bg: string }
@@ -124,7 +101,18 @@ export function CreateBlogPostDialog({
       tags.length === 0 ||
       !status;
 
-    if (requiredFieldsMissing) {
+    // TODO RENAME / refacto
+    const dateProblem =
+      expectedPublicationDate && expectedPublicationDate.isBefore(creationDate);
+
+    const creationDateCannotBeAfterToday =
+      creationDate && creationDate.isAfter(dayjs());
+
+    if (
+      requiredFieldsMissing ||
+      dateProblem ||
+      creationDateCannotBeAfterToday
+    ) {
       setToastOpen(true);
       return;
     }
@@ -140,7 +128,7 @@ export function CreateBlogPostDialog({
       tags,
       zenikaBlogLink,
       googleDocDraftLink,
-      status,
+      status: status,
     });
     resetForm();
     onClose();
@@ -162,7 +150,39 @@ export function CreateBlogPostDialog({
 
   return (
     <Dialog onClose={handleCancel} open={open} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ pb: 0 }}>Nouvel article de blog</DialogTitle>
+      <DialogTitle
+        sx={{
+          pb: 0,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        Nouvel article de blog
+        <Box>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <Select
+              value={status}
+              onChange={(e) =>
+                setStatus(e.target.value as "Draft" | "Published")
+              }
+              sx={{
+                fontWeight: "bold",
+                color: status === "Draft" ? "#757575" : "#21c45d",
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor:
+                    status === "Draft"
+                      ? "rgba(117, 117, 117, 0.5)"
+                      : "rgba(33, 196, 93, 0.5)",
+                },
+              }}
+            >
+              <MenuItem value="Draft">Draft</MenuItem>
+              <MenuItem value="Published">Published</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      </DialogTitle>
       <DialogContent sx={{ pt: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Saisir un article de blog
@@ -255,7 +275,6 @@ export function CreateBlogPostDialog({
               value={zenikaBlogLink}
               onChange={(e) => setZenikaBlogLink(e.target.value)}
               fullWidth
-              // size="small"
               slotProps={{
                 input: {
                   startAdornment: (
@@ -294,7 +313,6 @@ export function CreateBlogPostDialog({
               value={googleDocDraftLink}
               onChange={(e) => setGoogleDocDraftLink(e.target.value)}
               fullWidth
-              // size="small"
               slotProps={{
                 input: {
                   startAdornment: (
@@ -346,7 +364,12 @@ export function CreateBlogPostDialog({
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert onClose={handleToastClose} severity="error" variant="filled">
-          {"Merci de remplir tous les champs obligatoires."}
+          {expectedPublicationDate &&
+          expectedPublicationDate.isBefore(creationDate)
+            ? "La date de publication doit être supérieure à la date de création."
+            : creationDate && creationDate.isAfter(dayjs())
+              ? "La date de création ne peut pas être après aujourd'hui."
+              : "Merci de remplir tous les champs obligatoires."}
         </Alert>
       </Snackbar>
     </Dialog>
@@ -396,9 +419,7 @@ const BlogPosts: React.FC = () => {
     }
   };
 
-  const displayPosts = posts.length > 0 ? posts : mockPosts;
-  const selectedPost =
-    displayPosts.find((p) => p.id === selectedPostId) || null;
+  const selectedPost = posts.find((p) => p.id === selectedPostId) || null;
 
   return (
     <Box sx={{ p: 4 }}>
@@ -445,7 +466,7 @@ const BlogPosts: React.FC = () => {
       </Box>
 
       <Stack spacing={2}>
-        {displayPosts.map((post) => (
+        {posts.map((post) => (
           <Paper
             key={post.id}
             variant="outlined"
@@ -470,10 +491,10 @@ const BlogPosts: React.FC = () => {
                 {post.title}
               </Typography>
               <Typography variant="body2" sx={{ color: "#64748b" }}>
-                {post.author} • {dayjs(post.creationDate).format("DD-MM-YYYY")}
+                {post.author} • {post.creationDate}
               </Typography>
               <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
-                {post.tags.map((tag) => (
+                {post.tags.slice(0, 5).map((tag) => (
                   <Box
                     key={tag}
                     sx={{
@@ -496,7 +517,7 @@ const BlogPosts: React.FC = () => {
             </Box>
           </Paper>
         ))}
-        {displayPosts.length === 0 && (
+        {posts.length === 0 && (
           <Paper
             variant="outlined"
             sx={{

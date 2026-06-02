@@ -2,8 +2,8 @@ export interface BlogPostData {
   id: string;
   title: string;
   author: string;
-  creationDate: string; // TODO type
-  expectedPublicationDate?: string; // TODO type
+  creationDate: string;
+  expectedPublicationDate?: string;
   tags: string[];
   zenikaBlogLink?: string;
   googleDocDraftLink?: string;

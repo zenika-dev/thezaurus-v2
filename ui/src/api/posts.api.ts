@@ -1,41 +1,56 @@
-// TODO MAPPER FOR BLOG POSTS
-
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import type { BlogPostData } from '../../app/types/post';
+
+dayjs.extend(customParseFormat);
 
 const API_URL = 'http://localhost:8080/blog-posts';
 
+function toFrontendDate(dateStr: string | undefined | null): string {
+  if (!dateStr) return '';
+  if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) return dateStr;
+  const parsed = dayjs(dateStr);
+  if (parsed.isValid()) return parsed.format('DD-MM-YYYY');
+  return dateStr;
+}
+
 export function mapBackendToFrontend(p: any): BlogPostData {
-  const speakers = p.speakers || [];
   return {
     id: p.id || '',
     title: p.title || '',
-    author: p.writers[0] || '',
+    author: p.writers?.[0] || '',
     tags: p.tags || [],
-    creationDate: p.creationDate || '',
-    expectedPublicationDate: p.publicationDate,
+    creationDate: toFrontendDate(p.creationDate),
+    expectedPublicationDate: toFrontendDate(p.publicationDate),
     status: p.status === 'DRAFT' ? 'Draft' : 'Published',
     zenikaBlogLink: p.link || '',
     googleDocDraftLink: p.link || '',
   };
 }
 
+function toLocalDateTime(dateStr: string | undefined): string | null {
+  if (!dateStr) return null;
+  const ddmmyyyy = dateStr.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (ddmmyyyy) {
+    return `${ddmmyyyy[3]}-${ddmmyyyy[2]}-${ddmmyyyy[1]}T00:00:00`;
+  }
+  const yyyymmdd = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (yyyymmdd) {
+    return `${dateStr}T00:00:00`;
+  }
+  return dateStr;
+}
+
 export function mapFrontendToBackend(p: BlogPostData): any {
-//   const writers = [];
-//   if (p.speaker.trim()) speakers.push(p.speaker.trim());
-//   if (p.cospeaker.trim()) speakers.push(p.cospeaker.trim());
-
-  let backendStatus = 'DRAFT';
-if (p.status === 'Published') backendStatus = 'PUBLISHED';
-
   return {
     id: p.id,
     title: p.title,
-    writers: p.author,
-    creationDate: p.creationDate,
-    publicationDate: p.expectedPublicationDate || '',
-    status: backendStatus,
+    writers: [p.author],
+    status: p.status === 'Draft' ? 'DRAFT' : 'PUBLISHED',
+    tags: p.tags,
+    creationDate: toLocalDateTime(p.creationDate),
+    publicationDate: toLocalDateTime(p.expectedPublicationDate) || null,
     link: p.zenikaBlogLink || '',
-    // add googleDocDraftLink
   };
 }
 
