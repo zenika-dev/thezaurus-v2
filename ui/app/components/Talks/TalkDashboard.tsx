@@ -12,8 +12,8 @@ import Paper from "@mui/material/Paper";
 import { useTheme } from "@mui/material/styles";
 import { Plus, Eye } from "lucide-react";
 
-import { type TalkData, agencyLabels } from "../types/talk";
-import { useTalks } from "../hooks/useTalks";
+import { type TalkData, agencyLabels } from "../../types/talk";
+import { useTalks } from "../../hooks/useTalks";
 import { StatusTag, VisibilityTag } from "./TalkTags";
 import { CreateTalkDialog } from "./CreateTalkDialog";
 import { TalkDetailsDialog } from "./TalkDetailsDialog";
@@ -226,4 +226,3 @@ export default function TalkDashboard() {
     </Box>
   );
 }
-

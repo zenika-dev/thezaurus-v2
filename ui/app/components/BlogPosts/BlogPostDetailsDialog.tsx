@@ -21,8 +21,13 @@ import {
 import { DatePicker } from "@mui/x-date-pickers";
 import { ExternalLinkIcon, FileText, Library, Trash2 } from "lucide-react";
 import dayjs, { type Dayjs } from "dayjs";
-import { type BlogPostData, blogPostTags } from "~/types/post";
+import {
+  type BlogPostData,
+  type BlogPostStatus,
+  blogPostTags,
+} from "~/types/post";
 import { isValidUrl } from "~/lib/utils";
+import { statusConfig } from "./BlogPostTags";
 
 interface BlogPostDetailsDialogProps {
   post: BlogPostData | null;
@@ -45,7 +50,7 @@ export function BlogPostDetailsDialog({
   const [expectedPublicationDate, setExpectedPublicationDate] =
     React.useState<Dayjs | null>(null);
   const [tags, setTags] = React.useState<string[]>([]);
-  const [status, setStatus] = React.useState<"Draft" | "Published">("Draft");
+  const [status, setStatus] = React.useState<BlogPostStatus>("Idea");
   const [zenikaBlogLink, setZenikaBlogLink] = React.useState("");
   const [googleDocDraftLink, setGoogleDocDraftLink] = React.useState("");
   const [toastOpen, setToastOpen] = React.useState(false);
@@ -63,7 +68,7 @@ export function BlogPostDetailsDialog({
           : null,
       );
       setTags(post.tags || []);
-      setStatus(post.status || "Draft");
+      setStatus(post.status || "Idea");
       setZenikaBlogLink(post.zenikaBlogLink || "");
       setGoogleDocDraftLink(post.googleDocDraftLink || "");
     }
@@ -145,21 +150,18 @@ export function BlogPostDetailsDialog({
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <Select
               value={status}
-              onChange={(e) =>
-                setStatus(e.target.value as "Draft" | "Published")
-              }
+              onChange={(e) => setStatus(e.target.value as BlogPostStatus)}
               sx={{
                 fontWeight: "bold",
-                color: status === "Draft" ? "#757575" : "#21c45d",
+                color: statusConfig[status].text,
                 "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor:
-                    status === "Draft"
-                      ? "rgba(117, 117, 117, 0.5)"
-                      : "rgba(33, 196, 93, 0.5)",
+                  borderColor: statusConfig[status].bg, // TODO
                 },
               }}
             >
+              <MenuItem value="Idea">Idea</MenuItem>
               <MenuItem value="Draft">Draft</MenuItem>
+              <MenuItem value="Review">Review</MenuItem>
               <MenuItem value="Published">Published</MenuItem>
             </Select>
           </FormControl>

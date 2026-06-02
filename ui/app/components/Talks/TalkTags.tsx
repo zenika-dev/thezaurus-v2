@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
 import { Lock, Globe } from "lucide-react";
-import { type TalkStatus, visibilityLabels } from "../types/talk";
+import { type TalkStatus, visibilityLabels } from "../../types/talk";
 
 export const statusConfig: Record<TalkStatus, { text: string; bg: string }> = {
   Draft: { text: "#757575", bg: "rgba(117, 117, 117, 0.12)" },
@@ -59,4 +59,3 @@ export function VisibilityTag({ visibility }: { visibility: string }) {
     </Box>
   );
 }
-

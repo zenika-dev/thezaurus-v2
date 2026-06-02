@@ -1,5 +1,5 @@
 import type { Route } from "./+types/conferences";
-import Conferences from "~/components/Conferences";
+import Conferences from "~/components/Conferences/Conferences";
 
 export function meta({}: Route.MetaArgs) {
   return [

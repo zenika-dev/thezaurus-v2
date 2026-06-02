@@ -30,7 +30,7 @@ import {
   ExternalLink as ExternalLinkIcon,
 } from "lucide-react";
 
-import { type TalkData, type TalkStatus, agencyLabels } from "../types/talk";
+import { type TalkData, type TalkStatus, agencyLabels } from "../../types/talk";
 import { isValidUrl } from "~/lib/utils";
 import { StatusTag, statusConfig } from "./TalkTags";
 
