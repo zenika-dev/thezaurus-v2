@@ -77,8 +77,7 @@ export function CreateBlogPostDialog({
       tags.length === 0 ||
       !status;
 
-    // TODO RENAME / refacto
-    const dateProblem =
+    const mismatchedDates =
       expectedPublicationDate && expectedPublicationDate.isBefore(creationDate);
 
     const creationDateCannotBeAfterToday =
@@ -86,7 +85,7 @@ export function CreateBlogPostDialog({
 
     if (
       requiredFieldsMissing ||
-      dateProblem ||
+      mismatchedDates ||
       creationDateCannotBeAfterToday
     ) {
       setToastOpen(true);

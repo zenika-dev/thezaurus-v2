@@ -82,8 +82,7 @@ export function BlogPostDetailsDialog({
       tags.length === 0 ||
       !status;
 
-    // TODO RENAME / refacto
-    const dateProblem =
+    const mismatchedDates =
       expectedPublicationDate && expectedPublicationDate.isBefore(creationDate);
 
     const creationDateCannotBeAfterToday =
@@ -91,7 +90,7 @@ export function BlogPostDetailsDialog({
 
     if (
       requiredFieldsMissing ||
-      dateProblem ||
+      mismatchedDates ||
       creationDateCannotBeAfterToday
     ) {
       setToastOpen(true);
@@ -155,7 +154,7 @@ export function BlogPostDetailsDialog({
                 fontWeight: "bold",
                 color: statusConfig[status].text,
                 "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: statusConfig[status].bg, // TODO
+                  borderColor: statusConfig[status].bg,
                 },
               }}
             >
