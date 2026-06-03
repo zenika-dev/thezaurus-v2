@@ -35,6 +35,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+
       </head>
       <body>
         {children}
@@ -47,15 +48,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 
 import MainLayout from "./components/MainLayout";
+import { AuthProvider, ProtectedRoute } from "./lib/auth";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 export default function App() {
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
   return (
     <ThemeProvider theme={theme}>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <CssBaseline />
-        <MainLayout>
-          <Outlet />
-        </MainLayout>
+        <GoogleOAuthProvider clientId={clientId}>
+          <AuthProvider>
+            <MainLayout>
+              <ProtectedRoute allowedRoles={["membre", "admin"]}>
+                <Outlet />
+              </ProtectedRoute>
+            </MainLayout>
+          </AuthProvider>
+        </GoogleOAuthProvider>
       </LocalizationProvider>
     </ThemeProvider>
   );
