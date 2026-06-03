@@ -27,7 +27,7 @@ import {
   visibilityLabels,
   formatLabels,
   languageLabels,
-} from "../types/talk";
+} from "../../types/talk";
 
 dayjs.locale("fr");
 

@@ -1,5 +1,5 @@
 import type { Route } from "./+types/events";
-import Events from "~/components/Events";
+import Events from "~/components/Events/Events";
 
 export function meta({}: Route.MetaArgs) {
   return [

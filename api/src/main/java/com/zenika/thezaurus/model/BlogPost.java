@@ -9,7 +9,7 @@ public class BlogPost {
     private String creationDate;
     private String publicationDate;
     private String link;
-    private String status;
+    private BlogPostStatus status;
     private List<String> tags;
 
     public BlogPost() {
@@ -69,11 +69,11 @@ public class BlogPost {
         this.link = link;
     }
 
-    public String getStatus() {
+    public BlogPostStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(BlogPostStatus status) {
         this.status = status;
     }
 
