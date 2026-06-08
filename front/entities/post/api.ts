@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import type { BlogPostData, BlogPostStatus } from "@/entities/post";
+import type { BlogPostData, BlogPostStatus } from "./model";
 
 dayjs.extend(customParseFormat);
 

@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { postApi, queryKeys } from "@/shared/api";
+import { postApi } from "@/entities/post";
+import { queryKeys } from "@/shared/api";
 import { usePostsMutations } from "./usePostsMutations";
 
 export function usePosts() {

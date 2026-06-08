@@ -1,8 +1,8 @@
 "use server";
 
-import { postApi } from "@/shared/api";
+import { postApi } from "./api";
 import { revalidatePath } from "next/cache";
-import type { BlogPostData } from "@/entities/post";
+import type { BlogPostData } from "./model";
 
 export async function createPostAction(post: BlogPostData): Promise<BlogPostData> {
   const created = await postApi.createPost(post);

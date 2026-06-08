@@ -8,3 +8,4 @@ export {
   languageLabels,
   talkStatusConfig,
 } from "./model";
+export { talkApi, mapBackendToFrontend, mapFrontendToBackend } from "./api";

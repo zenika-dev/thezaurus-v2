@@ -1,8 +1,8 @@
 "use server";
 
-import { talkApi } from "@/shared/api";
+import { talkApi } from "./api";
 import { revalidatePath } from "next/cache";
-import type { TalkData } from "@/entities/talk";
+import type { TalkData } from "./model";
 
 export async function createTalkAction(talk: TalkData): Promise<TalkData> {
   const created = await talkApi.createTalk(talk);

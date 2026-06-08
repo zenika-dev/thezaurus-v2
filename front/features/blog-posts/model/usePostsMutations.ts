@@ -5,7 +5,7 @@ import {
   createPostAction,
   updatePostAction,
   deletePostAction,
-} from "@/shared/actions";
+} from "@/entities/post/actions";
 
 export function usePostsMutations() {
   const queryClient = useQueryClient();

@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { talkApi, queryKeys } from "@/shared/api";
+import { talkApi } from "@/entities/talk";
+import { queryKeys } from "@/shared/api";
 import { useTalksMutations } from "./useTalksMutations";
 
 export function useTalks() {

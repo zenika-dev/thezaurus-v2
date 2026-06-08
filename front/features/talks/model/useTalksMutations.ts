@@ -5,7 +5,7 @@ import {
   createTalkAction,
   updateTalkAction,
   deleteTalkAction,
-} from "@/shared/actions";
+} from "@/entities/talk/actions";
 
 export function useTalksMutations() {
   const queryClient = useQueryClient();

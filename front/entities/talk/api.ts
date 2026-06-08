@@ -1,4 +1,4 @@
-import type { TalkData } from "@/entities/talk";
+import type { TalkData } from "./model";
 
 const API_BASE = process.env.API_URL ?? "http://localhost:8080";
 const API_URL = `${API_BASE}/talks`;

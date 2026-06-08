@@ -26,7 +26,6 @@ export function BlogPosts() {
 
   return (
     <div className="p-8">
-      {/* Header — always rendered, independent of data */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-text">Blog Posts</h1>
@@ -40,7 +39,6 @@ export function BlogPosts() {
         </Button>
       </div>
 
-      {/* Data section — can load/fail independently */}
       <Suspense fallback={<BlogPostsListSkeleton />}>
         <DataErrorBoundary>
           <BlogPostsList />

@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
-import { talkApi, queryKeys } from "@/shared/api";
+import { talkApi } from "@/entities/talk";
+import { queryKeys } from "@/shared/api";
 import { getQueryClient } from "@/shared/lib";
 import { TalkDashboard } from "@/features/talks";
 import { TalkDashboardSkeleton } from "@/features/talks/ui/TalkDashboardSkeleton";

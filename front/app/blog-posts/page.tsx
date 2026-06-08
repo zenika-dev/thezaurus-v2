@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
-import { postApi, queryKeys } from "@/shared/api";
+import { postApi } from "@/entities/post";
+import { queryKeys } from "@/shared/api";
 import { getQueryClient } from "@/shared/lib";
 import { BlogPosts } from "@/features/blog-posts";
 import { BlogPostsSkeleton } from "@/features/blog-posts/ui/BlogPostsSkeleton";
