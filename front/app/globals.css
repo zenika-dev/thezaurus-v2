@@ -1,0 +1,91 @@
+/* Tailwind v4 — sans preflight : MUI CssBaseline gère le reset CSS */
+@import "tailwindcss/theme" layer(base);
+@import "tailwindcss/utilities";
+
+@theme {
+  --color-primary:        #ed213c;
+  --color-primary-dark:   #bf1d67;
+  --color-text:           #1e293b;
+  --color-text-muted:     #64748b;
+  --color-text-disabled:  #94a3b8;
+  --color-surface:        #ffffff;
+  --color-surface-muted:  #f1f5f9;
+  --color-surface-hover:  #f8fafc;
+  --color-border:         rgba(0, 0, 0, 0.08);
+  --color-border-strong:  rgba(0, 0, 0, 0.2);
+  --color-status-idea:      #007fff;
+  --color-status-draft:     #757575;
+  --color-status-submitted: #f59f0a;
+  --color-status-accepted:  #21c45d;
+  --color-status-published: #21c45d;
+  --color-status-review:    #f59f0a;
+  --color-status-replayed:  #d32f2f;
+  --font-sans: var(--font-nunito), "Nunito", "Roboto", "Helvetica", "Arial", sans-serif;
+  --shadow-card:   0px 2px 4px rgba(0, 0, 0, 0.15);
+  --shadow-button: 2px 2px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Overrides visuels MUI ── */
+@layer base {
+  /* Button contained primary */
+  .MuiButton-containedPrimary {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)) !important;
+    border-radius: 20px !important;
+    text-transform: none !important;
+    box-shadow: var(--shadow-button) !important;
+    color: white !important;
+    font-weight: 700 !important;
+    transition: transform 0.2s ease-in-out !important;
+  }
+  .MuiButton-containedPrimary:hover {
+    transform: translateY(-2px) !important;
+  }
+
+  /* Button outlined */
+  .MuiButton-outlinedPrimary {
+    border-color: var(--color-border-strong) !important;
+    color: var(--color-text) !important;
+    text-transform: none !important;
+  }
+  .MuiButton-outlinedPrimary:hover {
+    background-color: rgba(237, 33, 60, 0.04) !important;
+    border-color: var(--color-primary) !important;
+  }
+
+  /* TextField / Select focus */
+  .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: var(--color-primary) !important;
+  }
+  .MuiOutlinedInput-root:hover:not(.Mui-focused) .MuiOutlinedInput-notchedOutline {
+    border-color: var(--color-border-strong) !important;
+  }
+  .MuiInputLabel-root.Mui-focused {
+    color: var(--color-primary) !important;
+  }
+
+  /* Paper */
+  .MuiPaper-elevation {
+    box-shadow: var(--shadow-card) !important;
+  }
+
+  /* Dialog */
+  .MuiDialog-paper {
+    border-radius: 16px !important;
+  }
+
+  /* Textarea resize vertical */
+  .MuiInputBase-inputMultiline {
+    resize: vertical !important;
+  }
+
+  /* Switch compact */
+  .MuiSwitch-root { width: 50px !important; height: 26px !important; padding: 0 !important; }
+  .MuiSwitch-switchBase { padding: 0 !important; margin: 2px !important; transition-duration: 300ms !important; }
+  .MuiSwitch-switchBase.Mui-checked { transform: translateX(24px) !important; color: #fff !important; }
+  .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track {
+    background-color: var(--color-primary) !important;
+    opacity: 1 !important;
+  }
+  .MuiSwitch-thumb { box-sizing: border-box !important; width: 22px !important; height: 22px !important; }
+  .MuiSwitch-track { border-radius: 13px !important; background-color: #e9e9ea !important; opacity: 1 !important; }
+}

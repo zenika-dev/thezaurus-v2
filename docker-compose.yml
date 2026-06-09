@@ -33,11 +33,13 @@ services:
     volumes:
       - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/credentials.json:ro
 
-  # UI Frontend (React Router / Vite)
-  ui:
+  # UI Frontend (Next.js)
+  front:
     build:
-      context: ./ui
-    container_name: thezaurus-ui
+      context: ./front
+      args:
+        - API_URL=http://api:8080
+    container_name: thezaurus-front
     ports:
       - "3000:3000"
     environment:
