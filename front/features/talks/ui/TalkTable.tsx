@@ -41,7 +41,7 @@ export function TalkTable() {
       <TableContainer
         component={Paper}
         variant="outlined"
-        className="border! border-primary! rounded! overflow-hidden!"
+        className="border! border-primary! rounded-2xl! overflow-hidden!"
       >
         <Table>
           <TableHead className="bg-[#ececec]!">
@@ -66,12 +66,13 @@ export function TalkTable() {
               talks.map((talk) => (
                 <TableRow key={talk.id} hover>
                   <TableCell>
-                    <button
+                    <span
+                      role="button"
                       onClick={() => setSelectedTalkId(talk.id)}
                       className="text-primary underline font-medium hover:text-primary-dark text-sm cursor-pointer"
                     >
                       {talk.title}
-                    </button>
+                    </span>
                   </TableCell>
                   <TableCell>{talk.speaker}</TableCell>
                   <TableCell>{agencyLabels[talk.agency] || "—"}</TableCell>

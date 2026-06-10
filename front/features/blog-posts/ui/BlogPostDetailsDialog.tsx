@@ -174,7 +174,7 @@ export function BlogPostDetailsDialog({ post, open, onClose, onUpdate, onDelete 
         </div>
       </DialogContent>
 
-      <DialogActions>
+      <DialogActions className="px-6! pb-6! pt-5!">
         <Button variant="outlined" color="error" onClick={handleDelete} startIcon={<Trash2 size={16} />}>
           Supprimer
         </Button>

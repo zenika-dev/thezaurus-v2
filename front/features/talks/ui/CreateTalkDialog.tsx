@@ -272,7 +272,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
         </Box>
       </DialogContent>
 
-      <DialogActions>
+      <DialogActions className="px-6! pb-6! pt-5!">
         <Button variant="outlined" onClick={handleCancel}>Annuler</Button>
         <div className="flex-1" />
         <Button

@@ -34,7 +34,7 @@ export function BlogPostsList() {
           <div
             key={post.id}
             onClick={() => setSelectedPostId(post.id)}
-            className="p-4 flex justify-between items-center rounded border border-primary
+            className="p-4 flex justify-between items-center rounded-2xl border border-primary
               cursor-pointer transition-colors duration-200 hover:bg-surface-muted"
           >
             <div className="flex flex-col gap-0.5">
@@ -44,7 +44,7 @@ export function BlogPostsList() {
               </span>
               <div className="flex gap-1 mt-1 flex-wrap">
                 {post.tags.slice(0, 5).map((tag) => (
-                  <span key={tag} className="px-1.5 py-0.5 rounded text-[0.7rem] bg-surface-muted text-[#475569] font-medium">
+                  <span key={tag} className="px-1.5 py-0.5 rounded-2xl text-[0.7rem] bg-[rgba(117,117,117,0.12)] text-[#475569] font-medium">
                     {tag}
                   </span>
                 ))}
@@ -55,7 +55,7 @@ export function BlogPostsList() {
         ))}
 
         {posts.length === 0 && (
-          <div className="p-8 text-center text-text-muted border border-border rounded">
+          <div className="p-8 text-center text-text-muted border border-border rounded-2xl">
             Aucun article de blog pour le moment. Créez-en un avec &quot;Nouveau billet&quot; !
           </div>
         )}

@@ -28,12 +28,16 @@ export function BlogPosts() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-text">Blog Posts</h1>
-          <p className="text-sm text-text-muted mt-0.5">
+          <h1 className="text-[34px] leading-[1.235] font-bold text-text m-0 tracking-[0.25px]">Blog Posts</h1>
+          <p className="text-[14px] leading-[1.43] text-text-muted m-0 tracking-[0.15px]">
             Gérez les articles de blog Zenika.
           </p>
         </div>
-        <Button variant="contained" onClick={() => setOpen(true)} className="gap-2!">
+        <Button
+          variant="contained"
+          onClick={() => setOpen(true)}
+          className="gap-2! font-bold! py-2! shadow-none! rounded-[20px]! bg-[linear-gradient(135deg,#ed213c_0%,#BF1D67_100%)]! transition-transform! duration-200! hover:shadow-none! hover:-translate-y-[2px]!"
+        >
           <PenLine size={16} />
           Nouveau billet
         </Button>

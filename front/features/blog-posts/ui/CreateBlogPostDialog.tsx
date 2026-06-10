@@ -298,7 +298,7 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
         </Box>
       </DialogContent>
 
-      <DialogActions>
+      <DialogActions className="px-6! pb-6! pt-5!">
         <Button variant="outlined" onClick={handleClose}>Annuler</Button>
         <div className="flex-1" />
         <Button variant="contained" type="submit" form="create-post-form">
