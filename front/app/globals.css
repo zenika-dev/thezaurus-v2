@@ -2,12 +2,16 @@
 @import "tailwindcss/theme" layer(base);
 @import "tailwindcss/utilities";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+
 @theme {
   --color-primary:        #ed213c;
   --color-primary-dark:   #bf1d67;
   --color-text:           #1e293b;
   --color-text-muted:     #64748b;
   --color-text-disabled:  #94a3b8;
+  --sidebar-foreground:   0 0% 70%;
   --color-surface:        #ffffff;
   --color-surface-muted:  #f1f5f9;
   --color-surface-hover:  #f8fafc;
@@ -23,6 +27,19 @@
   --font-sans: var(--font-nunito), "Nunito", "Roboto", "Helvetica", "Arial", sans-serif;
   --shadow-card:   0px 2px 4px rgba(0, 0, 0, 0.15);
   --shadow-button: 2px 2px 3px rgba(0, 0, 0, 0.35);
+}
+
+@layer base {
+  .dark {
+    --color-text:           #f1f5f9;
+    --color-text-muted:     #b3b3b3; /* #94a3b8; */
+    --color-text-disabled:  #64748b;
+    --color-surface:        #121212;
+    --color-surface-muted:  #0a0a0a;
+    --color-surface-hover:  #2d2d2d;
+    --color-border:         rgba(255, 255, 255, 0.1);
+    --color-border-strong:  rgba(255, 255, 255, 0.2);
+  }
 }
 
 /* ── Overrides visuels MUI ── */
