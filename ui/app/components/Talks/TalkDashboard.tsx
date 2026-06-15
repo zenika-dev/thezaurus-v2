@@ -107,10 +107,11 @@ export default function TalkDashboard() {
           border: "1px solid #ed213c",
           overflow: "hidden",
           borderRadius: 1,
+          backgroundColor: "var(--color-surface)",
         }}
       >
         <Table>
-          <TableHead sx={{ backgroundColor: "#ececec" }}>
+          <TableHead sx={{ backgroundColor: "var(--color-surface-muted)" }}>
             <TableRow>
               <TableCell>
                 <strong>Titre</strong>

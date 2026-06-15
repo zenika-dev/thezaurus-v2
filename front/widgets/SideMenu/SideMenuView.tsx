@@ -27,12 +27,14 @@ const StyledDrawer = styled(Drawer, { shouldForwardProp: (p) => p !== "open" })(
         duration: theme.transitions.duration.enteringScreen,
       }),
       overflow: "visible",
-      borderRight: "1px solid rgba(0, 0, 0, 0.08)",
-      background: "#ffffff",
+      borderRight: "1px solid var(--color-border)",
+      background: theme.palette.background.paper,
       boxShadow: "none",
     },
   }),
 );
+
+import { SideMenuThemeToggle } from "./SideMenuThemeToggle";
 
 export interface SideMenuViewProps {
   open: boolean;
@@ -52,6 +54,7 @@ export function SideMenuView({ open, onToggle, navItems }: SideMenuViewProps) {
     >
       <SideMenuHeader open={open} onToggle={onToggle} />
       <SideMenuNavList open={open} items={navItems} />
+      <SideMenuThemeToggle open={open} />
     </StyledDrawer>
   );
 }

@@ -92,6 +92,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
       maxWidth="md"
       fullWidth
       aria-labelledby={DIALOG_TITLE_ID}
+      slotProps={{ paper: { className: "dark:bg-slate-900 dark:bg-none" } }}
     >
       <DialogTitle id={DIALOG_TITLE_ID} className="pb-0!">
         Nouveau Talk
