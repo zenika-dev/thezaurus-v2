@@ -109,12 +109,6 @@ export default function LandingPage({ onSuccess, error }: LandingPageProps) {
                 <span className="font-normal">{error}</span>
               </div>
             )}
-
-            <div className="pt-4 border-t border-slate-100 text-center">
-              <p className="text-[11px] text-slate-400 font-normal">
-                La connexion est réservée aux collaborateurs de Zenika.
-              </p>
-            </div>
           </div>
         </div>
       </main>

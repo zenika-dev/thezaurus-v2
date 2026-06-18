@@ -17,7 +17,6 @@ export default function GoogleLoginButton({ onSuccess, onError }: GoogleLoginBut
 
   return (
     <div className="flex flex-col items-center justify-center space-y-4">
-      <h2 className="text-xl font-bold mb-4">Connexion requise</h2>
       <GoogleLogin
         onSuccess={handleSuccess}
         onError={onError}
