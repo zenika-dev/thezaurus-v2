@@ -9,6 +9,7 @@ import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.Talk;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,10 +22,21 @@ public class TalkRepository {
     @Inject
     Firestore firestore;
 
-    private static final String COLLECTION_NAME = "talks";
+    @Inject
+    @ConfigProperty(name = "thezaurus.firestore.collection.prefix", defaultValue = "")
+    String collectionPrefix;
+
+    private static final String BASE_COLLECTION_NAME = "talks";
+
+    private String getCollectionName() {
+        if (collectionPrefix == null || collectionPrefix.trim().isEmpty()) {
+            return BASE_COLLECTION_NAME;
+        }
+        return collectionPrefix.trim() + "_" + BASE_COLLECTION_NAME;
+    }
 
     public List<Talk> findAll() throws ExecutionException, InterruptedException {
-        ApiFuture<QuerySnapshot> query = firestore.collection(COLLECTION_NAME).get();
+        ApiFuture<QuerySnapshot> query = firestore.collection(getCollectionName()).get();
         QuerySnapshot querySnapshot = query.get();
         return querySnapshot.getDocuments().stream()
                 .map(doc -> doc.toObject(Talk.class))
@@ -32,7 +44,7 @@ public class TalkRepository {
     }
 
     public Talk findById(String id) throws ExecutionException, InterruptedException {
-        DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(id);
+        DocumentReference docRef = firestore.collection(getCollectionName()).document(id);
         ApiFuture<DocumentSnapshot> future = docRef.get();
         DocumentSnapshot document = future.get();
         if (document.exists()) {
@@ -45,7 +57,7 @@ public class TalkRepository {
         if (talk.getId() == null || talk.getId().isEmpty()) {
             talk.setId(UUID.randomUUID().toString());
         }
-        DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(talk.getId());
+        DocumentReference docRef = firestore.collection(getCollectionName()).document(talk.getId());
         ApiFuture<WriteResult> result = docRef.set(talk);
         result.get();
         return talk;
@@ -53,14 +65,14 @@ public class TalkRepository {
 
     public Talk update(String id, Talk talk) throws ExecutionException, InterruptedException {
         talk.setId(id);
-        DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(id);
+        DocumentReference docRef = firestore.collection(getCollectionName()).document(id);
         ApiFuture<WriteResult> result = docRef.set(talk);
         result.get();
         return talk;
     }
 
     public void delete(String id) throws ExecutionException, InterruptedException {
-        ApiFuture<WriteResult> writeResult = firestore.collection(COLLECTION_NAME).document(id).delete();
+        ApiFuture<WriteResult> writeResult = firestore.collection(getCollectionName()).document(id).delete();
         writeResult.get();
     }
 }

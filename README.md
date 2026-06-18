@@ -35,27 +35,63 @@ Une API Quarkus est disponible dans le dossier `api` pour gérer les entités su
 
 ## Contributions 
 
-### Configuration Base de Données (Firestore)
+### Configuration de Firestore (Émulateur vs Cloud GCP)
 
-Pour que l'API puisse se connecter à la base de données Firestore :
+La configuration se fait via le fichier `.env` situé à la racine du projet (pour Docker Compose) ou dans le dossier `api/` (pour le mode Quarkus Dev local).
 
-1. Allez dans le répertoire `api`.
-2. Dupliquez le fichier `.env-template` et renommez-le en `.env`.
-3. Renseignez-y l'identifiant de votre projet GCP (`GOOGLE_CLOUD_PROJECT_ID`) — par défaut `thezaurus-dev` est configuré — et le chemin absolu vers votre fichier de clé de compte de service (`GOOGLE_APPLICATION_CREDENTIALS`).
+#### Mode Émulateur (par défaut) vs GCP 
+Le composant Back end est connecté à un émulateur GCP pour éviter de solliciter GCP (et engendrer des couts).
+Par défault, les données sont stockées localement en mémoire vive et est paramétré dans le fichier `.env` :
+  ```properties
+  QUARKUS_PROFILE=dev
+  FIRESTORE_EMULATOR_HOST=firestore:9000  # ou localhost:9000 en mode Quarkus Dev local
+  ```
+
+S'il y a besoin d'avoir plus de données et/ou vérifier le bon fonctionnement de la connexion avec GCP, il est possible, à partir du fichier `.env` de vous brancher sur l'instance Firestore.
+⚠️ Actuellement il existe une instance de dév et une de prod. Merci de ne pas utiliser la base de prod.
+
+* Paramètres à définir dans `.env` :
+  ```properties
+  QUARKUS_PROFILE=prod
+  FIRESTORE_EMULATOR_HOST=               # Laissez vide ou commentez cette ligne
+  GOOGLE_CLOUD_PROJECT_ID=votre-projet-gcp
+  FIRESTORE_DATABASE_ID=votre-base-id
+  GOOGLE_APPLICATION_CREDENTIALS=/chemin/vers/votre/cle-service-account.json
+  ```
 
 ## Déploiement Local (Docker Compose)
 
-Vous pouvez lancer l'ensemble de l'application (UI, API et un émulateur Firestore) localement avec Docker Compose :
+Vous pouvez lancer l'ensemble de l'application (UI, API et l'émulateur Firestore local) avec Docker Compose :
 
-1. Assurez-vous d'avoir Docker installé.
-2. À la racine du projet, lancez :
+1. Assurez-vous d'avoir Docker installé et configuré.
+2. Créez ou modifiez le fichier `.env` à la racine du projet en vous basant sur la configuration ci-dessus.
+3. Lancez :
    ```bash
    docker-compose up --build
    ```
-3. L'application sera disponible aux adresses suivantes :
+4. L'application sera disponible aux adresses suivantes :
    - **Frontend** : `http://localhost:3000`
    - **API** : `http://localhost:8080`
    - **Swagger UI** : `http://localhost:8080/q/swagger-ui/`
-   - **Firestore Emulator** : `http://localhost:9000` (utilisé automatiquement par l'API)
+   - **Firestore Emulator** : `http://localhost:9000` (utilisé uniquement si `QUARKUS_PROFILE=dev` et `FIRESTORE_EMULATOR_HOST` est défini)
+
+### Utilisation et vérification de l'émulateur Firestore
+
+L'image `google/cloud-sdk:emulators` démarre un émulateur Firestore local. 
+
+* **Fonctionnement** : Il simule localement l'API Firestore en mémoire vive (RAM). Les données sont réinitialisées à chaque arrêt des conteneurs via `docker compose down`.
+* **Redirection automatique** : L'API Quarkus détecte la variable d'environnement `FIRESTORE_EMULATOR_HOST=firestore:9000` et redirige automatiquement tous les appels vers le conteneur Firestore local au lieu de la production.
+* **Vérification des données** : Pour inspecter les documents stockés par l'application dans l'émulateur, vous pouvez effectuer des requêtes HTTP GET directement sur l'API REST de l'émulateur :
+  
+  ```bash
+  # Lister les articles de blog
+  curl -X GET "http://localhost:9000/v1/projects/thezaurus-dev/databases/thezaurus-dev/documents/blog_posts"
+
+  # Lister les conférences
+  curl -X GET "http://localhost:9000/v1/projects/thezaurus-dev/databases/thezaurus-dev/documents/conferences"
+
+  # Lister les talks
+  curl -X GET "http://localhost:9000/v1/projects/thezaurus-dev/databases/thezaurus-dev/documents/talks"
+  ```
 
 Made with ❤️ by Zenika
