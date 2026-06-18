@@ -71,7 +71,10 @@ export function SideMenuHeader({ open, onToggle }: SideMenuHeaderProps) {
           <Typography
             sx={{
               fontWeight: 800,
-              color: theme.palette.mode === "dark" ? "hsl(var(--foreground))" : "#1e293b",
+              color:
+                theme.palette.mode === "dark"
+                  ? "hsl(var(--foreground))"
+                  : "#1e293b",
               letterSpacing: "-0.5px",
               fontSize: "1.125rem",
               lineHeight: 1.2,
@@ -84,7 +87,7 @@ export function SideMenuHeader({ open, onToggle }: SideMenuHeaderProps) {
               fontSize: "10px",
               textTransform: "uppercase",
               letterSpacing: "0.1em",
-              color: "#737373",
+              color: "var(--color-text-muted)",
               fontWeight: 700,
               mt: 0.5,
             }}
