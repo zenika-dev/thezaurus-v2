@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router";
 import GoogleLoginButton from "../components/Auth/GoogleLoginButton";
 
@@ -29,9 +29,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     return null;
   });
+  const isFirstVerification = useRef(true);
 
   const setToken = useCallback((newToken: string) => {
     localStorage.setItem("google_token", newToken);
+    setError(null);
     setTokenState(newToken);
   }, []);
 
@@ -39,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("google_token");
     setTokenState(null);
     setUser(null);
+    setError(null);
   }, []);
 
   useEffect(() => {
@@ -51,13 +54,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!token) {
       setUser(null);
-      setError(null);
       setIsLoading(false);
+      isFirstVerification.current = false;
       return;
     }
 
     setIsLoading(true);
-    setError(null);
 
     const headers: HeadersInit = {
       "Authorization": `Bearer ${token}`
@@ -76,9 +78,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .catch((err) => {
         console.error("Auth error:", err);
-        setError("Impossible de s'authentifier");
+        localStorage.removeItem("google_token");
+        setTokenState(null);
         setUser(null);
         setIsLoading(false);
+
+        if (!isFirstVerification.current) {
+          setError("Impossible de s'authentifier");
+        }
+      })
+      .finally(() => {
+        isFirstVerification.current = false;
       });
   }, [token]);
 
