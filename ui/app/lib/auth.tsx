@@ -49,10 +49,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const headers: HeadersInit = {};
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
+    if (!token) {
+      setUser(null);
+      setError(null);
+      setIsLoading(false);
+      return;
     }
+
+    setIsLoading(true);
+    setError(null);
+
+    const headers: HeadersInit = {
+      "Authorization": `Bearer ${token}`
+    };
 
     fetch("/api/me", { headers })
       .then((res) => {

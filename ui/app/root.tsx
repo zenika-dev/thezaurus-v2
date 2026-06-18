@@ -48,8 +48,41 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 
 import MainLayout from "./components/MainLayout";
-import { AuthProvider, ProtectedRoute } from "./lib/auth";
+import { AuthProvider, ProtectedRoute, useAuth } from "./lib/auth";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import LandingPage from "./components/Auth/LandingPage";
+
+function AppContent() {
+  const { user, isLoading, error, setToken } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-12 h-12 border-4 border-[#ED213C] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-600 font-medium animate-pulse">Chargement de la session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <LandingPage
+        onSuccess={(token) => setToken(token)}
+        error={error}
+      />
+    );
+  }
+
+  return (
+    <MainLayout>
+      <ProtectedRoute allowedRoles={["membre", "admin"]}>
+        <Outlet />
+      </ProtectedRoute>
+    </MainLayout>
+  );
+}
 
 export default function App() {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
@@ -60,11 +93,7 @@ export default function App() {
         <CssBaseline />
         <GoogleOAuthProvider clientId={clientId}>
           <AuthProvider>
-            <MainLayout>
-              <ProtectedRoute allowedRoles={["membre", "admin"]}>
-                <Outlet />
-              </ProtectedRoute>
-            </MainLayout>
+            <AppContent />
           </AuthProvider>
         </GoogleOAuthProvider>
       </LocalizationProvider>
