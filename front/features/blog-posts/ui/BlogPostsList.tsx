@@ -44,7 +44,7 @@ export function BlogPostsList() {
               </span>
               <div className="flex gap-1 mt-1 flex-wrap">
                 {post.tags.slice(0, 5).map((tag) => (
-                  <span key={tag} className="px-1.5 py-0.5 rounded-2xl text-[0.7rem] bg-[rgba(117,117,117,0.12)] text-[#475569] font-medium">
+                  <span key={tag} className="px-1.5 py-0.5 rounded-2xl text-[0.7rem] bg-[rgba(117,117,117,0.12)] text-[#475569] dark:bg-[rgba(255,255,255,0.1)] dark:text-[#94a3b8] font-medium">
                     {tag}
                   </span>
                 ))}
