@@ -1,0 +1,29 @@
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: src/main/docker/Dockerfile.jvm
+    environment:
+      - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
+      - FIRESTORE_DATABASE_ID=${FIRESTORE_DATABASE_ID}
+      - QUARKUS_GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
+      - QUARKUS_GOOGLE_CLOUD_FIRESTORE_DATABASE_ID=${FIRESTORE_DATABASE_ID}
+      - FIRESTORE_COLLECTION_PREFIX=${FIRESTORE_COLLECTION_PREFIX}
+      - QUARKUS_PROFILE=prod
+      - QUARKUS_HTTP_PORT=8080
+    ports:
+      - "8080:8080"
+
+  front:
+    build:
+      context: ./front
+      args:
+        - API_URL=http://localhost:8080
+    ports:
+      - "80:3000"
+    environment:
+      - API_URL=http://localhost:8080
+    depends_on:
+      - api
+    x-google-cloudrun:
+      ingress-container: true

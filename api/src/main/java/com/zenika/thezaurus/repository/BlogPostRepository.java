@@ -12,6 +12,7 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -23,16 +24,16 @@ public class BlogPostRepository {
     Firestore firestore;
 
     @Inject
-    @ConfigProperty(name = "thezaurus.firestore.collection.prefix", defaultValue = "")
-    String collectionPrefix;
+    @ConfigProperty(name = "thezaurus.firestore.collection.prefix")
+    Optional<String> collectionPrefix;
 
     private static final String BASE_COLLECTION_NAME = "blog_posts";
 
     private String getCollectionName() {
-        if (collectionPrefix == null || collectionPrefix.trim().isEmpty()) {
+        if (collectionPrefix == null || collectionPrefix.isEmpty() || collectionPrefix.get().trim().isEmpty()) {
             return BASE_COLLECTION_NAME;
         }
-        return collectionPrefix.trim() + "_" + BASE_COLLECTION_NAME;
+        return collectionPrefix.get().trim() + "_" + BASE_COLLECTION_NAME;
     }
 
     public List<BlogPost> findAll() throws ExecutionException, InterruptedException {
