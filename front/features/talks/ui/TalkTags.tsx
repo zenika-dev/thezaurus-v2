@@ -7,7 +7,11 @@ export { talkStatusConfig as statusConfig };
 
 export function StatusTag({ status }: { status: TalkStatus }) {
   const { text, bg } = talkStatusConfig[status];
-  return <Badge color={text} bg={bg}>{status}</Badge>;
+  return (
+    <Badge color={text} bg={bg}>
+      {status}
+    </Badge>
+  );
 }
 
 export function VisibilityTag({ visibility }: { visibility: string }) {
