@@ -6,9 +6,9 @@ import { Badge } from "@/shared/ui";
 export { talkStatusConfig as statusConfig };
 
 export function StatusTag({ status }: { status: TalkStatus }) {
-  const { text, bg } = talkStatusConfig[status];
+  const { text, bg, darkText, darkBg } = talkStatusConfig[status];
   return (
-    <Badge color={text} bg={bg}>
+    <Badge color={text} bg={bg} darkColor={darkText} darkBg={darkBg}>
       {status}
     </Badge>
   );
@@ -18,11 +18,11 @@ export function VisibilityTag({ visibility }: { visibility: string }) {
   const isExternal = visibility === "external";
   const label = visibilityLabels[visibility] || visibility;
   const config = isExternal
-    ? { text: "#21c45d", bg: "rgba(33, 196, 93, 0.12)", Icon: Globe }
-    : { text: "#757575", bg: "rgba(117, 117, 117, 0.12)", Icon: Lock };
+    ? { text: "#245E12", bg: "#DCFCE7", darkText: "#47FFB4", darkBg: "#0D542B", Icon: Globe }
+    : { text: "#000000", bg: "#F7F7F7", darkText: "#FFFFFF", darkBg: "#5E5E5E", Icon: Lock };
 
   return (
-    <Badge color={config.text} bg={config.bg}>
+    <Badge color={config.text} bg={config.bg} darkColor={config.darkText} darkBg={config.darkBg}>
       <config.Icon size={12} />
       <span>{label}</span>
     </Badge>
