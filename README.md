@@ -94,4 +94,24 @@ L'image `google/cloud-sdk:emulators` démarre un émulateur Firestore local.
   curl -X GET "http://localhost:9000/v1/projects/thezaurus-dev/databases/thezaurus-dev/documents/talks"
   ```
 
+## Deploiement
+
+Le déploiement est pour le moment manuel. Il faut s'assurer de :
+
+- 1) Définir les variables d'environnement du projet
+  ```bash
+  export $(grep -v '^#' .env | xargs)
+  ```
+- 2) Lancer la commande
+  ```bash
+  gcloud run compose up docker-compose.cloud.yml --allow-unauthenticated
+  ```
+
+⚠️ Le fichier `.env` est celui de votre configuration locale. Donc avant de déployer, merci de bien respecter les variables d'environnement présentes dans ce fichier, notamment :
+
+  ```bash
+  FIRESTORE_DATABASE_ID=thezaurus-prod
+  FIRESTORE_COLLECTION_PREFIX=prod
+  ```
+
 Made with ❤️ by Zenika
