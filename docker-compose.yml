@@ -27,6 +27,7 @@ services:
       - QUARKUS_HTTP_PORT=8080
       - QUARKUS_PROFILE=dev
       - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-dummy-client-id}
     depends_on:
       firestore:
         condition: service_healthy
@@ -38,11 +39,13 @@ services:
     build:
       context: ./front
       args:
-        - API_URL=http://api:8080
+        - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-your-google-client-id.apps.googleusercontent.com}
     container_name: thezaurus-front
     ports:
       - "3000:3000"
     environment:
       - API_URL=http://api:8080
+      - VITE_MOCK_AUTH=false
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-your-google-client-id.apps.googleusercontent.com}
     depends_on:
       - api
