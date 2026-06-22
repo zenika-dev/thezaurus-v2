@@ -11,7 +11,6 @@ services:
       - QUARKUS_GOOGLE_CLOUD_PROJECT_ID=thezaurus-494709
       - QUARKUS_GOOGLE_CLOUD_FIRESTORE_DATABASE_ID=thezaurus-dev
       - QUARKUS_HTTP_PORT=8080
-      - QUARKUS_PROFILE=dev
       - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-dummy-client-id}
     volumes:
