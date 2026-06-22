@@ -24,7 +24,7 @@ const getDesignTokens = (mode: "light" | "dark") => ({
   shape: { borderRadius: 16 },
   shadows: [
     "none",
-    "2px 2px 3px rgba(0, 0, 0, .35)",
+    "2px 2px 3px #00000059",
     ...createTheme().shadows.slice(2),
   ] as Shadows,
   components: {
