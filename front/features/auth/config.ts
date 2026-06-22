@@ -14,7 +14,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account }) {
       if (account?.id_token) {
         try {
-          const res = await fetch(`${process.env.BACKEND_URL ?? ""}/api/me`, {
+          const API_BASE = process.env.API_URL ?? "http://localhost:8080";
+          const res = await fetch(`${API_BASE}/api/me`, {
             headers: { Authorization: `Bearer ${account.id_token}` },
           });
 
@@ -26,7 +27,8 @@ export const authOptions: NextAuthOptions = {
           token.roles = (data.roles as Role[]) ?? ["membre"];
         } catch (err) {
           console.error("Erreur récupération des rôles:", err);
-          token.roles = [];
+          // Si le backend refuse l'utilisateur ou si l'endpoint n'existe pas encore, on lui donne le rôle "membre" par défaut
+          token.roles = ["membre"];
         }
       }
       return token;
@@ -38,6 +40,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
+  secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
   },
