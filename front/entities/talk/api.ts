@@ -48,7 +48,9 @@ export function mapBackendToFrontend(t: BackendTalk): TalkData {
           ? "Accepted"
           : t.status === "SUBMITTED"
             ? "Submitted"
-            : "Idea",
+            : t.status === "DRAFT"
+              ? "Draft"
+              : "Idea",
     slides: "",
     replay: "",
   };
@@ -60,7 +62,8 @@ export function mapFrontendToBackend(t: TalkData): BackendTalkPayload {
   if (t.cospeaker.trim()) speakers.push(t.cospeaker.trim());
 
   let backendStatus = "PLANNED";
-  if (t.status === "Submitted") backendStatus = "SUBMITTED";
+  if (t.status === "Draft") backendStatus = "DRAFT";
+  else if (t.status === "Submitted") backendStatus = "SUBMITTED";
   else if (t.status === "Accepted") backendStatus = "ACCEPTED";
   else if (t.status === "Replayed") backendStatus = "DONE";
 

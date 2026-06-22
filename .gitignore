@@ -1,5 +1,8 @@
-# GCP Key files
+# GCP Key files / service account credentials
 thezaurus-*.json
+*credentials*.json
+**/.config/gcloud/
+.config/
 
 # Environment variables
 .env

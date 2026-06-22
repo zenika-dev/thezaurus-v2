@@ -9,6 +9,7 @@ import DialogActions from "@mui/material/DialogActions";
 import Switch from "@mui/material/Switch";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
+import Divider from "@mui/material/Divider";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
@@ -94,7 +95,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
             </div>
           </div>
 
-          <hr className="border-t border-border" />
+          <Divider />
 
           {/* Status */}
           <div>
@@ -108,7 +109,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
             </FormControl>
           </div>
 
-          <hr className="border-t border-border" />
+          <Divider />
 
           {/* Visibility toggle */}
           <div className="flex justify-between items-center">
@@ -129,7 +130,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
           {/* Slides & Replay */}
           {(talk.status === "Accepted" || talk.status === "Replayed") && (
             <>
-              <hr className="border-t border-border" />
+              <Divider />
               <div>
                 <p className="text-sm text-text-muted mb-4">Liens du talk</p>
                 <div className="grid grid-cols-2 gap-4">
@@ -176,7 +177,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
         </div>
       </DialogContent>
 
-      <DialogActions className="justify-between!">
+      <DialogActions className="px-6! pb-6! pt-5! justify-between!">
         <Button variant="contained" onClick={handleDelete}>Supprimer</Button>
         <Button variant="outlined" onClick={onClose}>Fermer</Button>
       </DialogActions>

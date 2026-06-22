@@ -5,6 +5,6 @@ import { Badge } from "@/shared/ui";
 export { blogPostStatusConfig as statusConfig };
 
 export function StatusTag({ status }: { status: BlogPostStatus }) {
-  const { text, bg } = blogPostStatusConfig[status];
-  return <Badge color={text} bg={bg}>{status}</Badge>;
+  const { text, bg, darkText, darkBg } = blogPostStatusConfig[status];
+  return <Badge color={text} bg={bg} darkColor={darkText} darkBg={darkBg}>{status}</Badge>;
 }

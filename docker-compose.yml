@@ -1,17 +1,4 @@
 services:
-  # Firestore Emulator pour le développement local
-  firestore:
-    image: google/cloud-sdk:emulators
-    container_name: thezaurus-firestore-emulator
-    command: gcloud beta emulators firestore start --host-port=0.0.0.0:9000
-    ports:
-      - "9000:9000"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   # API Backend (Quarkus)
   api:
     build:
@@ -21,34 +8,38 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
-      - FIRESTORE_DATABASE_ID=${FIRESTORE_DATABASE_ID}
-      - QUARKUS_GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
-      - QUARKUS_GOOGLE_CLOUD_FIRESTORE_DATABASE_ID=${FIRESTORE_DATABASE_ID}
-      - FIRESTORE_EMULATOR_HOST
-      - FIRESTORE_COLLECTION_PREFIX=${FIRESTORE_COLLECTION_PREFIX}
-      - QUARKUS_PROFILE=${QUARKUS_PROFILE:-dev}
+      - QUARKUS_GOOGLE_CLOUD_PROJECT_ID=thezaurus-494709
+      - QUARKUS_GOOGLE_CLOUD_FIRESTORE_DATABASE_ID=thezaurus-dev
       - QUARKUS_HTTP_PORT=8080
       - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-dummy-client-id}
-    depends_on:
-      firestore:
-        condition: service_healthy
     volumes:
-      - ${GOOGLE_APPLICATION_CREDENTIALS:-${HOME}/.config/gcloud/application_default_credentials.json}:/tmp/credentials.json:ro
+      # Credentials (service-account) lues depuis le repo => connexion au vrai Firestore (GCP)
+      - ./api/.config/gcloud/application_default_credentials.json:/tmp/credentials.json:ro
 
   # UI Frontend (Next.js)
   front:
     build:
-      context: ./ui
-      args:
-        - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-your-google-client-id.apps.googleusercontent.com}
-    container_name: thezaurus-ui
+      context: ./front
+      target: dev
+    container_name: thezaurus-front
     ports:
       - "3000:3000"
     environment:
       - API_URL=http://api:8080
       - VITE_MOCK_AUTH=false
-      - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-your-google-client-id.apps.googleusercontent.com}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-your-google-client-id.apps.googleusercontent.com}
     depends_on:
       - api
+    develop:
+      watch:
+        - action: sync
+          path: ./front
+          target: /app
+          ignore:
+            - node_modules/
+            - .next/
+        - action: rebuild
+          path: ./front/package.json
+        - action: rebuild
+          path: ./front/package-lock.json

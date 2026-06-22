@@ -41,10 +41,10 @@ export function TalkTable() {
       <TableContainer
         component={Paper}
         variant="outlined"
-        className="border! border-primary! rounded! overflow-hidden!"
+        className="border! border-primary! rounded-2xl! overflow-hidden! bg-surface!"
       >
         <Table>
-          <TableHead className="bg-[#ececec]!">
+          <TableHead className="bg-surface-muted!">
             <TableRow>
               <TableCell><strong>Titre</strong></TableCell>
               <TableCell><strong>Speaker</strong></TableCell>
@@ -66,12 +66,13 @@ export function TalkTable() {
               talks.map((talk) => (
                 <TableRow key={talk.id} hover>
                   <TableCell>
-                    <button
+                    <span
+                      role="button"
                       onClick={() => setSelectedTalkId(talk.id)}
                       className="text-primary underline font-medium hover:text-primary-dark text-sm cursor-pointer"
                     >
                       {talk.title}
-                    </button>
+                    </span>
                   </TableCell>
                   <TableCell>{talk.speaker}</TableCell>
                   <TableCell>{agencyLabels[talk.agency] || "—"}</TableCell>
@@ -83,7 +84,7 @@ export function TalkTable() {
                       <button
                         onClick={() => setSelectedTalkId(talk.id)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs
-                          border border-border text-text bg-surface
+                          border border-border text-text bg-surface font-sans
                           hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
                       >
                         <Eye size={12} />

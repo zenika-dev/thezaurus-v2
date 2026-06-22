@@ -92,6 +92,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
       maxWidth="md"
       fullWidth
       aria-labelledby={DIALOG_TITLE_ID}
+      slotProps={{ paper: { className: "dark:bg-slate-900 dark:bg-none" } }}
     >
       <DialogTitle id={DIALOG_TITLE_ID} className="pb-0!">
         Nouveau Talk
@@ -272,7 +273,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
         </Box>
       </DialogContent>
 
-      <DialogActions>
+      <DialogActions className="px-6! pb-6! pt-5!">
         <Button variant="outlined" onClick={handleCancel}>Annuler</Button>
         <div className="flex-1" />
         <Button

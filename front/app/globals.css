@@ -2,27 +2,44 @@
 @import "tailwindcss/theme" layer(base);
 @import "tailwindcss/utilities";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+
 @theme {
   --color-primary:        #ed213c;
   --color-primary-dark:   #bf1d67;
   --color-text:           #1e293b;
   --color-text-muted:     #64748b;
   --color-text-disabled:  #94a3b8;
+  --sidebar-foreground:   #000033;
   --color-surface:        #ffffff;
   --color-surface-muted:  #f1f5f9;
   --color-surface-hover:  #f8fafc;
-  --color-border:         rgba(0, 0, 0, 0.08);
-  --color-border-strong:  rgba(0, 0, 0, 0.2);
-  --color-status-idea:      #007fff;
+  --color-border:         #00000014;
+  --color-border-strong:  #00000033;
+  --color-status-idea:      #9A0530;
   --color-status-draft:     #757575;
-  --color-status-submitted: #f59f0a;
-  --color-status-accepted:  #21c45d;
-  --color-status-published: #21c45d;
-  --color-status-review:    #f59f0a;
-  --color-status-replayed:  #d32f2f;
+  --color-status-submitted: #0132D1;
+  --color-status-accepted:  #245E12;
+  --color-status-published: #245E12;
+  --color-status-review:    #0132D1;
+  --color-status-replayed:  #681AC1;
   --font-sans: var(--font-nunito), "Nunito", "Roboto", "Helvetica", "Arial", sans-serif;
-  --shadow-card:   0px 2px 4px rgba(0, 0, 0, 0.15);
-  --shadow-button: 2px 2px 3px rgba(0, 0, 0, 0.35);
+  --shadow-card:   0px 2px 4px #00000026;
+  --shadow-button: 2px 2px 3px #00000059;
+}
+
+@layer base {
+  .dark {
+    --color-text:           #f1f5f9;
+    --color-text-muted:     #b3b3b3; /* #94a3b8; */
+    --color-text-disabled:  #64748b;
+    --color-surface:        #121212;
+    --color-surface-muted:  #0a0a0a;
+    --color-surface-hover:  #2d2d2d;
+    --color-border:         #ffffff1a;
+    --color-border-strong:  #ffffff33;
+  }
 }
 
 /* ── Overrides visuels MUI ── */

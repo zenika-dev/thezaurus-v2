@@ -48,10 +48,10 @@ export const languageLabels: Record<string, string> = {
   english:  "English",
 };
 
-export const talkStatusConfig: Record<TalkStatus, { text: string; bg: string }> = {
-  Draft:     { text: "#757575", bg: "rgba(117, 117, 117, 0.12)" },
-  Idea:      { text: "#007fff", bg: "rgba(0, 127, 255, 0.12)" },
-  Submitted: { text: "#f59f0a", bg: "rgba(245, 159, 10, 0.12)" },
-  Accepted:  { text: "#21c45d", bg: "rgba(33, 196, 93, 0.12)" },
-  Replayed:  { text: "#d32f2f", bg: "rgba(211, 47, 47, 0.12)" },
+export const talkStatusConfig: Record<TalkStatus, { text: string; bg: string; darkText: string; darkBg: string }> = {
+  Draft:     { text: "#000000", bg: "#F7F7F7", darkText: "#FFFFFF", darkBg: "#5E5E5E" },
+  Idea:      { text: "#9A0530", bg: "#FFEDD4", darkText: "#FFDD58", darkBg: "#7E2A0C" },
+  Submitted: { text: "#0132D1", bg: "#DBEAFE", darkText: "#94E5FF", darkBg: "#1C398E" },
+  Accepted:  { text: "#245E12", bg: "#DCFCE7", darkText: "#47FFB4", darkBg: "#0D542B" },
+  Replayed:  { text: "#681AC1", bg: "#F3E8FF", darkText: "#FFB9FF", darkBg: "#59168B" },
 };

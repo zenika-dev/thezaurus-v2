@@ -7,7 +7,7 @@ import { SideMenuToggle } from "./SideMenuToggle";
 const ICON_SIZE = 36;
 const COLLAPSED_WIDTH = 88;
 const OPEN_PADDING_LEFT = 20;
-const CLOSED_PADDING_LEFT = (COLLAPSED_WIDTH - ICON_SIZE) / 2; 
+const CLOSED_PADDING_LEFT = (COLLAPSED_WIDTH - ICON_SIZE) / 2;
 
 const HeaderRoot = styled(Box, { shouldForwardProp: (p) => p !== "open" })<{
   open: boolean;
@@ -71,7 +71,10 @@ export function SideMenuHeader({ open, onToggle }: SideMenuHeaderProps) {
           <Typography
             sx={{
               fontWeight: 800,
-              color: "#1e293b",
+              color:
+                theme.palette.mode === "dark"
+                  ? "hsl(var(--foreground))"
+                  : "#1e293b",
               letterSpacing: "-0.5px",
               fontSize: "1.125rem",
               lineHeight: 1.2,
@@ -84,7 +87,7 @@ export function SideMenuHeader({ open, onToggle }: SideMenuHeaderProps) {
               fontSize: "10px",
               textTransform: "uppercase",
               letterSpacing: "0.1em",
-              color: "#737373",
+              color: "var(--color-text-muted)",
               fontWeight: 700,
               mt: 0.5,
             }}

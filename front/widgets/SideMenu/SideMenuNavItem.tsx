@@ -42,7 +42,11 @@ export function SideMenuNavItem({
           px: 2,
           borderRadius: 1,
           backgroundColor: active ? "rgba(237, 33, 60, 0.08)" : "transparent",
-          color: active ? theme.palette.primary.main : "#4d4d4d",
+          color: active
+            ? theme.palette.primary.main
+            : theme.palette.mode === "dark"
+              ? "hsl(var(--sidebar-foreground))"
+              : "#4D4D4D",
           "&:hover": {
             backgroundColor: active
               ? "rgba(237, 33, 60, 0.12)"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTheme } from "next-themes";
 import { DatePickerProvider } from "@/shared/ui";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -62,7 +63,10 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
   const zenikaBlogLink = watch("zenikaBlogLink");
   const googleDocDraftLink = watch("googleDocDraftLink");
   const currentStatus = watch("status");
-  const { text: statusColor } = blogPostStatusConfig[currentStatus];
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  const { text: statusColor, darkText: statusDarkColor } = blogPostStatusConfig[currentStatus];
+  const appliedStatusColor = isDark ? statusDarkColor : statusColor;
 
   const handleClose = () => {
     reset();
@@ -112,6 +116,7 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
       maxWidth="md"
       fullWidth
       aria-labelledby={DIALOG_TITLE_ID}
+      slotProps={{ paper: { className: "dark:bg-slate-900 dark:bg-none" } }}
     >
       <DialogTitle
         id={DIALOG_TITLE_ID}
@@ -125,7 +130,7 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
             <FormControl size="small" className="min-w-30">
               <Select
                 {...field}
-                style={{ fontWeight: "bold", color: statusColor }}
+                style={{ fontWeight: "bold", color: appliedStatusColor }}
                 inputProps={{ "aria-label": "Statut de l'article" }}
               >
                 <MenuItem value="Idea">Idea</MenuItem>
@@ -298,7 +303,7 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
         </Box>
       </DialogContent>
 
-      <DialogActions>
+      <DialogActions className="px-6! pb-6! pt-5!">
         <Button variant="outlined" onClick={handleClose}>Annuler</Button>
         <div className="flex-1" />
         <Button variant="contained" type="submit" form="create-post-form">
