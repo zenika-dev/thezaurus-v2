@@ -25,7 +25,7 @@
   --color-status-review:    #0132D1;
   --color-status-replayed:  #681AC1;
   --font-sans: var(--font-nunito), "Nunito", "Roboto", "Helvetica", "Arial", sans-serif;
-  --shadow-card:   0px 2px 4px rgba(0, 0, 0, 0.15);
+  --shadow-card:   0px 2px 4px #00000026;
   --shadow-button: 2px 2px 3px rgba(0, 0, 0, 0.35);
 }
 
