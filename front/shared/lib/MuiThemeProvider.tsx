@@ -31,7 +31,7 @@ const getDesignTokens = (mode: "light" | "dark") => ({
     MuiBackdrop: {
       styleOverrides: {
         root: {
-          backgroundColor: "rgba(0, 0, 0, 0.75)",
+          backgroundColor: "#000000bf",
         },
       },
     },
