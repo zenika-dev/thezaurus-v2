@@ -40,7 +40,7 @@ const getDesignTokens = (mode: "light" | "dark") => ({
         root: { textTransform: "none" as const },
         contained: {
           color: "#FFFFFF",
-          boxShadow: "2px 2px 3px rgba(0, 0, 0, .35)",
+          boxShadow: "2px 2px 3px #00000059",
           "&:hover": { boxShadow: "2px 2px 4px rgba(0, 0, 0, .4)" },
         },
         outlined: {
