@@ -2,7 +2,7 @@
 
 import { useTheme as useNextTheme } from "next-themes";
 import { ThemeProvider, createTheme, type Shadows } from "@mui/material/styles";
-import { useMemo, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import CssBaseline from "@mui/material/CssBaseline";
 
 const getDesignTokens = (mode: "light" | "dark") => ({
@@ -51,17 +51,21 @@ const getDesignTokens = (mode: "light" | "dark") => ({
     },
     MuiPaper: {
       styleOverrides: {
-        root: { 
+        root: {
           boxShadow: "0px 2px 4px #00000026",
-          backgroundImage: "none"
+          backgroundImage: "none",
         },
       },
     },
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#ed213c" },
-          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#ed213c" },
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: "#ed213c",
+          },
+          "&:hover .MuiOutlinedInput-notchedOutline": {
+            borderColor: "#ed213c",
+          },
         },
       },
     },
@@ -78,12 +82,13 @@ export function MuiThemeProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    queueMicrotask(() => {
+      setMounted(true);
+    });
   }, []);
 
-  const theme = useMemo(
-    () => createTheme(getDesignTokens(mounted && resolvedTheme === "dark" ? "dark" : "light")),
-    [resolvedTheme, mounted]
+  const theme = createTheme(
+    getDesignTokens(mounted && resolvedTheme === "dark" ? "dark" : "light"),
   );
 
   return (
