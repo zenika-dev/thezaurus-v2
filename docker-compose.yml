@@ -32,7 +32,7 @@ services:
       firestore:
         condition: service_healthy
     volumes:
-      - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/credentials.json:ro
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-${HOME}/.config/gcloud/application_default_credentials.json}:/tmp/credentials.json:ro
 
   # UI Frontend (Next.js)
   front:
