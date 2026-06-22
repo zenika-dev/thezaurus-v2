@@ -45,7 +45,7 @@ const getDesignTokens = (mode: "light" | "dark") => ({
         },
         outlined: {
           color: mode === "light" ? "#000000" : "#FFFFFF",
-          "&:hover": { backgroundColor: "rgba(237, 33, 60, 0.04)" },
+          "&:hover": { backgroundColor: "#ed213c66" },
         },
       },
     },
