@@ -41,7 +41,7 @@ const getDesignTokens = (mode: "light" | "dark") => ({
         contained: {
           color: "#FFFFFF",
           boxShadow: "2px 2px 3px #00000059",
-          "&:hover": { boxShadow: "2px 2px 4px rgba(0, 0, 0, .4)" },
+          "&:hover": { boxShadow: "2px 2px 4px #00000066" },
         },
         outlined: {
           color: mode === "light" ? "#000000" : "#FFFFFF",
