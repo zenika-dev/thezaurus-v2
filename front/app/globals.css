@@ -37,7 +37,7 @@
     --color-surface:        #121212;
     --color-surface-muted:  #0a0a0a;
     --color-surface-hover:  #2d2d2d;
-    --color-border:         rgba(255, 255, 255, 0.1);
+    --color-border:         #ffffff1a;
     --color-border-strong:  rgba(255, 255, 255, 0.2);
   }
 }
