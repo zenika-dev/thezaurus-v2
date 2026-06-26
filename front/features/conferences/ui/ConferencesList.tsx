@@ -3,6 +3,12 @@
 import { useConferences } from "@/features/conferences/model";
 import { ConferenceData } from "@/entities/conference";
 import { StatusTag } from "@/features/conferences/ui";
+import { useState } from "react";
+import {
+  MapPin,
+  Calendar,
+  ExternalLink as ExternalLinkIcon,
+} from "lucide-react";
 
 const fakeConferences: ConferenceData[] = [
   {
@@ -46,36 +52,135 @@ const fakeConferences: ConferenceData[] = [
 export function ConferencesList() {
   // const { conferences } = useConferences();
 
+  const [statusFilter, setStatusFilter] = useState<"All" | "Open" | "Closed">(
+    "All",
+  );
+  const [yearFilter, setYearFilter] = useState<
+    "All" | "This Year" | "Next Year"
+  >("All");
+
+  const currentYear = new Date().getFullYear();
+
+  const filteredConferences = fakeConferences.filter((conference) => {
+    if (statusFilter !== "All" && conference.cfpStatus !== statusFilter) {
+      return false;
+    }
+    if (yearFilter !== "All") {
+      const confYear = new Date(conference.date).getFullYear();
+      if (yearFilter === "This Year" && confYear !== currentYear) return false;
+      if (yearFilter === "Next Year" && confYear !== currentYear + 1)
+        return false;
+    }
+    return true;
+  });
+
+  const FilterBadge = ({
+    label,
+    active,
+    onClick,
+  }: {
+    label: string;
+    active: boolean;
+    onClick: () => void;
+  }) => (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1 px-3 py-1 rounded-2xl text-xs font-bold border cursor-pointer transition-colors ${
+        active
+          ? "bg-primary text-white border-primary"
+          : "bg-surface-hover text-text border-transparent hover:bg-border-strong"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
-    <>
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center gap-6 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm font-bold text-text-muted mr-2">
+            Année :
+          </span>
+          {(["All", "This Year", "Next Year"] as const).map((year) => (
+            <FilterBadge
+              key={year}
+              label={
+                year === "All"
+                  ? "Toutes"
+                  : year === "This Year"
+                    ? currentYear.toString()
+                    : (currentYear + 1).toString()
+              }
+              active={yearFilter === year}
+              onClick={() => setYearFilter(year)}
+            />
+          ))}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm font-bold text-text-muted mr-2">
+            Statut CFP :
+          </span>
+          {(["All", "Open", "Closed"] as const).map((status) => (
+            <FilterBadge
+              key={status}
+              label={status === "All" ? "Tous" : status}
+              active={statusFilter === status}
+              onClick={() => setStatusFilter(status)}
+            />
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* todo use real conferences */}
-        {fakeConferences.map((conference: ConferenceData) => (
+        {filteredConferences.map((conference: ConferenceData) => (
           <div
             key={conference.id}
-            className="p-4 flex justify-between items-center rounded-2xl border border-primary"
+            className="p-6 flex flex-col gap-2 rounded-2xl border border-primary"
           >
-            <div className="flex flex-col gap-0.5">
-              <span className="font-bold text-text">{conference.title}</span>
-              <span className="text-text">{conference.cfpLink}</span>
-              <span className="text-sm text-text-muted">
-                {conference.location}
-                <br />
-                {/* todo change br / design */}
-                {conference.date}
-              </span>
+            <div className="flex justify-between items-start">
+              <div className="flex flex-col gap-2">
+                <span className="font-bold text-text">{conference.title}</span>
+                <div className="flex flex-col gap-1 text-xs text-text-muted">
+                  <span className="flex items-center gap-1.5">
+                    <MapPin size={14} className="text-text-muted shrink-0" />
+                    {conference.location}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Calendar size={14} className="text-text-muted shrink-0" />
+                    {conference.date}
+                  </span>
+                </div>
+              </div>
+              <StatusTag status={conference.cfpStatus} />
             </div>
-            <StatusTag status={conference.cfpStatus} />
+            <div className="flex items-center justify-between text-xs mt-2 text-text-muted">
+              <span>
+                {conference.submittedTalksAmount} talk
+                {conference.submittedTalksAmount !== 1 ? "s" : ""} soumis
+              </span>
+              {conference.cfpLink && (
+                <a
+                  href={conference.cfpLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-primary no-underline hover:underline font-bold"
+                >
+                  Lien CFP <ExternalLinkIcon size={14} />
+                </a>
+              )}
+            </div>
           </div>
         ))}
 
-        {fakeConferences.length === 0 && (
-          <div className="p-8 text-center text-text-muted border border-border rounded-2xl">
+        {filteredConferences.length === 0 && (
+          <div className="p-8 text-center text-text-muted border border-border rounded-2xl md:col-span-2 lg:col-span-3">
             Aucune conférence listée pour le moment. De nouvelles seront
             ajoutées bientôt !
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
