@@ -106,3 +106,21 @@
   .MuiSwitch-thumb { box-sizing: border-box !important; width: 22px !important; height: 22px !important; }
   .MuiSwitch-track { border-radius: 13px !important; background-color: #e9e9ea !important; opacity: 1 !important; }
 }
+
+@layer utilities {
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.4s forwards cubic-bezier(0.215, 0.610, 0.355, 1);
+    opacity: 0;
+  }
+}
