@@ -20,6 +20,15 @@ public class Talk {
         this.description = description;
     }
 
+    public Talk(String title, String description, List<String> speakers, String office, TalkStatus status, Visibility visibility) {
+        this.title = title;
+        this.description = description;
+        this.speakers = speakers;
+        this.office = office;
+        this.status = status;
+        this.visibility = visibility;
+    }
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     

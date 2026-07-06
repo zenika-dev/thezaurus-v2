@@ -13,6 +13,8 @@ services:
       - QUARKUS_HTTP_PORT=8080
       - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-dummy-client-id}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
     volumes:
       # Credentials (service-account) lues depuis le repo => connexion au vrai Firestore (GCP)
       - ./api/.config/gcloud/application_default_credentials.json:/tmp/credentials.json:ro

@@ -1,0 +1,30 @@
+display_information:
+  name: TheZaurus
+features:
+  bot_user:
+    display_name: TheZaurus
+    always_online: false
+  slash_commands:
+    - command: /talk
+      url: https://your-url.zenika.com/slack/events
+      description: Ajouter un talk 
+      should_escape: false
+    - command: /ping
+      url: https://your-url.zenika.com/slack/events
+      description: Pong
+      should_escape: false
+oauth_config:
+  redirect_urls:
+    - https://your-url.zenika.com
+  scopes:
+    bot:
+      - commands
+  pkce_enabled: false
+settings:
+  interactivity:
+    is_enabled: true
+    request_url: https://your-url.zenika.com/slack/events
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
+  is_mcp_enabled: false
