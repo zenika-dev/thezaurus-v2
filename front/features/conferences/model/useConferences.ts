@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { conferenceApi } from "@/entities/conference";
 import { queryKeys } from "@/shared/api";
+import { useConferencesMutations } from "./useConferencesMutations";
 
 export function useConferences() {
   const { data: conferences } = useSuspenseQuery({
@@ -8,5 +9,7 @@ export function useConferences() {
     queryFn: () => conferenceApi.getConferences(),
   });
 
-  return { conferences: conferences ?? [] };
+  const mutations = useConferencesMutations();
+
+  return { conferences: conferences ?? [], ...mutations };
 }
