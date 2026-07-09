@@ -6,6 +6,9 @@ public class Conference {
     private String date;
     private String cfpLink;
     private Location location;
+    private String cfpStatus;
+    private int submittedTalksAmount;
+    private String cfpClosingDate;
 
     public Conference() {}
 
@@ -29,4 +32,13 @@ public class Conference {
 
     public Location getLocation() { return location; }
     public void setLocation(Location location) { this.location = location; }
+
+    public String getCfpStatus() { return cfpStatus; }
+    public void setCfpStatus(String cfpStatus) { this.cfpStatus = cfpStatus; }
+
+    public int getSubmittedTalksAmount() { return submittedTalksAmount; }
+    public void setSubmittedTalksAmount(int submittedTalksAmount) { this.submittedTalksAmount = submittedTalksAmount; }
+
+    public String getCfpClosingDate() { return cfpClosingDate; }
+    public void setCfpClosingDate(String cfpClosingDate) { this.cfpClosingDate = cfpClosingDate; }
 }

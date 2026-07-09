@@ -15,7 +15,10 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-dummy-client-id}
     volumes:
       # Credentials (service-account) lues depuis le repo => connexion au vrai Firestore (GCP)
-      - ./api/.config/gcloud/application_default_credentials.json:/tmp/credentials.json:ro
+      # - ./api/.config/gcloud/application_default_credentials.json:/tmp/credentials.json:ro
+
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/credentials.json:ro
+      # - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/credentials.json:ro
 
   # UI Frontend (Next.js)
   front:
