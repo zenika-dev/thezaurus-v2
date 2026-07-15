@@ -9,10 +9,6 @@ features:
       url: https://your-url.zenika.com/slack/events
       description: Ajouter un talk 
       should_escape: false
-    - command: /ping
-      url: https://your-url.zenika.com/slack/events
-      description: Pong
-      should_escape: false
 oauth_config:
   redirect_urls:
     - https://your-url.zenika.com

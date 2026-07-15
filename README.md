@@ -59,9 +59,9 @@ S'il y a besoin d'avoir plus de données et/ou vérifier le bon fonctionnement d
   GOOGLE_APPLICATION_CREDENTIALS=/chemin/vers/votre/cle-service-account.json
   ```
 
-### Configuration du bot Slack (`/talk`, `/ping`)
+### Configuration du bot Slack (`/talk``)
 
-L'API expose un bot Slack (commandes slash `/talk` et `/ping`) via le SDK [Bolt for Java](https://github.com/slackapi/java-slack-sdk). Cette intégration est **optionnelle** : si les variables ci-dessous ne sont pas renseignées, l'application démarre normalement mais le bot Slack reste désactivé (aucune commande n'est enregistrée, aucun appel n'est fait à l'API Slack).
+L'API expose un bot Slack (commandes slash `/talk`) via le SDK [Bolt for Java](https://github.com/slackapi/java-slack-sdk). Cette intégration est **optionnelle** : si les variables ci-dessous ne sont pas renseignées, l'application démarre normalement mais le bot Slack reste désactivé (aucune commande n'est enregistrée, aucun appel n'est fait à l'API Slack).
 
 #### Variables d'environnement
 
@@ -103,7 +103,6 @@ Utilisez ensuite l'URL HTTPS fournie par ngrok (ex : `https://xxxx.ngrok-free.ap
 
 #### Commandes disponibles
 
-- `/ping` : commande de test, répond « Pong ! 🏓 »
 - `/talk` : ouvre une modale permettant de créer un talk (titre, speakers, agence, description, statut, visibilité, conférence, date)
 
 ## Déploiement Local (Docker Compose)
