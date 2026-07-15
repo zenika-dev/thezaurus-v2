@@ -59,6 +59,52 @@ S'il y a besoin d'avoir plus de données et/ou vérifier le bon fonctionnement d
   GOOGLE_APPLICATION_CREDENTIALS=/chemin/vers/votre/cle-service-account.json
   ```
 
+### Configuration du bot Slack (`/talk``)
+
+L'API expose un bot Slack (commandes slash `/talk`) via le SDK [Bolt for Java](https://github.com/slackapi/java-slack-sdk). Cette intégration est **optionnelle** : si les variables ci-dessous ne sont pas renseignées, l'application démarre normalement mais le bot Slack reste désactivé (aucune commande n'est enregistrée, aucun appel n'est fait à l'API Slack).
+
+#### Variables d'environnement
+
+À définir dans le fichier `.env` (racine du projet pour Docker Compose, ou `api/` en mode Quarkus Dev local) :
+
+```properties
+SLACK_BOT_TOKEN=xoxb-...
+SLACK_SIGNING_SECRET=...
+```
+
+| Variable | Description | Où la récupérer dans Slack |
+|---|---|---|
+| `SLACK_BOT_TOKEN` | Bot User OAuth Token utilisé pour appeler l'API Slack | **OAuth & Permissions** > `Bot User OAuth Token` |
+| `SLACK_SIGNING_SECRET` | Secret utilisé pour vérifier que les requêtes reçues proviennent bien de Slack | **Basic Information** > `App Credentials` > `Signing Secret` |
+
+#### Créer l'application Slack à partir du manifest
+
+Le fichier [`api/src/main/resources/manifest.yaml`](api/src/main/resources/manifest.yaml) décrit entièrement la configuration de l'application Slack (nom du bot, commandes slash, interactivité, scopes OAuth...). Il permet de créer l'app Slack en une fois plutôt que de configurer chaque écran manuellement :
+
+1. Rendez-vous sur https://api.slack.com/apps puis cliquez sur **Create New App**.
+2. Choisissez **From a manifest** et sélectionnez le workspace Slack sur lequel vous voulez installer l'app (idéalement un workspace de dev/test).
+3. Collez le contenu de `manifest.yaml` (onglet **YAML**), puis remplacez chaque occurrence de `https://your-url.zenika.com` par l'URL publique de votre API (URL de déploiement, ou URL ngrok en local — voir ci-dessous).
+4. Validez la création (**Create**), puis vérifiez le résumé (**Review summary & create app**).
+5. Dans **OAuth & Permissions**, cliquez sur **Install to Workspace** et autorisez l'app, puis copiez le **Bot User OAuth Token** (commence par `xoxb-`) dans `SLACK_BOT_TOKEN`.
+6. Dans **Basic Information > App Credentials**, copiez le **Signing Secret** dans `SLACK_SIGNING_SECRET`.
+7. Renseignez ces deux valeurs dans votre `.env`, puis (re)démarrez l'application.
+
+#### Tester en local avec ngrok
+
+Slack doit pouvoir atteindre votre API sur une URL HTTPS publique pour délivrer les commandes slash sur `/slack/events`. En local, vous pouvez exposer votre API avec [ngrok](https://ngrok.com/) :
+
+```bash
+ngrok http 8080
+```
+
+Utilisez ensuite l'URL HTTPS fournie par ngrok (ex : `https://xxxx.ngrok-free.app/slack/events`) comme `url` des commandes slash et comme `request_url` d'interactivité dans le manifest de l'app Slack.
+
+⚠️ L'URL ngrok change à chaque redémarrage (sauf domaine réservé) : il faut alors mettre à jour la configuration de l'app Slack (Slash Commands + Interactivity) avec la nouvelle URL.
+
+#### Commandes disponibles
+
+- `/talk` : ouvre une modale permettant de créer un talk (titre, speakers, agence, description, statut, visibilité, conférence, date)
+
 ## Déploiement Local (Docker Compose)
 
 Vous pouvez lancer l'ensemble de l'application (UI, API et l'émulateur Firestore local) avec Docker Compose :
