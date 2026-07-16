@@ -1,7 +1,9 @@
 package com.zenika.thezaurus.resource;
 
 import com.zenika.thezaurus.model.Conference;
+import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.service.ConferenceService;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -21,6 +23,7 @@ import java.util.concurrent.ExecutionException;
 @Path("/conferences")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed({Role.Names.ADMIN, Role.Names.DT, Role.Names.CONSULTANT})
 public class ConferenceResource {
 
     @Inject
@@ -76,6 +79,7 @@ public class ConferenceResource {
 
     @DELETE
     @Path("/{id}")
+    @RolesAllowed(Role.Names.ADMIN)
     public Response delete(@PathParam("id") String id) throws ExecutionException, InterruptedException {
         boolean deleted = service.delete(id);
         if (!deleted) {

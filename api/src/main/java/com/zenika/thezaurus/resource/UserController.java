@@ -1,5 +1,6 @@
 package com.zenika.thezaurus.resource;
 
+import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.repository.UserRepository;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
@@ -26,15 +27,12 @@ public class UserController {
     @Inject
     UserRepository userRepository;
 
-    @ConfigProperty(name = "mock.auth", defaultValue = "false")
-    boolean mockAuth;
-
     @ConfigProperty(name = "thezaurus.users.max-results", defaultValue = "500")
     int maxResults;
 
     @GET
     @Path("/me")
-    @RolesAllowed({"membre", "admin"})
+    @RolesAllowed({Role.Names.ADMIN, Role.Names.DT, Role.Names.CONSULTANT})
     public Response getCurrentUser() {
         if (identity.isAnonymous()) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
@@ -49,11 +47,12 @@ public class UserController {
 
     /**
      * Annuaire des utilisateurs persistés, pour alimenter le picker de speakers.
-     * Projection volontairement réduite à {name, email} : le rôle ne sort pas de l'API.
+     * Projection volontairement réduite à {name, email} : les rôles ne sortent pas de l'API
+     * (l'administration passe par UserAdminResource, réservé aux admins).
      */
     @GET
     @Path("/users")
-    @RolesAllowed({"membre", "admin"})
+    @RolesAllowed({Role.Names.ADMIN, Role.Names.DT, Role.Names.CONSULTANT})
     public List<UserSummary> listUsers() throws ExecutionException, InterruptedException {
         return userRepository.findAll(maxResults).stream()
                 .map(u -> new UserSummary(u.name(), u.email()))

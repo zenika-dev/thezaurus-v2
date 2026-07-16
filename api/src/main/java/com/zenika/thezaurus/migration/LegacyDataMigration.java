@@ -1,6 +1,7 @@
 package com.zenika.thezaurus.migration;
 
 import com.zenika.thezaurus.repository.TalkRepository;
+import com.zenika.thezaurus.repository.UserRepository;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -26,6 +27,9 @@ public class LegacyDataMigration {
     @Inject
     TalkRepository talkRepository;
 
+    @Inject
+    UserRepository userRepository;
+
     /**
      * Désactivé en profil test : les tests n'ont pas de Firestore (tout est mocké) et
      * l'instanciation du client au démarrage ferait échouer le boot de Quarkus.
@@ -37,9 +41,13 @@ public class LegacyDataMigration {
         if (!enabled) {
             return;
         }
-        int migrated = talkRepository.migrateLegacySpeakers();
-        if (migrated > 0) {
-            logger.infov("Migration speakers legacy : {0} talk(s) réécrit(s) au format User", migrated);
+        int migratedTalks = talkRepository.migrateLegacySpeakers();
+        if (migratedTalks > 0) {
+            logger.infov("Migration speakers legacy : {0} talk(s) réécrit(s) au format User", migratedTalks);
+        }
+        int migratedUsers = userRepository.migrateLegacyRoles();
+        if (migratedUsers > 0) {
+            logger.infov("Migration rôles legacy : {0} utilisateur(s) réécrit(s) au format roles[]", migratedUsers);
         }
     }
 }

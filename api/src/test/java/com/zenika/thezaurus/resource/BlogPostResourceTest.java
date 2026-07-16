@@ -2,8 +2,10 @@ package com.zenika.thezaurus.resource;
 
 import com.zenika.thezaurus.model.BlogPost;
 import com.zenika.thezaurus.service.BlogPostService;
+import com.zenika.thezaurus.model.Role;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -14,6 +16,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
+@TestSecurity(user = "dev@zenika.com", roles = {Role.Names.CONSULTANT})
 public class BlogPostResourceTest {
 
     @InjectMock
