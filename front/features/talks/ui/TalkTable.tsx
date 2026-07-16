@@ -8,8 +8,8 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
-import { Eye } from "lucide-react";
-import type { TalkData } from "@/entities/talk";
+import { Eye, Funnel } from "lucide-react";
+import type { TalkData, TalkStatus } from "@/entities/talk";
 import { agencyLabels } from "@/entities/talk";
 import dynamic from "next/dynamic";
 import { useTalks } from "@/features/talks/model";
@@ -22,6 +22,7 @@ const TalkDetailsDialog = dynamic(
 
 export function TalkTable() {
   const [selectedTalkId, setSelectedTalkId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"All" | TalkStatus>("All");
   const { talks, updateTalk, deleteTalk } = useTalks();
 
   const selectedTalk = talks.find((t) => t.id === selectedTalkId) ?? null;
@@ -36,8 +37,62 @@ export function TalkTable() {
     catch { alert("Erreur lors de la suppression du talk"); }
   };
 
+  const filteredTalks = talks.filter((talk) => {
+    if (statusFilter !== "All" && talk.status !== statusFilter) {
+      return false;
+    }
+    return true;
+  });
+
+  const FilterBadge = ({
+    label,
+    active,
+    onClick,
+  }: {
+    label: string;
+    active: boolean;
+    onClick: () => void;
+  }) => (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1 px-3 py-1 rounded-2xl text-xs font-sans border cursor-pointer transition-colors ${
+        active
+          ? "bg-primary text-white border-primary"
+          : "bg-surface-hover text-text border-transparent hover:bg-border-strong"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <>
+      <div className="flex flex-col gap-6 mb-6">
+        <div className="flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Funnel size={14} className="text-text-muted shrink-0" />
+            <span className="text-xs text-text-muted mr-2">Statut :</span>
+            {(["All", "Idea", "Submitted", "Accepted", "Replayed", "Draft"] as const).map((status) => (
+              <FilterBadge
+                key={status}
+                label={status === "All" ? "Tous" : status}
+                active={statusFilter === status}
+                onClick={() => setStatusFilter(status)}
+              />
+            ))}
+          </div>
+
+          {statusFilter !== "All" && (
+            <button
+              onClick={() => setStatusFilter("All")}
+              className="flex text-xs items-center font-sans gap-1 cursor-pointer text-primary border border-primary/20 px-3 py-1 rounded-2xl bg-primary/10 transition-colors no-underline hover:bg-primary/20 hover:text-primary"
+            >
+              Réinitialiser
+            </button>
+          )}
+        </div>
+      </div>
+
       <TableContainer
         component={Paper}
         variant="outlined"
@@ -56,14 +111,14 @@ export function TalkTable() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {talks.length === 0 ? (
+            {filteredTalks.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center" className="py-8! text-text-muted!">
-                  Aucun talk pour le moment. Créez-en un avec &quot;New Talk&quot; !
+                  Aucun talk ne correspond à ces critères.
                 </TableCell>
               </TableRow>
             ) : (
-              talks.map((talk) => (
+              filteredTalks.map((talk) => (
                 <TableRow key={talk.id} hover>
                   <TableCell>
                     <span
