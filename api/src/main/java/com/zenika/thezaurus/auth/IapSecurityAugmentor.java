@@ -12,8 +12,11 @@ import org.jboss.logging.Logger;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.repository.UserRepository;
+
+import java.util.List;
 
 @ApplicationScoped
 public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
@@ -30,11 +33,11 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
         // Bypass conditionnel de l'authentification
         if (mockAuth && identity.isAnonymous()) {
-            logger.warn("mock.auth activé : identité de développement admin/membre accordée");
+            logger.warn("mock.auth activé : identité de développement admin/consultant accordée");
             SecurityIdentity devIdentity = QuarkusSecurityIdentity.builder(identity)
                     .setPrincipal(() -> "dev@zenika.com")
-                    .addRole("admin")
-                    .addRole("membre")
+                    .addRole(Role.Names.ADMIN)
+                    .addRole(Role.Names.CONSULTANT)
                     .build();
             return Uni.createFrom().item(devIdentity);
         }
@@ -53,6 +56,7 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
                 return context.runBlocking(() -> enrichIdentity(identity, email, name));
             } else {
                 // Email invalide ou non Zenika : on ne donne pas de rôles
+                logger.warn("Email absent ou hors domaine zenika.com, identité non enrichie");
                 return Uni.createFrom().item(identity);
             }
         }
@@ -64,19 +68,22 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
         try {
             User user = userRepository.findByEmail(email);
             if (user == null) {
-                // Création auto avec rôle par défaut 'membre', nom récupéré depuis le SSO
-                user = User.builder().email(email).name(name).role("membre").build();
+                // Création auto avec rôle par défaut 'consultant', nom récupéré depuis le SSO
+                user = User.builder().email(email).name(name).roles(List.of(Role.CONSULTANT)).build();
                 userRepository.create(user);
+                logger.infof("Utilisateur %s créé automatiquement avec le rôle '%s'", email, Role.CONSULTANT);
             } else if ((user.name() == null || user.name().isBlank()) && name != null && !name.isBlank()) {
                 // Compte existant créé avant l'ajout du champ name : on le complète depuis le SSO
                 user = user.withName(name);
                 userRepository.update(email, user);
             }
 
-            return QuarkusSecurityIdentity.builder(identity)
-                    .setPrincipal(() -> email)
-                    .addRole(user.role())
-                    .build();
+            QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity)
+                    .setPrincipal(() -> email);
+            if (user.roles() != null) {
+                user.roles().stream().map(Role::name).forEach(builder::addRole);
+            }
+            return builder.build();
         } catch (Exception e) {
             throw new RuntimeException("Erreur d'accès à Firestore pour l'utilisateur", e);
         }

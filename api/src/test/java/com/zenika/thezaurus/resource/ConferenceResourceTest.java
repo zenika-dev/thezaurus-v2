@@ -4,8 +4,10 @@ import com.zenika.thezaurus.model.Conference;
 import com.zenika.thezaurus.model.ConferenceReach;
 import com.zenika.thezaurus.model.ConferenceType;
 import com.zenika.thezaurus.service.ConferenceService;
+import com.zenika.thezaurus.model.Role;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -18,6 +20,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
+@TestSecurity(user = "dev@zenika.com", roles = {Role.Names.CONSULTANT})
 public class ConferenceResourceTest {
 
     @InjectMock

@@ -132,7 +132,7 @@ public class TalkCommandTest {
         assertEquals("Jane Doe", speaker.name());
         assertEquals("jane@zenika.com", speaker.email());
         assertEquals("U123", speaker.slackUserId());
-        assertNull(speaker.role(), "Un speaker ne doit jamais porter de rôle d'autorisation");
+        assertNull(speaker.roles(), "Un speaker ne doit jamais porter de rôles d'autorisation");
     }
 
     @Test

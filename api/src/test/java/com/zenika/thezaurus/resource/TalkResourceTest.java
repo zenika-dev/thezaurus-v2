@@ -1,10 +1,12 @@
 package com.zenika.thezaurus.resource;
 
+import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.Talk;
 import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.service.TalkService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -20,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 @QuarkusTest
+@TestSecurity(user = "dev@zenika.com", roles = {Role.Names.CONSULTANT})
 public class TalkResourceTest {
 
     @InjectMock
@@ -52,7 +55,7 @@ public class TalkResourceTest {
     public void testCreate() throws Exception {
         Talk input = new Talk(null, "New Talk", "Desc");
         Talk created = new Talk("new-id", "New Talk", "Desc");
-        
+
         Mockito.when(service.create(Mockito.any(Talk.class))).thenReturn(created);
 
         given()
@@ -88,12 +91,12 @@ public class TalkResourceTest {
     }
 
     @Test
-    public void testCreateIgnoresRoleInjectedInSpeakers() throws Exception {
+    public void testCreateIgnoresRolesInjectedInSpeakers() throws Exception {
         Talk created = new Talk("new-id", "New Talk", "Desc");
         Mockito.when(service.create(Mockito.any(Talk.class))).thenReturn(created);
 
         String payload = "{\"title\":\"New Talk\",\"description\":\"Desc\","
-                + "\"speakers\":[{\"name\":\"Intrus\",\"email\":\"intrus@evil.com\",\"role\":\"admin\"}]}";
+                + "\"speakers\":[{\"name\":\"Intrus\",\"email\":\"intrus@evil.com\",\"roles\":[\"ADMIN\"]}]}";
 
         given()
           .contentType(ContentType.JSON)
@@ -104,8 +107,8 @@ public class TalkResourceTest {
 
         ArgumentCaptor<Talk> captor = ArgumentCaptor.forClass(Talk.class);
         Mockito.verify(service).create(captor.capture());
-        assertNull(captor.getValue().speakers().get(0).role(),
-                "Le rôle ne doit pas pouvoir être injecté depuis un payload client");
+        assertNull(captor.getValue().speakers().get(0).roles(),
+                "Les rôles ne doivent pas pouvoir être injectés depuis un payload client");
     }
 
     @Test
@@ -126,9 +129,10 @@ public class TalkResourceTest {
     }
 
     @Test
-    public void testGetTalksDoesNotExposeSpeakerRole() throws Exception {
+    public void testGetTalksDoesNotExposeSpeakerRoles() throws Exception {
         Talk talk = new Talk("Titre", "Description", List.of(
-                User.builder().name("Jane").email("jane@zenika.com").role("admin").build()),
+                User.builder().name("Jane").email("jane@zenika.com")
+                        .roles(List.of(Role.ADMIN)).build()),
                 null, null, null).withId("1");
         Mockito.when(service.findAll()).thenReturn(Collections.singletonList(talk));
 
@@ -137,6 +141,25 @@ public class TalkResourceTest {
           .then()
              .statusCode(200)
              .body("[0].speakers[0].name", is("Jane"))
-             .body("[0].speakers[0].role", is(nullValue()));
+             .body("[0].speakers[0].roles", is(nullValue()));
+    }
+
+    @Test
+    public void testDeleteForbiddenForConsultant() {
+        given()
+          .when().delete("/talks/1")
+          .then()
+             .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@zenika.com", roles = {Role.Names.ADMIN})
+    public void testDeleteAsAdmin() throws Exception {
+        Mockito.when(service.delete("1")).thenReturn(true);
+
+        given()
+          .when().delete("/talks/1")
+          .then()
+             .statusCode(204);
     }
 }

@@ -1,5 +1,6 @@
 package com.zenika.thezaurus.resource;
 
+import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.repository.UserRepository;
 import io.quarkus.test.InjectMock;
@@ -11,6 +12,7 @@ import org.mockito.Mockito;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 
@@ -21,9 +23,21 @@ public class UserControllerTest {
     UserRepository userRepository;
 
     @Test
-    @TestSecurity(user = "jane@zenika.com", roles = "membre")
-    public void testListUsersAsMembre() throws Exception {
-        User jane = User.builder().name("Jane Doe").email("jane@zenika.com").role("membre").build();
+    @TestSecurity(user = "maxime.mainguet@zenika.com", roles = {Role.Names.CONSULTANT, Role.Names.DT})
+    public void testMeReflectsAllRoles() {
+        given()
+          .when().get("/api/me")
+          .then()
+             .statusCode(200)
+             .body("email", is("maxime.mainguet@zenika.com"))
+             .body("roles", hasItems(Role.Names.CONSULTANT, Role.Names.DT));
+    }
+
+    @Test
+    @TestSecurity(user = "jane@zenika.com", roles = {Role.Names.CONSULTANT})
+    public void testListUsersAsConsultant() throws Exception {
+        User jane = User.builder().name("Jane Doe").email("jane@zenika.com")
+                .roles(List.of(Role.CONSULTANT)).build();
         Mockito.when(userRepository.findAll(Mockito.anyInt())).thenReturn(List.of(jane));
 
         given()
@@ -33,11 +47,11 @@ public class UserControllerTest {
              .body("size()", is(1))
              .body("[0].name", is("Jane Doe"))
              .body("[0].email", is("jane@zenika.com"))
-             .body("[0].role", is(nullValue()));
+             .body("[0].roles", is(nullValue()));
     }
 
     @Test
-    @TestSecurity(user = "jane@zenika.com", roles = "membre")
+    @TestSecurity(user = "jane@zenika.com", roles = {Role.Names.CONSULTANT})
     public void testListUsersIsBounded() throws Exception {
         Mockito.when(userRepository.findAll(Mockito.anyInt())).thenReturn(List.of());
 
