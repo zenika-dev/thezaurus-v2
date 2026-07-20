@@ -134,6 +134,8 @@ export function CreateConferenceDialog({
       cfpLink: "",
       cfpStatus: "None",
       submittedTalksAmount: 0,
+      type: undefined,
+      reach: undefined,
     },
   });
 
@@ -384,115 +386,146 @@ export function CreateConferenceDialog({
                 )}
               />
 
-              <FormControl fullWidth>
-                <InputLabel id="create-date-type-label">
-                  Type de date
-                </InputLabel>
-                <Select
-                  value={dateType}
-                  onChange={(e) => {
-                    setDateType(e.target.value as ConferenceDate["type"]);
-                    setDateError(null);
-                  }}
-                  labelId="create-date-type-label"
-                  id="conference-date-type"
-                  label="Type de date"
-                >
-                  <MenuItem value="single">Jour précis</MenuItem>
-                  <MenuItem value="range">Plusieurs jours</MenuItem>
-                  <MenuItem value="month">Mois uniquement</MenuItem>
-                </Select>
-              </FormControl>
+              <div className="col-span-2 flex flex-col gap-2">
+                <div className="flex gap-4">
+                  {dateType === "single" && (
+                    <DatePicker
+                      label="Date"
+                      value={date}
+                      onChange={(val) => {
+                        setDate(val);
+                        setDateError(null);
+                        setCfpDateError(null);
+                      }}
+                      views={["year", "month", "day"]}
+                      format="DD/MM/YYYY"
+                      sx={{ flex: 1 }}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          required: true,
+                          id: "conference-date",
+                          error: !!dateError,
+                          helperText: dateError ?? undefined,
+                        },
+                      }}
+                    />
+                  )}
 
-              {dateType === "single" && (
-                <DatePicker
-                  label="Date"
-                  value={date}
-                  onChange={(val) => {
-                    setDate(val);
-                    setDateError(null);
-                    setCfpDateError(null);
-                  }}
-                  views={["year", "month", "day"]}
-                  format="DD/MM/YYYY"
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      required: true,
-                      id: "conference-date",
-                      error: !!dateError,
-                      helperText: dateError ?? undefined,
-                    },
-                  }}
-                />
-              )}
+                  {dateType === "range" && (
+                    <>
+                      <DatePicker
+                        label="Date de début"
+                        value={date}
+                        onChange={(val) => {
+                          setDate(val);
+                          setDateError(null);
+                          setCfpDateError(null);
+                        }}
+                        views={["year", "month", "day"]}
+                        format="DD/MM/YYYY"
+                        sx={{ flex: 1 }}
+                        slotProps={{
+                          textField: {
+                            fullWidth: true,
+                            required: true,
+                            id: "conference-date-start",
+                            error: !!dateError,
+                            helperText: dateError ?? undefined,
+                          },
+                        }}
+                      />
+                      <DatePicker
+                        label="Date de fin"
+                        value={dateEnd}
+                        onChange={(val) => {
+                          setDateEnd(val);
+                          setDateError(null);
+                        }}
+                        views={["year", "month", "day"]}
+                        format="DD/MM/YYYY"
+                        minDate={date ?? undefined}
+                        sx={{ flex: 1 }}
+                        slotProps={{
+                          textField: {
+                            fullWidth: true,
+                            required: true,
+                            id: "conference-date-end",
+                            error: !!dateError,
+                          },
+                        }}
+                      />
+                    </>
+                  )}
 
-              {dateType === "range" && (
-                <>
-                  <DatePicker
-                    label="Date de début"
-                    value={date}
-                    onChange={(val) => {
-                      setDate(val);
-                      setDateError(null);
-                      setCfpDateError(null);
-                    }}
-                    views={["year", "month", "day"]}
-                    format="DD/MM/YYYY"
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        required: true,
-                        id: "conference-date-start",
-                        error: !!dateError,
-                        helperText: dateError ?? undefined,
-                      },
-                    }}
-                  />
-                  <DatePicker
-                    label="Date de fin"
-                    value={dateEnd}
-                    onChange={(val) => {
-                      setDateEnd(val);
-                      setDateError(null);
-                    }}
-                    views={["year", "month", "day"]}
-                    format="DD/MM/YYYY"
-                    minDate={date ?? undefined}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        required: true,
-                        id: "conference-date-end",
-                        error: !!dateError,
-                      },
-                    }}
-                  />
-                </>
-              )}
+                  {dateType === "month" && (
+                    <DatePicker
+                      label="Mois"
+                      value={dateMonth}
+                      onChange={(val) => {
+                        setDateMonth(val);
+                        setDateError(null);
+                        setCfpDateError(null);
+                      }}
+                      views={["year", "month"]}
+                      format="MMMM YYYY"
+                      sx={{ flex: 1 }}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          required: true,
+                          id: "conference-date-month",
+                          error: !!dateError,
+                          helperText: dateError ?? undefined,
+                        },
+                      }}
+                    />
+                  )}
+                </div>
 
-              {dateType === "month" && (
-                <DatePicker
-                  label="Mois"
-                  value={dateMonth}
-                  onChange={(val) => {
-                    setDateMonth(val);
-                    setDateError(null);
-                    setCfpDateError(null);
-                  }}
-                  views={["year", "month"]}
-                  format="MMMM YYYY"
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      required: true,
-                      id: "conference-date-month",
-                      error: !!dateError,
-                      helperText: dateError ?? undefined,
-                    },
-                  }}
-                />
-              )}
+                <div className="flex gap-3 text-xs">
+                  {dateType === "single" && (
+                    <>
+                      <button
+                        type="button"
+                        className="text-primary underline underline-offset-2"
+                        onClick={() => {
+                          setDateType("range");
+                          setDateError(null);
+                        }}
+                      >
+                        + Ajouter une date de fin
+                      </button>
+                      <button
+                        type="button"
+                        className="text-primary underline underline-offset-2"
+                        onClick={() => {
+                          setDateType("month");
+                          setDate(null);
+                          setDateError(null);
+                        }}
+                      >
+                        Mois uniquement
+                      </button>
+                    </>
+                  )}
+
+                  {(dateType === "range" || dateType === "month") && (
+                    <button
+                      type="button"
+                      className="text-text-muted underline underline-offset-2"
+                      onClick={() => {
+                        setDateType("single");
+                        setDateEnd(null);
+                        setDateMonth(null);
+                        setDateError(null);
+                      }}
+                    >
+                      Revenir à un jour précis
+                    </button>
+                  )}
+                </div>
+              </div>
 
               <TextField
                 {...register("cfpLink")}
@@ -544,6 +577,66 @@ export function CreateConferenceDialog({
                     helperText: cfpDateError ?? undefined,
                   },
                 }}
+              />
+
+              <Controller
+                name="type"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth required>
+                    <InputLabel id="create-conference-type-label">
+                      Type
+                    </InputLabel>
+                    <Select
+                      {...field}
+                      labelId="create-conference-type-label"
+                      id="conference-type"
+                      label="Type"
+                      value={field.value ?? ""}
+                    >
+                      {/* <MenuItem value="">
+                        <em>Sélectionner...</em>
+                      </MenuItem> */}
+                      <MenuItem value="Marketing / business">
+                        Marketing / business
+                      </MenuItem>
+                      <MenuItem value="Technique stratégique">
+                        Technique stratégique
+                      </MenuItem>
+                      <MenuItem value="Technique généraliste">
+                        Technique généraliste
+                      </MenuItem>
+                      <MenuItem value="Technique">Technique</MenuItem>
+                      <MenuItem value="Hors scope">Hors scope</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+              />
+
+              <Controller
+                name="reach"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth required>
+                    <InputLabel id="create-conference-reach-label">
+                      Portée
+                    </InputLabel>
+                    <Select
+                      {...field}
+                      labelId="create-conference-reach-label"
+                      id="conference-reach"
+                      label="Portée"
+                      value={field.value ?? ""}
+                    >
+                      {/* <MenuItem value="">
+                        <em>Sélectionner...</em>
+                      </MenuItem> */}
+                      <MenuItem value="Locale">Locale</MenuItem>
+                      <MenuItem value="Régionale">Régionale</MenuItem>
+                      <MenuItem value="Nationale">Nationale</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
               />
             </div>
           </Box>

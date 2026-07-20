@@ -13,3 +13,26 @@ export function StatusTag({ status }: { status: ConferenceCFPStatus }) {
     </Badge>
   );
 }
+
+import { ConferenceType, conferenceTypeConfig } from "@/entities/conference";
+
+export function TypeTag({
+  type,
+  small,
+}: {
+  type: ConferenceType;
+  small?: boolean;
+}) {
+  const { text, bg, darkText, darkBg } = conferenceTypeConfig[type];
+  return (
+    <Badge
+      color={text}
+      bg={bg}
+      darkColor={darkText}
+      darkBg={darkBg}
+      size={small ? "small" : "default"}
+    >
+      {type}
+    </Badge>
+  );
+}
