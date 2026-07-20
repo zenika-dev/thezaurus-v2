@@ -9,8 +9,11 @@ public class Conference {
     private String cfpStatus;
     private int submittedTalksAmount;
     private String cfpClosingDate;
+    private String type;
+    private String reach;
 
-    public Conference() {}
+    public Conference() {
+    }
 
     public Conference(String id, String name, String date) {
         this.id = id;
@@ -18,27 +21,83 @@ public class Conference {
         this.date = date;
     }
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-    
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getId() {
+        return id;
+    }
 
-    public String getDate() { return date; }
-    public void setDate(String date) { this.date = date; }
+    public void setId(String id) {
+        this.id = id;
+    }
 
-    public String getCfpLink() { return cfpLink; }
-    public void setCfpLink(String cfpLink) { this.cfpLink = cfpLink; }
+    public String getName() {
+        return name;
+    }
 
-    public Location getLocation() { return location; }
-    public void setLocation(Location location) { this.location = location; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public String getCfpStatus() { return cfpStatus; }
-    public void setCfpStatus(String cfpStatus) { this.cfpStatus = cfpStatus; }
+    public String getDate() {
+        return date;
+    }
 
-    public int getSubmittedTalksAmount() { return submittedTalksAmount; }
-    public void setSubmittedTalksAmount(int submittedTalksAmount) { this.submittedTalksAmount = submittedTalksAmount; }
+    public void setDate(String date) {
+        this.date = date;
+    }
 
-    public String getCfpClosingDate() { return cfpClosingDate; }
-    public void setCfpClosingDate(String cfpClosingDate) { this.cfpClosingDate = cfpClosingDate; }
+    public String getCfpLink() {
+        return cfpLink;
+    }
+
+    public void setCfpLink(String cfpLink) {
+        this.cfpLink = cfpLink;
+    }
+
+    public Location getLocation() {
+        return location;
+    }
+
+    public void setLocation(Location location) {
+        this.location = location;
+    }
+
+    public String getCfpStatus() {
+        return cfpStatus;
+    }
+
+    public void setCfpStatus(String cfpStatus) {
+        this.cfpStatus = cfpStatus;
+    }
+
+    public int getSubmittedTalksAmount() {
+        return submittedTalksAmount;
+    }
+
+    public void setSubmittedTalksAmount(int submittedTalksAmount) {
+        this.submittedTalksAmount = submittedTalksAmount;
+    }
+
+    public String getCfpClosingDate() {
+        return cfpClosingDate;
+    }
+
+    public void setCfpClosingDate(String cfpClosingDate) {
+        this.cfpClosingDate = cfpClosingDate;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getReach() {
+        return reach;
+    }
+
+    public void setReach(String reach) {
+        this.reach = reach;
+    }
 }
