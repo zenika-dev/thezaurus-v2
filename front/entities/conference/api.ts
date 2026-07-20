@@ -1,4 +1,4 @@
-import { ConferenceCFPStatus, ConferenceData, ConferenceDate } from "./model";
+import { ConferenceCFPStatus, ConferenceData, ConferenceDate, ConferenceReach, ConferenceType } from "./model";
 
 const API_BASE = process.env.API_URL ?? "http://localhost:8080";
 const API_URL = `${API_BASE}/conferences`;
@@ -14,9 +14,11 @@ interface BackendConference {
         address?: string;
         postalCode?: string;
     };
-    cfpStatus: string;
+    cfpStatus: ConferenceCFPStatus;
     submittedTalksAmount: number;
     cfpClosingDate?: string;
+    type: ConferenceType;
+    reach: ConferenceReach;
 }
 
 export function parseConferenceDate(raw: string): ConferenceDate {
@@ -52,20 +54,24 @@ export const mapBackendToFrontend = (c: BackendConference): ConferenceData => ({
     date: parseConferenceDate(c.date),
     cfpLink: c.cfpLink,
     location: c.location,
-    cfpStatus: c.cfpStatus as ConferenceCFPStatus,
+    cfpStatus: c.cfpStatus,
     submittedTalksAmount: c.submittedTalksAmount,
     cfpClosingDate: c.cfpClosingDate,
+    type: c.type,
+    reach: c.reach,
 });
 
 export const mapFrontendToBackend = (c: ConferenceData): BackendConference => ({
     id: c.id,
     name: c.title,
     date: serializeConferenceDate(c.date),
-    cfpLink: c.cfpLink,
+    cfpLink: c.cfpLink || "",
     location: c.location,
     cfpStatus: c.cfpStatus,
     submittedTalksAmount: c.submittedTalksAmount,
     cfpClosingDate: c.cfpClosingDate,
+    type: c.type,
+    reach: c.reach,
 });
 
 export const conferenceApi = {
