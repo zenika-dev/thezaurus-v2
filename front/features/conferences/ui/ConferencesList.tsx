@@ -7,7 +7,7 @@ import {
   getConferenceYear,
   formatLocation,
 } from "@/entities/conference";
-import { StatusTag } from "@/features/conferences/ui";
+import { StatusTag, TypeTag } from "@/features/conferences/ui";
 import { useState } from "react";
 import dayjs from "dayjs";
 import {
@@ -135,15 +135,15 @@ export function ConferencesList() {
             return (
               <div
                 key={`${conference.id}-${statusFilter}-${yearFilter}`}
-                className="p-6 flex flex-col gap-2 rounded-2xl border border-primary animate-fade-in-up"
+                className="p-6 flex flex-col gap-2 rounded-2xl border border-primary animate-fade-in-up transition-shadow hover:shadow-md"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-4">
                   <div className="flex flex-col gap-2">
                     <span className="font-bold text-text">
                       {conference.title}
                     </span>
-                    <div className="flex flex-col gap-1 text-xs text-text-muted">
+                    <div className="flex flex-col gap-1.5 text-xs text-text-muted">
                       <span className="flex items-center gap-1.5">
                         <MapPin
                           size={14}
@@ -158,9 +158,20 @@ export function ConferencesList() {
                         />
                         {formatConferenceDate(conference.date)}
                       </span>
+                      {conference.type && (
+                        <div className="mt-0.5">
+                          <TypeTag type={conference.type} small />
+                          <span className="text-[10px]">
+                            {" "}
+                            · {conference.reach}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <StatusTag status={conference.cfpStatus} />
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <StatusTag status={conference.cfpStatus} />
+                  </div>
                 </div>
                 <div className="flex items-center justify-between text-xs mt-2 text-text-muted">
                   <span>
