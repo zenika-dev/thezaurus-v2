@@ -23,10 +23,10 @@ export function EventsDashboard() {
     <div className="p-8">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="m-0 text-[34px] font-bold leading-[1.235] tracking-[0.25px] text-text">
+          <h1 className="m-0 text-3xl font-bold leading-[1.235] tracking-[0.25px] text-text">
             Événements {YEAR}
           </h1>
-          <p className="m-0 text-[14px] leading-[1.43] tracking-[0.15px] text-text-muted">
+          <p className="m-0 text-sm leading-[1.43] tracking-[0.15px] text-text-muted">
             Suivi des événements internes et externes par agence Zenika.
           </p>
         </div>
@@ -46,9 +46,9 @@ export function EventsDashboard() {
               type="button"
               onClick={() => setFilter(f.value)}
               aria-pressed={active}
-              className={`rounded-2xl px-4 py-1.5 text-sm font-bold transition-colors ${
+              className={`rounded-2xl text-xs! font-bold! transition-colors ${
                 active
-                  ? "bg-[linear-gradient(135deg,#ed213c_0%,#bf1d67_100%)] text-white!"
+                  ? "bg-primary! text-white!"
                   : "bg-surface-muted text-text-muted hover:bg-surface-hover"
               }`}
             >

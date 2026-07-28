@@ -6,7 +6,7 @@ const MOCK_DASHBOARD_2026: EventsDashboard = {
   year: 2026,
   totals: { internal: 30, external: 19 },
   monthly: [
-    { month: "Jan",  external: 0, internal: 10 },
+    { month: "Jan",  external: 0, internal: 12 },
     { month: "Fév",  external: 4, internal: 4 },
     { month: "Mar",  external: 2, internal: 7 },
     { month: "Avr",  external: 5, internal: 2 },

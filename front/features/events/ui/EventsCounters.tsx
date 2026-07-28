@@ -9,7 +9,7 @@ export function EventsCounters() {
   const { totals } = useEventsDashboard(2026);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 h-9">
       <Badge {...visibilityColors.external}>
         <Globe size={14} aria-hidden="true" />
         {totals.external} externes
