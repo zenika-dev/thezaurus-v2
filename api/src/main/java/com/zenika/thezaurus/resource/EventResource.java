@@ -36,8 +36,12 @@ public class EventResource {
     }
 
     @GET
-    public List<Event> list() throws ExecutionException, InterruptedException {
-        return service.findAll();
+    public List<Event> list(@QueryParam("page") Integer page, @QueryParam("size") Integer size)
+            throws ExecutionException, InterruptedException {
+        if (size == null) {
+            return service.findAll();
+        }
+        return service.findAll(page, size);
     }
 
     @GET
