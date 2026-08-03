@@ -35,6 +35,10 @@ public class EventService {
         return repository.findAll();
     }
 
+    public List<Event> findAll(Integer page, Integer size) throws ExecutionException, InterruptedException {
+        return repository.findAll(page, size);
+    }
+
     public Event findById(String id) throws ExecutionException, InterruptedException {
         return repository.findById(id);
     }
@@ -61,9 +65,20 @@ public class EventService {
     }
 
     public EventsDashboard getDashboard(int year) throws ExecutionException, InterruptedException {
-        List<Event> events = repository.findAllByYear(year);
+        List<EventWithMonth> eventsWithMonth = withParsedMonth(repository.findAllByYear(year));
 
-        List<EventWithMonth> eventsWithMonth = events.stream()
+        Map<MonthLabel, Integer> internalByMonth = countByMonth(eventsWithMonth, false);
+        Map<MonthLabel, Integer> externalByMonth = countByMonth(eventsWithMonth, true);
+
+        return new EventsDashboard(
+                year,
+                buildTotals(internalByMonth, externalByMonth),
+                buildMonthlyActivity(internalByMonth, externalByMonth),
+                buildEventTypeSummaries(eventsWithMonth));
+    }
+
+    private List<EventWithMonth> withParsedMonth(List<Event> events) {
+        return events.stream()
                 .flatMap(event -> {
                     LocalDate date = parseDate(event.date());
                     return date == null
@@ -71,40 +86,40 @@ public class EventService {
                             : Stream.of(new EventWithMonth(event, MonthLabel.of(date.getMonthValue())));
                 })
                 .toList();
+    }
 
-        Map<MonthLabel, Integer> internalByMonth = eventsWithMonth.stream()
-                .filter(eventWithMonth -> !isExternal(eventWithMonth.event()))
+    private Map<MonthLabel, Integer> countByMonth(List<EventWithMonth> eventsWithMonth, boolean external) {
+        return eventsWithMonth.stream()
+                .filter(eventWithMonth -> isExternal(eventWithMonth.event()) == external)
                 .collect(Collectors.groupingBy(
                         EventWithMonth::month,
                         () -> new EnumMap<>(MonthLabel.class),
                         Collectors.summingInt(eventWithMonth -> 1)));
+    }
 
-        Map<MonthLabel, Integer> externalByMonth = eventsWithMonth.stream()
-                .filter(eventWithMonth -> isExternal(eventWithMonth.event()))
-                .collect(Collectors.groupingBy(
-                        EventWithMonth::month,
-                        () -> new EnumMap<>(MonthLabel.class),
-                        Collectors.summingInt(eventWithMonth -> 1)));
-
+    private EventsTotals buildTotals(Map<MonthLabel, Integer> internalByMonth, Map<MonthLabel, Integer> externalByMonth) {
         int totalInternal = internalByMonth.values().stream().mapToInt(Integer::intValue).sum();
         int totalExternal = externalByMonth.values().stream().mapToInt(Integer::intValue).sum();
+        return new EventsTotals(totalInternal, totalExternal);
+    }
 
-        List<MonthlyActivity> monthly = Arrays.stream(MonthLabel.values())
+    private List<MonthlyActivity> buildMonthlyActivity(Map<MonthLabel, Integer> internalByMonth, Map<MonthLabel, Integer> externalByMonth) {
+        return Arrays.stream(MonthLabel.values())
                 .map(month -> new MonthlyActivity(
                         month,
                         internalByMonth.getOrDefault(month, 0),
                         externalByMonth.getOrDefault(month, 0)))
                 .collect(Collectors.toList());
+    }
 
-        List<EventTypeSummary> eventTypes = eventsWithMonth.stream()
+    private List<EventTypeSummary> buildEventTypeSummaries(List<EventWithMonth> eventsWithMonth) {
+        return eventsWithMonth.stream()
                 .map(EventWithMonth::event)
                 .collect(Collectors.groupingBy(Event::type, LinkedHashMap::new, Collectors.toList()))
                 .entrySet().stream()
                 .map(entry -> toEventTypeSummary(entry.getKey(), entry.getValue()))
                 .sorted(Comparator.comparingInt(EventTypeSummary::total).reversed())
                 .collect(Collectors.toList());
-
-        return new EventsDashboard(year, new EventsTotals(totalInternal, totalExternal), monthly, eventTypes);
     }
 
     private boolean isExternal(Event event) {
