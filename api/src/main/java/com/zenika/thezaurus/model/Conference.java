@@ -9,8 +9,8 @@ public class Conference {
     private String cfpStatus;
     private int submittedTalksAmount;
     private String cfpClosingDate;
-    private String type;
-    private String reach;
+    private ConferenceType type;
+    private ConferenceReach reach;
 
     public Conference() {
     }
@@ -85,19 +85,19 @@ public class Conference {
         this.cfpClosingDate = cfpClosingDate;
     }
 
-    public String getType() {
+    public ConferenceType getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(ConferenceType type) {
         this.type = type;
     }
 
-    public String getReach() {
+    public ConferenceReach getReach() {
         return reach;
     }
 
-    public void setReach(String reach) {
+    public void setReach(ConferenceReach reach) {
         this.reach = reach;
     }
 }
