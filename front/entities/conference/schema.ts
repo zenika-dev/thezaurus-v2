@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CONFERENCE_REACHES, CONFERENCE_TYPES } from "./model";
 
 export const conferenceFormSchema = z.object({
   title:              z.string().min(1, "Le titre est requis"),
@@ -7,14 +8,8 @@ export const conferenceFormSchema = z.object({
   cfpClosingDate:     z.string().optional(),
   cfpStatus:          z.enum(["Open", "Closed", "None"]),
   submittedTalksAmount: z.number(),
-  type: z.enum([
-    "Marketing / business",
-    "Technique stratégique",
-    "Technique généraliste",
-    "Technique",
-    "Hors scope"
-  ]),
-  reach: z.enum(["Locale", "Régionale", "Nationale"]),
+  type: z.enum(CONFERENCE_TYPES),
+  reach: z.enum(CONFERENCE_REACHES),
 });
 
 export type ConferenceFormData = z.infer<typeof conferenceFormSchema>;

@@ -29,6 +29,8 @@ import { isValidUrl } from "@/shared/lib";
 import {
   conferenceCFPStatusConfig,
   ConferenceData,
+  CONFERENCE_TYPES,
+  CONFERENCE_REACHES,
 } from "@/entities/conference";
 import {
   ConferenceFormData,
@@ -597,17 +599,11 @@ export function CreateConferenceDialog({
                       {/* <MenuItem value="">
                         <em>Sélectionner...</em>
                       </MenuItem> */}
-                      <MenuItem value="Marketing / business">
-                        Marketing / business
-                      </MenuItem>
-                      <MenuItem value="Technique stratégique">
-                        Technique stratégique
-                      </MenuItem>
-                      <MenuItem value="Technique généraliste">
-                        Technique généraliste
-                      </MenuItem>
-                      <MenuItem value="Technique">Technique</MenuItem>
-                      <MenuItem value="Hors scope">Hors scope</MenuItem>
+                      {CONFERENCE_TYPES.map((type) => (
+                        <MenuItem key={type} value={type}>
+                          {type}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                 )}
@@ -631,9 +627,11 @@ export function CreateConferenceDialog({
                       {/* <MenuItem value="">
                         <em>Sélectionner...</em>
                       </MenuItem> */}
-                      <MenuItem value="Locale">Locale</MenuItem>
-                      <MenuItem value="Régionale">Régionale</MenuItem>
-                      <MenuItem value="Nationale">Nationale</MenuItem>
+                      {CONFERENCE_REACHES.map((reach) => (
+                        <MenuItem key={reach} value={reach}>
+                          {reach}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                 )}

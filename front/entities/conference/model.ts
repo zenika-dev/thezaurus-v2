@@ -1,13 +1,18 @@
 export type ConferenceCFPStatus = "Open" | "Closed" | "None";
 
-export type ConferenceType =
-  | "Marketing / business"
-  | "Technique stratégique"
-  | "Technique généraliste"
-  | "Technique"
-  | "Hors scope";
+export const CONFERENCE_TYPES = [
+  "Marketing / business",
+  "Technique stratégique",
+  "Technique généraliste",
+  "Technique",
+  "Hors scope",
+] as const;
 
-export type ConferenceReach = "Locale" | "Régionale" | "Nationale";
+export type ConferenceType = (typeof CONFERENCE_TYPES)[number];
+
+export const CONFERENCE_REACHES = ["Locale", "Régionale", "Nationale"] as const;
+
+export type ConferenceReach = (typeof CONFERENCE_REACHES)[number];
 
 export type ConferenceDate =
     | { type: "single"; date: string }
