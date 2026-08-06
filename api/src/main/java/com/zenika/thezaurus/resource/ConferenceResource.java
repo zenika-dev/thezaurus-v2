@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 @Path("/conferences")
@@ -42,6 +43,10 @@ public class ConferenceResource {
 
     @POST
     public Response create(Conference conference) throws ExecutionException, InterruptedException {
+        Response invalid = validateTypeAndReach(conference);
+        if (invalid != null) {
+            return invalid;
+        }
         Conference created = service.create(conference);
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
@@ -49,11 +54,24 @@ public class ConferenceResource {
     @PUT
     @Path("/{id}")
     public Response update(@PathParam("id") String id, Conference conference) throws ExecutionException, InterruptedException {
+        Response invalid = validateTypeAndReach(conference);
+        if (invalid != null) {
+            return invalid;
+        }
         Conference updated = service.update(id, conference);
         if (updated == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(updated).build();
+    }
+
+    private Response validateTypeAndReach(Conference conference) {
+        if (conference.getType() == null || conference.getReach() == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "type et reach sont requis"))
+                    .build();
+        }
+        return null;
     }
 
     @DELETE
