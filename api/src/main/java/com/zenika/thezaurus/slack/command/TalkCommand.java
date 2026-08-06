@@ -20,6 +20,7 @@ import com.slack.api.model.view.ViewState;
 import com.zenika.thezaurus.model.Conference;
 import com.zenika.thezaurus.model.Talk;
 import com.zenika.thezaurus.model.TalkStatus;
+import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.model.Visibility;
 import com.zenika.thezaurus.service.TalkService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -231,9 +232,9 @@ public class TalkCommand implements SlackCommand{
         String conferenceName = form.text(Field.CONFERENCE);
         String conferenceDate = form.selectedDate(Field.DATE);
 
-        List<String> speakerNames = getSpeakerRealNames(ctx, form.selectedUsers(Field.SPEAKERS));
+        List<User> speakers = getSpeakers(ctx, form.selectedUsers(Field.SPEAKERS));
 
-        Talk talk = new Talk(title, description, speakerNames, office, status, visibility);
+        Talk talk = new Talk(title, description, speakers, office, status, visibility);
         if ((conferenceName != null && !conferenceName.isBlank()) || conferenceDate != null) {
             talk.setConference(new Conference(null, conferenceName, conferenceDate));
         }
@@ -247,25 +248,27 @@ public class TalkCommand implements SlackCommand{
         return ctx.ack();
     }
 
-    private @NonNull List<String> getSpeakerRealNames(ViewSubmissionContext ctx, List<String> speakerIds) {
-        List<String> speakerNames = new ArrayList<>();
+    @NonNull List<User> getSpeakers(ViewSubmissionContext ctx, List<String> speakerIds) {
+        List<User> speakers = new ArrayList<>();
 
         for (String userId : speakerIds) {
             try {
                 UsersInfoResponse userInfo = ctx.client().usersInfo(r -> r.user(userId));
 
                 if (userInfo.isOk() && userInfo.getUser() != null) {
-                    speakerNames.add(userInfo.getUser().getRealName());
+                    String email = userInfo.getUser().getProfile() != null
+                            ? userInfo.getUser().getProfile().getEmail() : null;
+                    speakers.add(User.builder().name(userInfo.getUser().getRealName()).email(email).build());
                 } else {
                     logger.error("Impossible de récupérer l'utilisateur " + userId + " : " + userInfo.getError());
-                    speakerNames.add("Utilisateur Inconnu (" + userId + ")");
+                    speakers.add(User.builder().name("Utilisateur Inconnu (" + userId + ")").build());
                 }
             } catch (IOException | SlackApiException e) {
                 logger.error("Erreur d'appel API Slack pour l'utilisateur " + userId, e);
-                speakerNames.add("Erreur Réseau (" + userId + ")");
+                speakers.add(User.builder().name("Erreur Réseau (" + userId + ")").build());
             }
         }
-        return speakerNames;
+        return speakers;
     }
 
 }

@@ -1,12 +1,14 @@
 package com.zenika.thezaurus.model;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Talk {
     private String id;
     private String title;
     private String description;
-    private List<String> speakers;
+    private List<User> speakers;
     private String office;
     private Conference conference;
     private TalkStatus status;
@@ -20,7 +22,7 @@ public class Talk {
         this.description = description;
     }
 
-    public Talk(String title, String description, List<String> speakers, String office, TalkStatus status, Visibility visibility) {
+    public Talk(String title, String description, List<User> speakers, String office, TalkStatus status, Visibility visibility) {
         this.title = title;
         this.description = description;
         this.speakers = speakers;
@@ -38,8 +40,29 @@ public class Talk {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public List<String> getSpeakers() { return speakers; }
-    public void setSpeakers(List<String> speakers) { this.speakers = speakers; }
+    public List<User> getSpeakers() { return speakers; }
+
+    public void setSpeakers(List<?> speakers) {
+        this.speakers = speakers == null ? null
+                : speakers.stream().map(Talk::toSpeaker).collect(Collectors.toList());
+    }
+
+    private static User toSpeaker(Object raw) {
+        if (raw instanceof User user) {
+            return user;
+        }
+        if (raw instanceof String name) {
+            return User.builder().name(name).build();
+        }
+        if (raw instanceof Map<?, ?> map) {
+            return User.builder()
+                    .name((String) map.get("name"))
+                    .email((String) map.get("email"))
+                    .role((String) map.get("role"))
+                    .build();
+        }
+        throw new IllegalArgumentException("Format de speaker inattendu : " + raw);
+    }
 
     public String getOffice() { return office; }
     public void setOffice(String office) { this.office = office; }
