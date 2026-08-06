@@ -33,49 +33,64 @@ Une API Quarkus est disponible dans le dossier `api` pour gérer les entités su
 - **Status** (`/status`) : `GET` (Statut simple de l'application)
 - **Health Checks** (`/q/health`) : Points de terminaison standards Quarkus (Liveness/Readiness)
 
-## Contributions 
+## Configuration
 
-### Configuration de Firestore (Émulateur vs Cloud GCP)
+Toute la configuration passe par un fichier `.env` **à la racine du projet**, lu automatiquement par Docker Compose (et jamais versionné) :
 
-La configuration se fait via le fichier `.env` situé à la racine du projet (pour Docker Compose) ou dans le dossier `api/` (pour le mode Quarkus Dev local).
+```bash
+cp .env-template .env
+```
 
-#### Mode Émulateur (par défaut) vs GCP 
-Le composant Back end est connecté à un émulateur GCP pour éviter de solliciter GCP (et engendrer des couts).
-Par défault, les données sont stockées localement en mémoire vive et est paramétré dans le fichier `.env` :
-  ```properties
-  QUARKUS_PROFILE=dev
-  FIRESTORE_EMULATOR_HOST=firestore:9000  # ou localhost:9000 en mode Quarkus Dev local
-  ```
+### Variables d'environnement
 
-S'il y a besoin d'avoir plus de données et/ou vérifier le bon fonctionnement de la connexion avec GCP, il est possible, à partir du fichier `.env` de vous brancher sur l'instance Firestore.
-⚠️ Actuellement il existe une instance de dév et une de prod. Merci de ne pas utiliser la base de prod.
+| Variable | Requise | Utilisée par | Description |
+|---|---|---|---|
+| **Mode de fonctionnement** | | | |
+| `COMPOSE_FILE` | — | Docker Compose | Absente (défaut) : mode **dev** avec émulateur Firestore local. Pour le mode **prod** (vrai GCP) : `docker-compose.yml:docker-compose.prod.yml`, accompagnée de `COMPOSE_PATH_SEPARATOR=:` (indispensable sous Windows, sans effet ailleurs). |
+| **Authentification (front)** | | | |
+| `GOOGLE_CLIENT_ID` | ✅ | front, api | Client OAuth Google — console GCP > *APIs & Services > Credentials > OAuth 2.0 Client IDs*. `http://localhost:3000/api/auth/callback/google` doit être dans les *Authorized redirect URIs*. Sert aussi d'audience JWT à l'API en dev. |
+| `GOOGLE_CLIENT_SECRET` | ✅ | front | Secret du client OAuth. Affiché uniquement à sa création (bouton *Add secret* si perdu). |
+| `NEXTAUTH_URL` | ✅ | front | URL du front en local : `http://localhost:3000`. |
+| `NEXTAUTH_SECRET` | ✅ | front | Signature des sessions NextAuth. À générer : `openssl rand -base64 32`. |
+| **Firestore GCP** (mode `prod` uniquement) | | | |
+| `GOOGLE_CLOUD_PROJECT_ID` | mode prod | api | Projet GCP cible. Défaut du compose : `thezaurus-494709` (projet de l'équipe). |
+| `FIRESTORE_DATABASE_ID` | mode prod | api | Base Firestore. Défaut : `thezaurus-dev`. ⚠️ Ne jamais pointer `thezaurus-prod` en local. |
+| `FIRESTORE_COLLECTION_PREFIX` | — | api | Préfixe des collections (ex : `dev` → `dev_talks`). Défaut : `dev`. |
+| `GCLOUD_ADC` | Windows, mode prod | Docker Compose | Chemin du fichier *Application Default Credentials* monté dans le conteneur API. Inutile sur Linux/Mac (défaut : `~/.config/gcloud/...`) ; sous Windows : `C:/Users/<vous>/AppData/Roaming/gcloud/application_default_credentials.json`. |
+| **Bot Slack** (optionnel — voir la section dédiée) | | | |
+| `SLACK_BOT_TOKEN` | — | api | Bot User OAuth Token (`xoxb-...`). Absent = bot désactivé. |
+| `SLACK_SIGNING_SECRET` | — | api | Vérification de l'origine des requêtes Slack. |
+| `SLACK_APP_TOKEN` | — | api | Token app-level (`xapp-...`), si utilisé. |
+| **Déploiement Cloud Run** (`docker-compose.cloud.yml` uniquement) | | | |
+| `NEXTAUTH_PUBLIC_URL` | déploiement | front | URL publique du front déployé, utilisée comme `NEXTAUTH_URL` en prod. À ajouter aux *Authorized redirect URIs* du client OAuth. |
+| `GOOGLE_IAP_AUDIENCE` | déploiement | api | Audience du JWT IAP vérifiée par l'API en prod. ⚠️ Non câblée à ce jour — à valider avec la personne qui gère le déploiement. |
 
-* Paramètres à définir dans `.env` :
-  ```properties
-  QUARKUS_PROFILE=prod
-  FIRESTORE_EMULATOR_HOST=               # Laissez vide ou commentez cette ligne
-  GOOGLE_CLOUD_PROJECT_ID=votre-projet-gcp
-  FIRESTORE_DATABASE_ID=votre-base-id
-  GOOGLE_APPLICATION_CREDENTIALS=/chemin/vers/votre/cle-service-account.json
-  ```
+### Mode dev (émulateur — défaut)
+
+Rien à configurer : `docker compose up` démarre un émulateur Firestore local avec la stack (port 9000, données en RAM, réinitialisées à chaque `docker compose down`). Aucun credential GCP requis — seules les variables d'authentification du front sont à renseigner.
+
+### Mode prod (vrai Firestore GCP)
+
+Décommentez dans votre `.env` :
+
+```properties
+COMPOSE_PATH_SEPARATOR=:
+COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
+```
+
+L'override [docker-compose.prod.yml](docker-compose.prod.yml) désactive l'émulateur et passe l'API en profil `prod` : elle se connecte au vrai Firestore. Il faut alors des *Application Default Credentials* : installez la [gcloud CLI](https://cloud.google.com/sdk/docs/install) puis :
+
+```bash
+gcloud auth application-default login
+```
+
+⚠️ **Sous Windows**, gcloud écrit ce fichier dans `%APPDATA%\gcloud\`, pas dans `~/.config/gcloud` : renseignez `GCLOUD_ADC` (voir tableau). Après un changement de mode, relancez avec `docker compose up -d --force-recreate --remove-orphans`.
 
 ### Configuration du bot Slack (`/talk``)
 
 L'API expose un bot Slack (commandes slash `/talk`) via le SDK [Bolt for Java](https://github.com/slackapi/java-slack-sdk). Cette intégration est **optionnelle** : si les variables ci-dessous ne sont pas renseignées, l'application démarre normalement mais le bot Slack reste désactivé (aucune commande n'est enregistrée, aucun appel n'est fait à l'API Slack).
 
-#### Variables d'environnement
-
-À définir dans le fichier `.env` (racine du projet pour Docker Compose, ou `api/` en mode Quarkus Dev local) :
-
-```properties
-SLACK_BOT_TOKEN=xoxb-...
-SLACK_SIGNING_SECRET=...
-```
-
-| Variable | Description | Où la récupérer dans Slack |
-|---|---|---|
-| `SLACK_BOT_TOKEN` | Bot User OAuth Token utilisé pour appeler l'API Slack | **OAuth & Permissions** > `Bot User OAuth Token` |
-| `SLACK_SIGNING_SECRET` | Secret utilisé pour vérifier que les requêtes reçues proviennent bien de Slack | **Basic Information** > `App Credentials` > `Signing Secret` |
+Les variables `SLACK_BOT_TOKEN` et `SLACK_SIGNING_SECRET` sont décrites dans le [tableau des variables d'environnement](#variables-denvironnement) ; les étapes 5 et 6 ci-dessous indiquent où les récupérer dans Slack.
 
 #### Créer l'application Slack à partir du manifest
 
@@ -107,38 +122,33 @@ Utilisez ensuite l'URL HTTPS fournie par ngrok (ex : `https://xxxx.ngrok-free.ap
 
 ## Déploiement Local (Docker Compose)
 
-Vous pouvez lancer l'ensemble de l'application (UI, API et l'émulateur Firestore local) avec Docker Compose :
-
-1. Assurez-vous d'avoir Docker installé et configuré.
-2. Créez ou modifiez le fichier `.env` à la racine du projet en vous basant sur la configuration ci-dessus.
-3. Lancez :
+1. Assurez-vous d'avoir Docker installé et le `.env` configuré (section précédente).
+2. Lancez :
    ```bash
-   docker-compose up --build
+   docker compose up --build
    ```
-4. L'application sera disponible aux adresses suivantes :
+3. L'application sera disponible aux adresses suivantes :
    - **Frontend** : `http://localhost:3000`
    - **API** : `http://localhost:8080`
    - **Swagger UI** : `http://localhost:8080/q/swagger-ui/`
-   - **Firestore Emulator** : `http://localhost:9000` (utilisé uniquement si `QUARKUS_PROFILE=dev` et `FIRESTORE_EMULATOR_HOST` est défini)
+   - **Émulateur Firestore** : `http://localhost:9000` (mode `dev` uniquement)
 
-### Utilisation et vérification de l'émulateur Firestore
+### Vérifier les données de l'émulateur (mode dev)
 
-L'image `google/cloud-sdk:emulators` démarre un émulateur Firestore local. 
+L'API REST de l'émulateur permet d'inspecter les documents directement :
 
-* **Fonctionnement** : Il simule localement l'API Firestore en mémoire vive (RAM). Les données sont réinitialisées à chaque arrêt des conteneurs via `docker compose down`.
-* **Redirection automatique** : L'API Quarkus détecte la variable d'environnement `FIRESTORE_EMULATOR_HOST=firestore:9000` et redirige automatiquement tous les appels vers le conteneur Firestore local au lieu de la production.
-* **Vérification des données** : Pour inspecter les documents stockés par l'application dans l'émulateur, vous pouvez effectuer des requêtes HTTP GET directement sur l'API REST de l'émulateur :
-  
-  ```bash
-  # Lister les articles de blog
-  curl -X GET "http://localhost:9000/v1/projects/thezaurus-dev/databases/thezaurus-dev/documents/blog_posts"
+```bash
+curl "http://localhost:9000/v1/projects/local-dev/databases/(default)/documents/dev_talks"
+```
 
-  # Lister les conférences
-  curl -X GET "http://localhost:9000/v1/projects/thezaurus-dev/databases/thezaurus-dev/documents/conferences"
+(même principe pour `dev_blog_posts` et `dev_conferences` — le préfixe vient de `FIRESTORE_COLLECTION_PREFIX`)
 
-  # Lister les talks
-  curl -X GET "http://localhost:9000/v1/projects/thezaurus-dev/databases/thezaurus-dev/documents/talks"
-  ```
+> **Pièges connus**
+> - Sous Windows, `COMPOSE_FILE` avec plusieurs fichiers exige `COMPOSE_PATH_SEPARATOR=:` (le séparateur par défaut y est `;`, pas `:`). Décommentez toujours les deux lignes ensemble.
+> - En mode `prod`, si l'API loggue `Error reading credential file ... /tmp/credentials.json: File does not exist` : le fichier ADC n'existait pas quand le conteneur a été créé, et Docker a monté un dossier vide à la place. Vérifiez que `gcloud auth application-default login` a bien créé le fichier (et supprimez un éventuel **dossier** `application_default_credentials.json` créé par Docker à cet emplacement), puis recréez le conteneur : `docker compose up -d --force-recreate api`.
+> - Si le front loggue `client_secret_basic client authentication method requires a client_secret` : `GOOGLE_CLIENT_SECRET` manque dans votre `.env`.
+
+> **Note** : le mode Quarkus Dev hors Docker (`./mvnw quarkus:dev` dans `api/`) utilise l'émulateur sur `localhost:9000`, voir `api/.env-template`.
 
 ## Deploiement
 

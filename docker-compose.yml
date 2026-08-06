@@ -1,4 +1,17 @@
 services:
+  # Émulateur Firestore local (désactivé en mode prod par docker-compose.prod.yml)
+  firestore:
+    image: google/cloud-sdk:emulators
+    container_name: thezaurus-firestore-emulator
+    command: gcloud beta emulators firestore start --host-port=0.0.0.0:9000
+    ports:
+      - "9000:9000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   # API Backend (Quarkus)
   api:
     build:
@@ -8,19 +21,22 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - QUARKUS_GOOGLE_CLOUD_PROJECT_ID=thezaurus-494709
-      - QUARKUS_GOOGLE_CLOUD_FIRESTORE_DATABASE_ID=thezaurus-dev
+      - QUARKUS_PROFILE=dev
+      - FIRESTORE_HOST_OVERRIDE=firestore:9000
+      - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID:-thezaurus-494709}
+      - FIRESTORE_DATABASE_ID=${FIRESTORE_DATABASE_ID:-thezaurus-dev}
+      - FIRESTORE_COLLECTION_PREFIX=${FIRESTORE_COLLECTION_PREFIX:-dev}
       - QUARKUS_HTTP_PORT=8080
       - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-dummy-client-id}
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
       - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
+    depends_on:
+      firestore:
+        condition: service_healthy
+        required: false
     volumes:
-      # Credentials (service-account) lues depuis le repo => connexion au vrai Firestore (GCP)
-      # - ./api/.config/gcloud/application_default_credentials.json:/tmp/credentials.json:ro
-
-      - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/credentials.json:ro
-      # - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/credentials.json:ro
+      - ${GCLOUD_ADC:-${HOME}/.config/gcloud/application_default_credentials.json}:/tmp/credentials.json:ro
 
   # UI Frontend (Next.js)
   front:
@@ -34,6 +50,9 @@ services:
       - API_URL=http://api:8080
       - VITE_MOCK_AUTH=false
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-your-google-client-id.apps.googleusercontent.com}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
     depends_on:
       - api
     develop:
