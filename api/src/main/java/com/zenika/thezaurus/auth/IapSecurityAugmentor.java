@@ -47,9 +47,10 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
         if (identity.getPrincipal() instanceof JsonWebToken) {
             JsonWebToken jwt = (JsonWebToken) identity.getPrincipal();
             String email = jwt.getClaim("email");
+            String name = jwt.getClaim("name");
 
             if (email != null && email.endsWith("@zenika.com")) {
-                return Uni.createFrom().item(() -> enrichIdentity(identity, email));
+                return Uni.createFrom().item(() -> enrichIdentity(identity, email, name));
             } else {
                 // Email invalide ou non Zenika : on ne donne pas de rôles
                 return Uni.createFrom().item(identity);
@@ -59,13 +60,17 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
         return Uni.createFrom().item(identity);
     }
 
-    private SecurityIdentity enrichIdentity(SecurityIdentity identity, String email) {
+    private SecurityIdentity enrichIdentity(SecurityIdentity identity, String email, String name) {
         try {
             User user = userRepository.findByEmail(email);
             if (user == null) {
-                // Création auto avec rôle par défaut 'membre'
-                user = new User(email, "membre");
+                // Création auto avec rôle par défaut 'membre', nom récupéré depuis le SSO
+                user = User.builder().email(email).name(name).role("membre").build();
                 userRepository.create(user);
+            } else if ((user.getName() == null || user.getName().isBlank()) && name != null && !name.isBlank()) {
+                // Compte existant créé avant l'ajout du champ name : on le complète depuis le SSO
+                user.setName(name);
+                userRepository.update(email, user);
             }
 
             return QuarkusSecurityIdentity.builder(identity)

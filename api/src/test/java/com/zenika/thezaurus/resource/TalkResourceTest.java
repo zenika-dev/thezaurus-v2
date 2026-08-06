@@ -6,12 +6,14 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.util.Collections;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
 public class TalkResourceTest {
@@ -57,5 +59,27 @@ public class TalkResourceTest {
              .statusCode(201)
              .body("id", is("new-id"))
              .body("title", is("New Talk"));
+    }
+
+    @Test
+    public void testCreateWithStructuredSpeakers() throws Exception {
+        Talk created = new Talk("new-id", "New Talk", "Desc");
+        Mockito.when(service.create(Mockito.any(Talk.class))).thenReturn(created);
+
+        String payload = "{\"title\":\"New Talk\",\"description\":\"Desc\","
+                + "\"speakers\":[{\"name\":\"Jane Doe\",\"email\":\"jane@zenika.com\"}]}";
+
+        given()
+          .contentType(ContentType.JSON)
+          .body(payload)
+          .when().post("/talks")
+          .then()
+             .statusCode(201);
+
+        ArgumentCaptor<Talk> captor = ArgumentCaptor.forClass(Talk.class);
+        Mockito.verify(service).create(captor.capture());
+        assertEquals(1, captor.getValue().getSpeakers().size());
+        assertEquals("Jane Doe", captor.getValue().getSpeakers().get(0).getName());
+        assertEquals("jane@zenika.com", captor.getValue().getSpeakers().get(0).getEmail());
     }
 }

@@ -1,5 +1,6 @@
 package com.zenika.thezaurus.resource;
 
+import com.zenika.thezaurus.repository.UserRepository;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -11,19 +12,25 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
-@Path("/api/me")
+@Path("/api")
 @Produces(MediaType.APPLICATION_JSON)
 public class UserController {
 
     @Inject
     SecurityIdentity identity;
 
+    @Inject
+    UserRepository userRepository;
+
     @ConfigProperty(name = "mock.auth", defaultValue = "false")
     boolean mockAuth;
 
     @GET
+    @Path("/me")
     @RolesAllowed({"membre", "admin"})
     public Response getCurrentUser() {
         if (identity.isAnonymous()) {
@@ -36,4 +43,15 @@ public class UserController {
 
         return Response.ok(userProfile).build();
     }
+
+    @GET
+    @Path("/users/summary")
+    @RolesAllowed({"membre", "admin"})
+    public List<UserSummary> listUsers() throws ExecutionException, InterruptedException {
+        return userRepository.findAll().stream()
+                .map(u -> new UserSummary(u.getName(), u.getEmail()))
+                .toList();
+    }
+
+    public record UserSummary(String name, String email) {}
 }
