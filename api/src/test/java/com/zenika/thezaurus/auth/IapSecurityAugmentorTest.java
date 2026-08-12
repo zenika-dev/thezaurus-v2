@@ -2,8 +2,10 @@ package com.zenika.thezaurus.auth;
 
 import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.repository.UserRepository;
+import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +19,9 @@ public class IapSecurityAugmentorTest {
 
     private IapSecurityAugmentor augmentor;
     private UserRepository userRepository;
+
+    /** Exécute le supplier en ligne, comme le ferait Quarkus sur un worker thread. */
+    private final AuthenticationRequestContext context = supplier -> Uni.createFrom().item(supplier);
 
     @BeforeEach
     public void setUp() {
@@ -34,12 +39,15 @@ public class IapSecurityAugmentorTest {
         return QuarkusSecurityIdentity.builder().setPrincipal(jwt).build();
     }
 
+    private SecurityIdentity augment(SecurityIdentity identity) {
+        return augmentor.augment(identity, context).await().indefinitely();
+    }
+
     @Test
     public void testNewUserGetsNameFromSsoClaim() throws Exception {
         Mockito.when(userRepository.findByEmail("new@zenika.com")).thenReturn(null);
 
-        SecurityIdentity result = augmentor.augment(jwtIdentity("new@zenika.com", "New User"), null)
-                .await().indefinitely();
+        SecurityIdentity result = augment(jwtIdentity("new@zenika.com", "New User"));
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         Mockito.verify(userRepository).create(captor.capture());
@@ -47,36 +55,77 @@ public class IapSecurityAugmentorTest {
         assertEquals("new@zenika.com", captor.getValue().getEmail());
         assertEquals("membre", captor.getValue().getRole());
         assertEquals("new@zenika.com", result.getPrincipal().getName());
+        assertTrue(result.hasRole("membre"));
     }
 
     @Test
-    public void testExistingUserWithoutNameIsBackfilledFromSso() throws Exception {
-        User existing = new User("old@zenika.com", "admin");
+    public void testExistingUserIsReadOnly() throws Exception {
+        User existing = User.builder().email("old@zenika.com").name("Already Set").role("admin").build();
         Mockito.when(userRepository.findByEmail("old@zenika.com")).thenReturn(existing);
 
-        augmentor.augment(jwtIdentity("old@zenika.com", "Old User"), null).await().indefinitely();
+        SecurityIdentity result = augment(jwtIdentity("old@zenika.com", "Different Name"));
+
+        assertEquals("old@zenika.com", result.getPrincipal().getName());
+        assertTrue(result.hasRole("admin"));
+        // L'authentification ne doit écrire que sur une création : pas de write par requête.
+        Mockito.verify(userRepository, Mockito.never()).update(Mockito.anyString(), Mockito.any());
+        Mockito.verify(userRepository, Mockito.never()).create(Mockito.any());
+    }
+
+    @Test
+    public void testExistingUserWithMissingNameIsBackfilledFromSsoClaim() throws Exception {
+        User existing = User.builder().email("legacy@zenika.com").name(null).role("admin").build();
+        Mockito.when(userRepository.findByEmail("legacy@zenika.com")).thenReturn(existing);
+
+        SecurityIdentity result = augment(jwtIdentity("legacy@zenika.com", "Legacy User"));
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        Mockito.verify(userRepository).update(Mockito.eq("old@zenika.com"), captor.capture());
-        assertEquals("Old User", captor.getValue().getName());
+        Mockito.verify(userRepository).update(Mockito.eq("legacy@zenika.com"), captor.capture());
+        assertEquals("Legacy User", captor.getValue().getName());
+        assertEquals("admin", captor.getValue().getRole());
+        Mockito.verify(userRepository, Mockito.never()).create(Mockito.any());
+        assertEquals("legacy@zenika.com", result.getPrincipal().getName());
+        assertTrue(result.hasRole("admin"));
     }
 
     @Test
-    public void testExistingUserWithNameIsNotUpdated() throws Exception {
-        User existing = new User("old@zenika.com", "admin");
-        existing.setName("Already Set");
+    public void testExistingUserWithNameAlreadySetDoesNotTriggerWrite() throws Exception {
+        User existing = User.builder().email("old@zenika.com").name("Already Set").role("admin").build();
         Mockito.when(userRepository.findByEmail("old@zenika.com")).thenReturn(existing);
 
-        augmentor.augment(jwtIdentity("old@zenika.com", "Different Name"), null).await().indefinitely();
+        augment(jwtIdentity("old@zenika.com", "Different Name"));
 
         Mockito.verify(userRepository, Mockito.never()).update(Mockito.anyString(), Mockito.any());
+        Mockito.verify(userRepository, Mockito.never()).create(Mockito.any());
     }
 
     @Test
     public void testNonZenikaEmailIsNotEnriched() {
-        SecurityIdentity result = augmentor.augment(jwtIdentity("intru@evil.com", "Intru"), null)
-                .await().indefinitely();
+        SecurityIdentity result = augment(jwtIdentity("intru@evil.com", "Intru"));
 
+        assertTrue(result.getRoles().isEmpty());
+        Mockito.verifyNoInteractions(userRepository);
+    }
+
+    @Test
+    public void testMockAuthGrantsDevIdentityToAnonymous() {
+        augmentor.mockAuth = true;
+
+        SecurityIdentity result = augment(QuarkusSecurityIdentity.builder().setAnonymous(true).build());
+
+        assertEquals("dev@zenika.com", result.getPrincipal().getName());
+        assertTrue(result.hasRole("admin"));
+        assertTrue(result.hasRole("membre"));
+        Mockito.verifyNoInteractions(userRepository);
+    }
+
+    @Test
+    public void testAnonymousIsUntouchedWithoutMockAuth() {
+        SecurityIdentity anonymous = QuarkusSecurityIdentity.builder().setAnonymous(true).build();
+
+        SecurityIdentity result = augment(anonymous);
+
+        assertTrue(result.isAnonymous());
         assertTrue(result.getRoles().isEmpty());
         Mockito.verifyNoInteractions(userRepository);
     }

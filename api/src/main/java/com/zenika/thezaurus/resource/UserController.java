@@ -29,6 +29,9 @@ public class UserController {
     @ConfigProperty(name = "mock.auth", defaultValue = "false")
     boolean mockAuth;
 
+    @ConfigProperty(name = "thezaurus.users.max-results", defaultValue = "500")
+    int maxResults;
+
     @GET
     @Path("/me")
     @RolesAllowed({"membre", "admin"})
@@ -44,11 +47,15 @@ public class UserController {
         return Response.ok(userProfile).build();
     }
 
+    /**
+     * Annuaire des utilisateurs persistés, pour alimenter le picker de speakers.
+     * Projection volontairement réduite à {name, email} : le rôle ne sort pas de l'API.
+     */
     @GET
-    @Path("/users/summary")
+    @Path("/users")
     @RolesAllowed({"membre", "admin"})
     public List<UserSummary> listUsers() throws ExecutionException, InterruptedException {
-        return userRepository.findAll().stream()
+        return userRepository.findAll(maxResults).stream()
                 .map(u -> new UserSummary(u.getName(), u.getEmail()))
                 .toList();
     }

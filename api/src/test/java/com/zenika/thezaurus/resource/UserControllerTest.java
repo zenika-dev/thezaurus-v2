@@ -22,16 +22,12 @@ public class UserControllerTest {
 
     @Test
     @TestSecurity(user = "jane@zenika.com", roles = "membre")
-    public void testListUsersSummaryAsMembre() throws Exception {
-        User jane = new User();
-        jane.setName("Jane Doe");
-        jane.setEmail("jane@zenika.com");
-        jane.setRole("membre");
-
-        Mockito.when(userRepository.findAll()).thenReturn(List.of(jane));
+    public void testListUsersAsMembre() throws Exception {
+        User jane = User.builder().name("Jane Doe").email("jane@zenika.com").role("membre").build();
+        Mockito.when(userRepository.findAll(Mockito.anyInt())).thenReturn(List.of(jane));
 
         given()
-          .when().get("/api/users/summary")
+          .when().get("/api/users")
           .then()
              .statusCode(200)
              .body("size()", is(1))
@@ -41,9 +37,32 @@ public class UserControllerTest {
     }
 
     @Test
-    public void testListUsersSummaryUnauthorizedWhenAnonymous() {
+    @TestSecurity(user = "jane@zenika.com", roles = "membre")
+    public void testListUsersIsBounded() throws Exception {
+        Mockito.when(userRepository.findAll(Mockito.anyInt())).thenReturn(List.of());
+
         given()
-          .when().get("/api/users/summary")
+          .when().get("/api/users")
+          .then()
+             .statusCode(200);
+
+        // La liste doit toujours être bornée : pas de scan complet de la collection.
+        Mockito.verify(userRepository).findAll(500);
+    }
+
+    @Test
+    @TestSecurity(user = "intru@evil.com", roles = {})
+    public void testListUsersForbiddenWithoutRole() {
+        given()
+          .when().get("/api/users")
+          .then()
+             .statusCode(403);
+    }
+
+    @Test
+    public void testListUsersUnauthorizedWhenAnonymous() {
+        given()
+          .when().get("/api/users")
           .then()
              .statusCode(401);
     }
