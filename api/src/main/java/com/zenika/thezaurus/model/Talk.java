@@ -1,8 +1,6 @@
 package com.zenika.thezaurus.model;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class Talk {
     private String id;
@@ -42,27 +40,7 @@ public class Talk {
 
     public List<User> getSpeakers() { return speakers; }
 
-    public void setSpeakers(List<?> speakers) {
-        this.speakers = speakers == null ? null
-                : speakers.stream().map(Talk::toSpeaker).collect(Collectors.toList());
-    }
-
-    private static User toSpeaker(Object raw) {
-        if (raw instanceof User user) {
-            return user;
-        }
-        if (raw instanceof String name) {
-            return User.builder().name(name).build();
-        }
-        if (raw instanceof Map<?, ?> map) {
-            return User.builder()
-                    .name((String) map.get("name"))
-                    .email((String) map.get("email"))
-                    .role((String) map.get("role"))
-                    .build();
-        }
-        throw new IllegalArgumentException("Format de speaker inattendu : " + raw);
-    }
+    public void setSpeakers(List<User> speakers) { this.speakers = speakers; }
 
     public String getOffice() { return office; }
     public void setOffice(String office) { this.office = office; }

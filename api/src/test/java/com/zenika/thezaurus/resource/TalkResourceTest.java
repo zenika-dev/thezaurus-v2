@@ -13,7 +13,9 @@ import java.util.Collections;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @QuarkusTest
 public class TalkResourceTest {
@@ -81,5 +83,59 @@ public class TalkResourceTest {
         assertEquals(1, captor.getValue().getSpeakers().size());
         assertEquals("Jane Doe", captor.getValue().getSpeakers().get(0).getName());
         assertEquals("jane@zenika.com", captor.getValue().getSpeakers().get(0).getEmail());
+    }
+
+    @Test
+    public void testCreateIgnoresRoleInjectedInSpeakers() throws Exception {
+        Talk created = new Talk("new-id", "New Talk", "Desc");
+        Mockito.when(service.create(Mockito.any(Talk.class))).thenReturn(created);
+
+        String payload = "{\"title\":\"New Talk\",\"description\":\"Desc\","
+                + "\"speakers\":[{\"name\":\"Intrus\",\"email\":\"intrus@evil.com\",\"role\":\"admin\"}]}";
+
+        given()
+          .contentType(ContentType.JSON)
+          .body(payload)
+          .when().post("/talks")
+          .then()
+             .statusCode(201);
+
+        ArgumentCaptor<Talk> captor = ArgumentCaptor.forClass(Talk.class);
+        Mockito.verify(service).create(captor.capture());
+        assertNull(captor.getValue().getSpeakers().get(0).getRole(),
+                "Le rôle ne doit pas pouvoir être injecté depuis un payload client");
+    }
+
+    @Test
+    public void testCreateRejectsUnstructuredSpeakers() throws Exception {
+        // Le contrat OpenAPI annonce des objets : une chaîne doit être refusée proprement en 400,
+        // pas absorbée en silence ni transformée en 500.
+        String payload = "{\"title\":\"New Talk\",\"description\":\"Desc\","
+                + "\"speakers\":[\"Jane Doe\"]}";
+
+        given()
+          .contentType(ContentType.JSON)
+          .body(payload)
+          .when().post("/talks")
+          .then()
+             .statusCode(400);
+
+        Mockito.verify(service, Mockito.never()).create(Mockito.any(Talk.class));
+    }
+
+    @Test
+    public void testGetTalksDoesNotExposeSpeakerRole() throws Exception {
+        Talk talk = new Talk("1", "Titre", "Description");
+        talk.setSpeakers(java.util.List.of(
+                com.zenika.thezaurus.model.User.builder()
+                        .name("Jane").email("jane@zenika.com").role("admin").build()));
+        Mockito.when(service.findAll()).thenReturn(Collections.singletonList(talk));
+
+        given()
+          .when().get("/talks")
+          .then()
+             .statusCode(200)
+             .body("[0].speakers[0].name", is("Jane"))
+             .body("[0].speakers[0].role", is(nullValue()));
     }
 }

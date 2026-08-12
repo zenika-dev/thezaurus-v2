@@ -11,6 +11,7 @@ import com.slack.api.methods.response.users.UsersInfoResponse;
 import com.slack.api.model.block.InputBlock;
 import com.slack.api.model.block.composition.OptionObject;
 import com.slack.api.model.view.View;
+
 import static com.slack.api.model.block.Blocks.*;
 import static com.slack.api.model.block.composition.BlockCompositions.*;
 import static com.slack.api.model.block.element.BlockElements.*;
@@ -34,10 +35,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 
 @ApplicationScoped
-public class TalkCommand implements SlackCommand{
+public class TalkCommand implements SlackCommand {
 
     public static final String TALK_COMMAND = "/talk";
 
@@ -89,7 +91,7 @@ public class TalkCommand implements SlackCommand{
     @Inject
     TalkService service;
 
-    public void register(App app){
+    public void register(App app) {
         app.command(TALK_COMMAND, this::command);
         app.viewSubmission("talk-submission-modal", this::talkSubmission);
     }
@@ -220,7 +222,7 @@ public class TalkCommand implements SlackCommand{
         );
     }
 
-    private Response talkSubmission(ViewSubmissionRequest req, ViewSubmissionContext ctx) {
+    Response talkSubmission(ViewSubmissionRequest req, ViewSubmissionContext ctx) {
         logger.info(req.getPayload());
         FormValues form = new FormValues(req.getPayload().getView().getState().getValues());
 
@@ -248,27 +250,46 @@ public class TalkCommand implements SlackCommand{
         return ctx.ack();
     }
 
-    @NonNull List<User> getSpeakers(ViewSubmissionContext ctx, List<String> speakerIds) {
-        List<User> speakers = new ArrayList<>();
 
-        for (String userId : speakerIds) {
-            try {
-                UsersInfoResponse userInfo = ctx.client().usersInfo(r -> r.user(userId));
+    private @NonNull List<User> getSpeakers(ViewSubmissionContext ctx, List<String> speakerIds) {
 
-                if (userInfo.isOk() && userInfo.getUser() != null) {
-                    String email = userInfo.getUser().getProfile() != null
-                            ? userInfo.getUser().getProfile().getEmail() : null;
-                    speakers.add(User.builder().name(userInfo.getUser().getRealName()).email(email).build());
-                } else {
-                    logger.error("Impossible de récupérer l'utilisateur " + userId + " : " + userInfo.getError());
-                    speakers.add(User.builder().name("Utilisateur Inconnu (" + userId + ")").build());
-                }
-            } catch (IOException | SlackApiException e) {
-                logger.error("Erreur d'appel API Slack pour l'utilisateur " + userId, e);
-                speakers.add(User.builder().name("Erreur Réseau (" + userId + ")").build());
+        return speakerIds.stream().map(userId -> getSpeaker(ctx, userId)).collect(Collectors.toList());
+    }
+
+
+    /**
+     * Le slackUserId est renseigné dans tous les cas, y compris en erreur : c'est la seule clé qui
+     * permette de re-résoudre l'email d'un speaker plus tard (cf. notifications par mail).
+     */
+    private User getSpeaker(ViewSubmissionContext ctx, String userId) {
+        try {
+            UsersInfoResponse userInfo = ctx.client().usersInfo(r -> r.user(userId));
+
+            if (!userInfo.isOk() || userInfo.getUser() == null) {
+                logger.error("Impossible de récupérer l'utilisateur " + userId + " : " + userInfo.getError());
+                return User.builder()
+                        .name("Utilisateur Inconnu (" + userId + ")")
+                        .slackUserId(userId)
+                        .build();
             }
+            String email = userInfo.getUser().getProfile() != null
+                    ? userInfo.getUser().getProfile().getEmail() : null;
+            if (email == null || email.isBlank()) {
+                logger.warn("Aucun email pour l'utilisateur " + userId
+                        + " : vérifier que le scope users:read.email est accordé au bot");
+            }
+            return User.builder()
+                    .name(userInfo.getUser().getRealName())
+                    .email(email)
+                    .slackUserId(userId)
+                    .build();
+        } catch (IOException | SlackApiException e) {
+            logger.error("Erreur d'appel API Slack pour l'utilisateur " + userId, e);
+            return User.builder()
+                    .name("Erreur Réseau (" + userId + ")")
+                    .slackUserId(userId)
+                    .build();
         }
-        return speakers;
     }
 
 }

@@ -8,6 +8,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jboss.logging.Logger;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -17,6 +18,8 @@ import com.zenika.thezaurus.repository.UserRepository;
 @ApplicationScoped
 public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
 
+    private static final Logger logger = Logger.getLogger(IapSecurityAugmentor.class);
+
     @Inject
     UserRepository userRepository;
 
@@ -25,12 +28,9 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
 
     @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
-        System.out.println("====== AUGMENT CALLED ======");
-        System.out.println("Mock Auth: " + mockAuth);
-        System.out.println("Is Anonymous: " + identity.isAnonymous());
         // Bypass conditionnel de l'authentification
         if (mockAuth && identity.isAnonymous()) {
-            System.out.println("Creating dev identity!");
+            logger.warn("mock.auth activé : identité de développement admin/membre accordée");
             SecurityIdentity devIdentity = QuarkusSecurityIdentity.builder(identity)
                     .setPrincipal(() -> "dev@zenika.com")
                     .addRole("admin")
@@ -50,7 +50,7 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
             String name = jwt.getClaim("name");
 
             if (email != null && email.endsWith("@zenika.com")) {
-                return Uni.createFrom().item(() -> enrichIdentity(identity, email, name));
+                return context.runBlocking(() -> enrichIdentity(identity, email, name));
             } else {
                 // Email invalide ou non Zenika : on ne donne pas de rôles
                 return Uni.createFrom().item(identity);

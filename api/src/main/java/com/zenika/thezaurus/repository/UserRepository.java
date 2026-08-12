@@ -22,8 +22,13 @@ public class UserRepository {
 
     private static final String COLLECTION_NAME = "users";
 
-    public List<User> findAll() throws ExecutionException, InterruptedException {
-        ApiFuture<QuerySnapshot> query = firestore.collection(COLLECTION_NAME).get();
+    /**
+     * Liste les utilisateurs persistés, bornée à {@code limit} documents.
+     * Pas de tri : un {@code orderBy} Firestore exclurait les documents dont le champ trié est
+     * absent, or {@code name} peut être null sur les comptes créés avant son introduction.
+     */
+    public List<User> findAll(int limit) throws ExecutionException, InterruptedException {
+        ApiFuture<QuerySnapshot> query = firestore.collection(COLLECTION_NAME).limit(limit).get();
         QuerySnapshot querySnapshot = query.get();
         return querySnapshot.getDocuments().stream()
                 .map(doc -> doc.toObject(User.class))

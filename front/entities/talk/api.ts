@@ -3,10 +3,17 @@ import type { TalkData } from "./model";
 const API_BASE = process.env.API_URL ?? "http://localhost:8080";
 const API_URL = `${API_BASE}/talks`;
 
+export interface BackendSpeaker {
+  name?: string;
+  email?: string;
+  /** Renseigné par la commande Slack. Le front ne l'affiche pas mais doit le préserver. */
+  slackUserId?: string;
+}
+
 interface BackendTalk {
   id?: string;
   title?: string;
-  speakers?: string[];
+  speakers?: BackendSpeaker[];
   office?: string;
   description?: string;
   conference?: { name?: string } | null;
@@ -18,7 +25,7 @@ interface BackendTalkPayload {
   id: string;
   title: string;
   description: string;
-  speakers: string[];
+  speakers: BackendSpeaker[];
   office: string;
   conference: { name: string } | null;
   status: string;
@@ -30,9 +37,10 @@ export function mapBackendToFrontend(t: BackendTalk): TalkData {
   return {
     id: t.id || "",
     title: t.title || "",
-    speaker: speakers[0] || "",
-    cospeaker: speakers[1] || "",
-    email: "",
+    speaker: speakers[0]?.name || "",
+    cospeaker: speakers[1]?.name || "",
+    email: speakers[0]?.email || "",
+    speakersSource: speakers,
     agency: t.office || "",
     abstract: t.description || "",
     format: "public",
@@ -57,9 +65,19 @@ export function mapBackendToFrontend(t: BackendTalk): TalkData {
 }
 
 export function mapFrontendToBackend(t: TalkData): BackendTalkPayload {
-  const speakers: string[] = [];
-  if (t.speaker.trim()) speakers.push(t.speaker.trim());
-  if (t.cospeaker.trim()) speakers.push(t.cospeaker.trim());
+  // Le formulaire ne connaît que deux noms et un email : on repart des speakers reçus du backend
+  // pour ne pas perdre les champs qu'il ne sait pas éditer (slackUserId, email du co-speaker).
+  // Au-delà des deux premiers, les speakers (ex. ajoutés via la commande Slack) ne sont pas
+  // éditables par ce formulaire mais doivent être réémis tels quels pour ne pas les perdre.
+  const source = t.speakersSource ?? [];
+  const speakers: BackendSpeaker[] = [];
+  if (t.speaker.trim()) {
+    speakers.push({ ...source[0], name: t.speaker.trim(), email: t.email.trim() || undefined });
+  }
+  if (t.cospeaker.trim()) {
+    speakers.push({ ...source[1], name: t.cospeaker.trim() });
+  }
+  speakers.push(...source.slice(2));
 
   let backendStatus = "PLANNED";
   if (t.status === "Draft") backendStatus = "DRAFT";
