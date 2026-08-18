@@ -9,29 +9,34 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class TalkTest {
 
     @Test
-    public void testSetSpeakersKeepsTheGivenList() {
-        User jane = User.builder().name("Jane").email("jane@zenika.com").build();
-        Talk talk = new Talk();
-        talk.setSpeakers(List.of(jane));
+    public void testWithIdKeepsOtherFields() {
+        Talk talk = new Talk("Titre", "Desc", List.of(User.builder().name("Jane").build()),
+                "Nantes", TalkStatus.DRAFT, Visibility.PUBLIC);
 
-        assertEquals(1, talk.getSpeakers().size());
-        assertSame(jane, talk.getSpeakers().get(0));
+        Talk withId = talk.withId("42");
+
+        assertEquals("42", withId.id());
+        assertEquals("Titre", withId.title());
+        assertEquals("Jane", withId.speakers().get(0).name());
+        assertEquals(TalkStatus.DRAFT, withId.status());
     }
 
     @Test
-    public void testSetSpeakersNullIsNull() {
-        Talk talk = new Talk();
-        talk.setSpeakers(null);
-        assertNull(talk.getSpeakers());
+    public void testWithConferenceKeepsOtherFields() {
+        Talk talk = new Talk("1", "Titre", "Desc");
+
+        Talk withConference = talk.withConference(new Conference(null, "Devoxx", null));
+
+        assertEquals("1", withConference.id());
+        assertEquals("Devoxx", withConference.conference().getName());
     }
 
     // --- Mapping Firestore ---------------------------------------------------------------------
-    // Le setter est typé, le SDK Firestore fait donc lui-même le mapping des speakers.
+    // Talk est un record : le SDK passe par RecordMapper (constructeur canonique / accesseurs).
 
     private Talk deserialize(Object speakers) {
         Map<String, Object> document = new HashMap<>();
@@ -41,22 +46,31 @@ public class TalkTest {
     }
 
     @Test
-    public void testFirestoreDeserializationOfStructuredSpeakers() {
+    public void testFirestoreDeserializationOfSpeakers() {
         Talk talk = deserialize(List.of(Map.of(
                 "name", "Jane",
                 "email", "jane@zenika.com",
                 "slackUserId", "U123")));
 
-        assertEquals("Jane", talk.getSpeakers().get(0).getName());
-        assertEquals("jane@zenika.com", talk.getSpeakers().get(0).getEmail());
-        assertEquals("U123", talk.getSpeakers().get(0).getSlackUserId());
+        assertEquals("Un talk", talk.title());
+        assertEquals("Jane", talk.speakers().get(0).name());
+        assertEquals("jane@zenika.com", talk.speakers().get(0).email());
+        assertEquals("U123", talk.speakers().get(0).slackUserId());
+    }
+
+    @Test
+    public void testFirestoreDeserializationWithoutSpeakers() {
+        Talk talk = deserialize(null);
+
+        assertEquals("Un talk", talk.title());
+        assertNull(talk.speakers());
     }
 
     @Test
     public void testFirestoreSerializationOfSpeakers() {
-        Talk talk = new Talk();
-        talk.setSpeakers(List.of(User.builder()
-                .name("Jane").email("jane@zenika.com").slackUserId("U123").build()));
+        Talk talk = new Talk("Titre", "Desc", List.of(User.builder()
+                .name("Jane").email("jane@zenika.com").slackUserId("U123").build()),
+                "Nantes", TalkStatus.DRAFT, Visibility.PUBLIC);
 
         @SuppressWarnings("unchecked")
         Map<String, Object> serialized = (Map<String, Object>) CustomClassMapper.serialize(talk);

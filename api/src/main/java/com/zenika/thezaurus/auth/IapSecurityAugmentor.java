@@ -67,15 +67,15 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
                 // Création auto avec rôle par défaut 'membre', nom récupéré depuis le SSO
                 user = User.builder().email(email).name(name).role("membre").build();
                 userRepository.create(user);
-            } else if ((user.getName() == null || user.getName().isBlank()) && name != null && !name.isBlank()) {
+            } else if ((user.name() == null || user.name().isBlank()) && name != null && !name.isBlank()) {
                 // Compte existant créé avant l'ajout du champ name : on le complète depuis le SSO
-                user.setName(name);
+                user = user.withName(name);
                 userRepository.update(email, user);
             }
 
             return QuarkusSecurityIdentity.builder(identity)
                     .setPrincipal(() -> email)
-                    .addRole(user.getRole())
+                    .addRole(user.role())
                     .build();
         } catch (Exception e) {
             throw new RuntimeException("Erreur d'accès à Firestore pour l'utilisateur", e);

@@ -126,13 +126,13 @@ public class TalkCommandTest {
 
         Talk talk = submit(List.of("U123"));
 
-        assertEquals("Mon talk", talk.getTitle());
-        assertEquals(1, talk.getSpeakers().size());
-        User speaker = talk.getSpeakers().get(0);
-        assertEquals("Jane Doe", speaker.getName());
-        assertEquals("jane@zenika.com", speaker.getEmail());
-        assertEquals("U123", speaker.getSlackUserId());
-        assertNull(speaker.getRole(), "Un speaker ne doit jamais porter de rôle d'autorisation");
+        assertEquals("Mon talk", talk.title());
+        assertEquals(1, talk.speakers().size());
+        User speaker = talk.speakers().get(0);
+        assertEquals("Jane Doe", speaker.name());
+        assertEquals("jane@zenika.com", speaker.email());
+        assertEquals("U123", speaker.slackUserId());
+        assertNull(speaker.role(), "Un speaker ne doit jamais porter de rÃ´le d'autorisation");
     }
 
     @Test
@@ -141,8 +141,8 @@ public class TalkCommandTest {
 
         submit(List.of("U123"));
 
-        // Le RequestConfigurator n'est jamais invoqué par le mock : on l'applique nous-mêmes
-        // pour vérifier que c'est bien l'identifiant du speaker qui est interrogé.
+        // Le RequestConfigurator n'est jamais invoquÃ© par le mock : on l'applique nous-mÃªmes
+        // pour vÃ©rifier que c'est bien l'identifiant du speaker qui est interrogÃ©.
         @SuppressWarnings("unchecked")
         ArgumentCaptor<RequestConfigurator<UsersInfoRequest.UsersInfoRequestBuilder>> captor =
                 ArgumentCaptor.forClass(RequestConfigurator.class);
@@ -155,24 +155,24 @@ public class TalkCommandTest {
     public void testSubmissionWithoutProfile() throws Exception {
         slackReturns(slackUser("Jane Doe", null, false));
 
-        User speaker = submit(List.of("U123")).getSpeakers().get(0);
+        User speaker = submit(List.of("U123")).speakers().get(0);
 
-        assertEquals("Jane Doe", speaker.getName());
-        assertNull(speaker.getEmail());
-        assertEquals("U123", speaker.getSlackUserId());
+        assertEquals("Jane Doe", speaker.name());
+        assertNull(speaker.email());
+        assertEquals("U123", speaker.slackUserId());
     }
 
     @Test
     public void testSubmissionWithProfileButNoEmail() throws Exception {
-        // Cas réel lorsque le scope users:read.email n'est pas accordé : le profil existe,
+        // Cas rÃ©el lorsque le scope users:read.email n'est pas accordÃ© : le profil existe,
         // mais l'email est absent.
         slackReturns(slackUser("Jane Doe", null, true));
 
-        User speaker = submit(List.of("U123")).getSpeakers().get(0);
+        User speaker = submit(List.of("U123")).speakers().get(0);
 
-        assertEquals("Jane Doe", speaker.getName());
-        assertNull(speaker.getEmail());
-        assertEquals("U123", speaker.getSlackUserId());
+        assertEquals("Jane Doe", speaker.name());
+        assertNull(speaker.email());
+        assertEquals("U123", speaker.slackUserId());
     }
 
     @Test
@@ -182,11 +182,11 @@ public class TalkCommandTest {
         response.setError("user_not_found");
         Mockito.when(client.usersInfo(Mockito.any(RequestConfigurator.class))).thenReturn(response);
 
-        User speaker = submit(List.of("U123")).getSpeakers().get(0);
+        User speaker = submit(List.of("U123")).speakers().get(0);
 
-        assertTrue(speaker.getName().contains("U123"));
-        assertNull(speaker.getEmail());
-        assertEquals("U123", speaker.getSlackUserId(),
+        assertTrue(speaker.name().contains("U123"));
+        assertNull(speaker.email());
+        assertEquals("U123", speaker.slackUserId(),
                 "Le slackUserId doit rester exploitable pour rattraper l'email plus tard");
     }
 
@@ -195,17 +195,17 @@ public class TalkCommandTest {
         Mockito.when(client.usersInfo(Mockito.any(RequestConfigurator.class)))
                 .thenThrow(new IOException("boom"));
 
-        User speaker = submit(List.of("U123")).getSpeakers().get(0);
+        User speaker = submit(List.of("U123")).speakers().get(0);
 
-        assertTrue(speaker.getName().contains("U123"));
-        assertEquals("U123", speaker.getSlackUserId());
+        assertTrue(speaker.name().contains("U123"));
+        assertEquals("U123", speaker.slackUserId());
     }
 
     @Test
     public void testSubmissionWithoutSpeakers() throws Exception {
         Talk talk = submit(List.of());
 
-        assertTrue(talk.getSpeakers().isEmpty());
+        assertTrue(talk.speakers().isEmpty());
         Mockito.verifyNoInteractions(client);
     }
 
@@ -219,11 +219,11 @@ public class TalkCommandTest {
         ko.setError("user_not_found");
         Mockito.when(client.usersInfo(Mockito.any(RequestConfigurator.class))).thenReturn(ok, ko);
 
-        List<User> speakers = submit(List.of("U123", "U456")).getSpeakers();
+        List<User> speakers = submit(List.of("U123", "U456")).speakers();
 
         assertEquals(2, speakers.size());
-        assertEquals("jane@zenika.com", speakers.get(0).getEmail());
-        assertNull(speakers.get(1).getEmail());
-        assertEquals("U456", speakers.get(1).getSlackUserId());
+        assertEquals("jane@zenika.com", speakers.get(0).email());
+        assertNull(speakers.get(1).email());
+        assertEquals("U456", speakers.get(1).slackUserId());
     }
 }
