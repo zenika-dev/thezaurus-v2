@@ -17,6 +17,7 @@ import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.repository.UserRepository;
 
 import java.util.List;
+import java.util.Locale;
 
 @ApplicationScoped
 public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
@@ -49,14 +50,18 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
         // Si l'identité provient du JWT (IAP)
         if (identity.getPrincipal() instanceof JsonWebToken) {
             JsonWebToken jwt = (JsonWebToken) identity.getPrincipal();
-            String email = jwt.getClaim("email");
+            String rawEmail = jwt.getClaim("email");
             String name = jwt.getClaim("name");
+
+            // Normalisé en minuscules : l'email sert de clé de document Firestore et de
+            // principal, une casse différente ne doit ni refuser l'accès ni créer un doublon.
+            String email = rawEmail == null ? null : rawEmail.toLowerCase(Locale.ROOT);
 
             if (email != null && email.endsWith("@zenika.com")) {
                 return context.runBlocking(() -> enrichIdentity(identity, email, name));
             } else {
                 // Email invalide ou non Zenika : on ne donne pas de rôles
-                logger.warn("Email absent ou hors domaine zenika.com, identité non enrichie");
+                logger.warnf("Email absent ou hors domaine zenika.com (%s), identité non enrichie", rawEmail);
                 return Uni.createFrom().item(identity);
             }
         }

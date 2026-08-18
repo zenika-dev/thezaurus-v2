@@ -120,6 +120,21 @@ public class IapSecurityAugmentorTest {
     }
 
     @Test
+    public void testUppercaseEmailIsNormalizedAndEnriched() throws Exception {
+        // L'email sert de clé de document Firestore et de principal : la casse du JWT ne doit
+        // ni refuser l'accès ni créer un doublon.
+        User user = User.builder().email("jane@zenika.com").name("Jane")
+                .roles(List.of(Role.CONSULTANT)).build();
+        Mockito.when(userRepository.findByEmail("jane@zenika.com")).thenReturn(user);
+
+        SecurityIdentity result = augment(jwtIdentity("JANE@ZENIKA.COM", "Jane"));
+
+        Mockito.verify(userRepository).findByEmail("jane@zenika.com");
+        assertEquals("jane@zenika.com", result.getPrincipal().getName());
+        assertTrue(result.hasRole(Role.Names.CONSULTANT));
+    }
+
+    @Test
     public void testNonZenikaEmailIsNotEnriched() {
         SecurityIdentity result = augment(jwtIdentity("intru@evil.com", "Intru"));
 
