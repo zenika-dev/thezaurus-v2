@@ -132,7 +132,7 @@ public class TalkCommandTest {
         assertEquals("Jane Doe", speaker.name());
         assertEquals("jane@zenika.com", speaker.email());
         assertEquals("U123", speaker.slackUserId());
-        assertNull(speaker.role(), "Un speaker ne doit jamais porter de rÃ´le d'autorisation");
+        assertNull(speaker.role(), "Un speaker ne doit jamais porter de rôle d'autorisation");
     }
 
     @Test
@@ -141,8 +141,8 @@ public class TalkCommandTest {
 
         submit(List.of("U123"));
 
-        // Le RequestConfigurator n'est jamais invoquÃ© par le mock : on l'applique nous-mÃªmes
-        // pour vÃ©rifier que c'est bien l'identifiant du speaker qui est interrogÃ©.
+        // Le RequestConfigurator n'est jamais invoqué par le mock : on l'applique nous-mêmes
+        // pour vérifier que c'est bien l'identifiant du speaker qui est interrogé.
         @SuppressWarnings("unchecked")
         ArgumentCaptor<RequestConfigurator<UsersInfoRequest.UsersInfoRequestBuilder>> captor =
                 ArgumentCaptor.forClass(RequestConfigurator.class);
@@ -164,7 +164,7 @@ public class TalkCommandTest {
 
     @Test
     public void testSubmissionWithProfileButNoEmail() throws Exception {
-        // Cas rÃ©el lorsque le scope users:read.email n'est pas accordÃ© : le profil existe,
+        // Cas réel lorsque le scope users:read.email n'est pas accordé : le profil existe,
         // mais l'email est absent.
         slackReturns(slackUser("Jane Doe", null, true));
 
