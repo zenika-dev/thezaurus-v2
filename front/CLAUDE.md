@@ -19,9 +19,14 @@ All commands run from `front/`.
 
 **Full local stack** (from repo root `thezaurus-v2/`):
 ```bash
-docker compose up
+docker compose up --build --watch
 ```
 Starts Firestore emulator → Quarkus API on `:8080` → Next.js frontend on `:3000`.
+
+> Use `--build --watch`, **not** a bare `docker compose up`. The `front` service bakes source into
+> its image (no bind-mount, only a `develop.watch` block), so a plain `up` runs stale code. `--watch`
+> syncs host edits into the container; `--build` rebuilds the image and is **required after any
+> `package.json` change** so new dependencies land in the container's `node_modules`.
 
 There is no test suite. Validate changes manually via `npm run dev` and confirm `npm run lint` + `npm run build` pass.
 
