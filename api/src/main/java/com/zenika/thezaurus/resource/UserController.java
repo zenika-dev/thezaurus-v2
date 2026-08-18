@@ -56,7 +56,7 @@ public class UserController {
     @RolesAllowed({"membre", "admin"})
     public List<UserSummary> listUsers() throws ExecutionException, InterruptedException {
         return userRepository.findAll(maxResults).stream()
-                .map(u -> new UserSummary(u.getName(), u.getEmail()))
+                .map(u -> new UserSummary(u.name(), u.email()))
                 .toList();
     }
 

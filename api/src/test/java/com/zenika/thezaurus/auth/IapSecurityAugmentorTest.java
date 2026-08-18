@@ -51,9 +51,9 @@ public class IapSecurityAugmentorTest {
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         Mockito.verify(userRepository).create(captor.capture());
-        assertEquals("New User", captor.getValue().getName());
-        assertEquals("new@zenika.com", captor.getValue().getEmail());
-        assertEquals("membre", captor.getValue().getRole());
+        assertEquals("New User", captor.getValue().name());
+        assertEquals("new@zenika.com", captor.getValue().email());
+        assertEquals("membre", captor.getValue().role());
         assertEquals("new@zenika.com", result.getPrincipal().getName());
         assertTrue(result.hasRole("membre"));
     }
@@ -81,8 +81,8 @@ public class IapSecurityAugmentorTest {
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         Mockito.verify(userRepository).update(Mockito.eq("legacy@zenika.com"), captor.capture());
-        assertEquals("Legacy User", captor.getValue().getName());
-        assertEquals("admin", captor.getValue().getRole());
+        assertEquals("Legacy User", captor.getValue().name());
+        assertEquals("admin", captor.getValue().role());
         Mockito.verify(userRepository, Mockito.never()).create(Mockito.any());
         assertEquals("legacy@zenika.com", result.getPrincipal().getName());
         assertTrue(result.hasRole("admin"));

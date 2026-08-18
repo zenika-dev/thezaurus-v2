@@ -1,6 +1,7 @@
 package com.zenika.thezaurus.resource;
 
 import com.zenika.thezaurus.model.Talk;
+import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.service.TalkService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -10,6 +11,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.util.Collections;
+import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -80,9 +82,9 @@ public class TalkResourceTest {
 
         ArgumentCaptor<Talk> captor = ArgumentCaptor.forClass(Talk.class);
         Mockito.verify(service).create(captor.capture());
-        assertEquals(1, captor.getValue().getSpeakers().size());
-        assertEquals("Jane Doe", captor.getValue().getSpeakers().get(0).getName());
-        assertEquals("jane@zenika.com", captor.getValue().getSpeakers().get(0).getEmail());
+        assertEquals(1, captor.getValue().speakers().size());
+        assertEquals("Jane Doe", captor.getValue().speakers().get(0).name());
+        assertEquals("jane@zenika.com", captor.getValue().speakers().get(0).email());
     }
 
     @Test
@@ -102,7 +104,7 @@ public class TalkResourceTest {
 
         ArgumentCaptor<Talk> captor = ArgumentCaptor.forClass(Talk.class);
         Mockito.verify(service).create(captor.capture());
-        assertNull(captor.getValue().getSpeakers().get(0).getRole(),
+        assertNull(captor.getValue().speakers().get(0).role(),
                 "Le rôle ne doit pas pouvoir être injecté depuis un payload client");
     }
 
@@ -125,10 +127,9 @@ public class TalkResourceTest {
 
     @Test
     public void testGetTalksDoesNotExposeSpeakerRole() throws Exception {
-        Talk talk = new Talk("1", "Titre", "Description");
-        talk.setSpeakers(java.util.List.of(
-                com.zenika.thezaurus.model.User.builder()
-                        .name("Jane").email("jane@zenika.com").role("admin").build()));
+        Talk talk = new Talk("Titre", "Description", List.of(
+                User.builder().name("Jane").email("jane@zenika.com").role("admin").build()),
+                null, null, null).withId("1");
         Mockito.when(service.findAll()).thenReturn(Collections.singletonList(talk));
 
         given()

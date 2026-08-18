@@ -30,7 +30,6 @@ import org.jboss.logging.Logger;
 import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -238,7 +237,7 @@ public class TalkCommand implements SlackCommand {
 
         Talk talk = new Talk(title, description, speakers, office, status, visibility);
         if ((conferenceName != null && !conferenceName.isBlank()) || conferenceDate != null) {
-            talk.setConference(new Conference(null, conferenceName, conferenceDate));
+            talk = talk.withConference(new Conference(null, conferenceName, conferenceDate));
         }
 
         try {

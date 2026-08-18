@@ -49,7 +49,7 @@ public class UserRepositoryTest {
         User jane = User.builder().name("Jane Doe").email("jane@zenika.com").role("membre").build();
         User john = User.builder().name("John Doe").email("john@zenika.com").role("admin").build();
         // Les documents sont construits avant le when() : imbriquer un stub dans un autre
-        // laisse Mockito avec un stubbing inachevé.
+        // laisse Mockito avec un stubbing inachevÃ©.
         QueryDocumentSnapshot janeDoc = documentOf(jane);
         QueryDocumentSnapshot johnDoc = documentOf(john);
         Mockito.when(snapshot.getDocuments()).thenReturn(List.of(janeDoc, johnDoc));
@@ -57,9 +57,9 @@ public class UserRepositoryTest {
         List<User> users = repository.findAll(500);
 
         assertEquals(2, users.size());
-        assertEquals("Jane Doe", users.get(0).getName());
-        assertEquals("jane@zenika.com", users.get(0).getEmail());
-        assertEquals("admin", users.get(1).getRole());
+        assertEquals("Jane Doe", users.get(0).name());
+        assertEquals("jane@zenika.com", users.get(0).email());
+        assertEquals("admin", users.get(1).role());
     }
 
     @Test
