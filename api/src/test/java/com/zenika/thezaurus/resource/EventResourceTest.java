@@ -7,9 +7,11 @@ import com.zenika.thezaurus.model.EventsDashboard;
 import com.zenika.thezaurus.model.EventsTotals;
 import com.zenika.thezaurus.model.MonthLabel;
 import com.zenika.thezaurus.model.MonthlyActivity;
+import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.service.EventService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -21,6 +23,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
+@TestSecurity(user = "dev@zenika.com", roles = {Role.Names.CONSULTANT})
 public class EventResourceTest {
 
     @InjectMock
@@ -87,5 +90,24 @@ public class EventResourceTest {
              .body("monthly[0].month", is("Jan"))
              .body("eventTypes[0].name", is("NightClazz"))
              .body("eventTypes[0].cities[0].city", is("Nantes"));
+    }
+
+    @Test
+    public void testDeleteForbiddenForConsultant() {
+        given()
+          .when().delete("/events/1")
+          .then()
+             .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@zenika.com", roles = {Role.Names.ADMIN})
+    public void testDeleteAsAdmin() throws Exception {
+        Mockito.when(service.delete("1")).thenReturn(true);
+
+        given()
+          .when().delete("/events/1")
+          .then()
+             .statusCode(204);
     }
 }
