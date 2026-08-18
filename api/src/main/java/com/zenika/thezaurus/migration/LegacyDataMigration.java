@@ -49,5 +49,9 @@ public class LegacyDataMigration {
         if (migratedUsers > 0) {
             logger.infov("Migration rôles legacy : {0} utilisateur(s) réécrit(s) au format roles[]", migratedUsers);
         }
+        int migratedEmails = userRepository.migrateLegacyEmailCasing();
+        if (migratedEmails > 0) {
+            logger.infov("Migration casse des emails : {0} document(s) utilisateur re-keyé(s) en minuscules", migratedEmails);
+        }
     }
 }

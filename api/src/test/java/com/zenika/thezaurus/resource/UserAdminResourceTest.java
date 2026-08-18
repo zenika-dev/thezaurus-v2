@@ -84,6 +84,26 @@ public class UserAdminResourceTest {
 
     @Test
     @TestSecurity(user = "admin@zenika.com", roles = {Role.Names.ADMIN})
+    public void testUpdateRolesNormalizesEmailCase() throws Exception {
+        // Les documents sont keyés par l'email en minuscules : un path param en casse
+        // mixte doit retrouver et mettre à jour le document minuscule.
+        Mockito.when(userRepository.findByEmail("jane@zenika.com"))
+                .thenReturn(user("jane@zenika.com", List.of(Role.CONSULTANT)));
+
+        given()
+          .contentType(ContentType.JSON)
+          .body(Map.of("roles", List.of(Role.Names.DT)))
+          .when().put("/api/admin/users/Jane@Zenika.com/roles")
+          .then()
+             .statusCode(200)
+             .body("email", is("jane@zenika.com"));
+
+        Mockito.verify(userRepository).findByEmail("jane@zenika.com");
+        Mockito.verify(userRepository).update(Mockito.eq("jane@zenika.com"), Mockito.any(User.class));
+    }
+
+    @Test
+    @TestSecurity(user = "admin@zenika.com", roles = {Role.Names.ADMIN})
     public void testUpdateRolesRejectsRemovedMembreRole() {
         given()
           .contentType(ContentType.JSON)
