@@ -1,7 +1,5 @@
+import { apiFetch } from "@/shared/api";
 import type { TalkData } from "./model";
-
-const API_BASE = process.env.API_URL ?? "http://localhost:8080";
-const API_URL = `${API_BASE}/talks`;
 
 export interface BackendSpeaker {
   name?: string;
@@ -99,13 +97,13 @@ export function mapFrontendToBackend(t: TalkData): BackendTalkPayload {
 
 export const talkApi = {
   getTalks: async (): Promise<TalkData[]> => {
-    const res = await fetch(API_URL);
+    const res = await apiFetch("/talks");
     if (!res.ok) throw new Error("Failed to fetch talks");
     const data = await res.json();
     return data.map(mapBackendToFrontend);
   },
   createTalk: async (talk: TalkData): Promise<TalkData> => {
-    const res = await fetch(API_URL, {
+    const res = await apiFetch("/talks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(mapFrontendToBackend(talk)),
@@ -114,7 +112,7 @@ export const talkApi = {
     return mapBackendToFrontend(await res.json());
   },
   updateTalk: async (talk: TalkData): Promise<TalkData> => {
-    const res = await fetch(`${API_URL}/${talk.id}`, {
+    const res = await apiFetch(`/talks/${talk.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(mapFrontendToBackend(talk)),
@@ -123,7 +121,7 @@ export const talkApi = {
     return talk;
   },
   deleteTalk: async (id: string): Promise<void> => {
-    const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`/talks/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete talk");
   },
 };

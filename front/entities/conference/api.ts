@@ -1,7 +1,6 @@
+import { apiFetch } from "@/shared/api";
 import { ConferenceCFPStatus, ConferenceData, ConferenceDate, ConferenceReach, ConferenceType } from "./model";
 
-const API_BASE = process.env.API_URL ?? "http://localhost:8080";
-const API_URL = `${API_BASE}/conferences`;
 
 interface BackendConference {
     id: string;
@@ -76,13 +75,13 @@ export const mapFrontendToBackend = (c: ConferenceData): BackendConference => ({
 
 export const conferenceApi = {
   getConferences: async (): Promise<ConferenceData[]> => {
-    const res = await fetch(API_URL);
+    const res = await apiFetch("/conferences");
     if (!res.ok) throw new Error("Failed to fetch conferences");
     const data = await res.json();
     return data.map(mapBackendToFrontend);
   },
   createConference:  async (conference: ConferenceData): Promise<ConferenceData> => {
-      const res = await fetch(API_URL, {
+      const res = await apiFetch("/conferences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(mapFrontendToBackend(conference)),
@@ -91,7 +90,7 @@ export const conferenceApi = {
       return mapBackendToFrontend(await res.json());
     },
       updateConference: async (conference: ConferenceData): Promise<ConferenceData> => {
-        const res = await fetch(`${API_URL}/${conference.id}`, {
+        const res = await apiFetch(`/conferences/${conference.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(mapFrontendToBackend(conference)),
@@ -100,7 +99,7 @@ export const conferenceApi = {
         return conference;
       },
     deleteConference: async (id: string): Promise<void> => {
-    const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`/conferences/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete conference");
   },
 };

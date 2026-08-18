@@ -1,7 +1,10 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
-export type Role = "membre" | "admin";
+// Vocabulaire backend repris verbatim (enum Role côté API) : toute couche de traduction
+// front serait un piège de plus. Cf. Role.java côté Quarkus.
+export const ROLES = ["ADMIN", "DT", "CONSULTANT"] as const;
+export type Role = (typeof ROLES)[number];
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -13,6 +16,9 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, account }) {
       if (account?.id_token) {
+        // Persisté pour la propagation d'identité des fetches server-side en dev
+        // (cf. shared/api/auth-headers). En production, l'assertion IAP prime.
+        token.idToken = account.id_token;
         try {
           const API_BASE = process.env.API_URL ?? "http://localhost:8080";
           const res = await fetch(`${API_BASE}/api/me`, {
@@ -24,11 +30,11 @@ export const authOptions: NextAuthOptions = {
           }
 
           const data = await res.json();
-          token.roles = (data.roles as Role[]) ?? ["membre"];
+          token.roles = (data.roles as Role[]) ?? [];
         } catch (err) {
           console.error("Erreur récupération des rôles:", err);
-          // Si le backend refuse l'utilisateur ou si l'endpoint n'existe pas encore, on lui donne le rôle "membre" par défaut
-          token.roles = ["membre"];
+          // Fail-closed : sans réponse du backend, aucun rôle — l'accès sera refusé.
+          token.roles = [];
         }
       }
       return token;
