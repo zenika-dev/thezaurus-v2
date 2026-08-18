@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Role } from "./config";
 import { LandingPage } from "./landing-page";
@@ -34,12 +34,21 @@ function ProtectedRouteContent({
   }
 
   const hasRole = allowedRoles.some((role) =>
-    session.user.roles.includes(role),
+    (session.user.roles ?? []).includes(role),
   );
   if (!hasRole) {
     return (
-      <div className="p-4 text-center text-red-500">
-        Vous n&apos;avez pas les droits nécessaires pour accéder à cette page.
+      <div className="p-4 text-center">
+        <p className="text-red-500">
+          Vous n&apos;avez pas les droits nécessaires pour accéder à cette page.
+        </p>
+        <button
+          type="button"
+          onClick={() => signOut()}
+          className="mt-4 rounded bg-gray-200 px-4 py-2 text-sm hover:bg-gray-300"
+        >
+          Se reconnecter
+        </button>
       </div>
     );
   }
