@@ -3,6 +3,7 @@ package com.zenika.thezaurus.repository;
 import com.google.api.core.ApiFutures;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.FieldValue;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.Query;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -147,5 +149,122 @@ public class UserRepositoryTest {
 
         assertEquals(0, repository.migrateLegacyRoles());
         Mockito.verifyNoInteractions(reference);
+    }
+
+    @Test
+    public void testMigrateLegacyRolesSkipsUnknownLegacyValueAndContinues() throws Exception {
+        // Une valeur legacy inattendue ne doit ni faire échouer la migration (elle tourne au
+        // démarrage) ni empêcher la migration des documents valides suivants.
+        DocumentReference badReference = Mockito.mock(DocumentReference.class);
+        QueryDocumentSnapshot badDoc = rawDocumentOf("n'importe quoi", null, badReference);
+        Mockito.when(badDoc.getId()).thenReturn("bad@zenika.com");
+        DocumentReference goodReference = updatableReference();
+        QueryDocumentSnapshot goodDoc = rawDocumentOf("membre", null, goodReference);
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(badDoc, goodDoc));
+
+        assertEquals(1, repository.migrateLegacyRoles());
+
+        Mockito.verifyNoInteractions(badReference);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        Mockito.verify(goodReference).update(captor.capture());
+        assertEquals(List.of(Role.CONSULTANT.name()), captor.getValue().get("roles"));
+    }
+
+    // --- Migration casse des emails (ids de documents) ----------------------------------------
+
+    private QueryDocumentSnapshot casedDocumentOf(String id, Map<String, Object> data, DocumentReference reference) {
+        QueryDocumentSnapshot doc = Mockito.mock(QueryDocumentSnapshot.class);
+        Mockito.when(doc.getId()).thenReturn(id);
+        Mockito.when(doc.getData()).thenReturn(data);
+        Mockito.when(doc.getReference()).thenReturn(reference);
+        return doc;
+    }
+
+    private DocumentReference deletableReference() {
+        DocumentReference reference = Mockito.mock(DocumentReference.class);
+        Mockito.when(reference.delete())
+                .thenReturn(ApiFutures.immediateFuture(Mockito.mock(WriteResult.class)));
+        return reference;
+    }
+
+    private DocumentReference targetReference(boolean exists, Map<String, Object> data) {
+        DocumentSnapshot targetSnapshot = Mockito.mock(DocumentSnapshot.class);
+        Mockito.when(targetSnapshot.exists()).thenReturn(exists);
+        Mockito.when(targetSnapshot.getData()).thenReturn(data);
+        DocumentReference reference = Mockito.mock(DocumentReference.class);
+        Mockito.when(reference.get()).thenReturn(ApiFutures.immediateFuture(targetSnapshot));
+        Mockito.when(reference.set(Mockito.<String, Object>anyMap()))
+                .thenReturn(ApiFutures.immediateFuture(Mockito.mock(WriteResult.class)));
+        return reference;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> capturedSetData(DocumentReference target) {
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        Mockito.verify(target).set(captor.capture());
+        return captor.getValue();
+    }
+
+    @Test
+    public void testMigrateLegacyEmailCasingRenamesDocumentToLowercaseId() throws Exception {
+        DocumentReference upperReference = deletableReference();
+        QueryDocumentSnapshot upperDoc = casedDocumentOf("Jane@Zenika.com",
+                Map.of("name", "Jane Doe", "email", "Jane@Zenika.com", "roles", List.of("ADMIN")),
+                upperReference);
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(upperDoc));
+        DocumentReference target = targetReference(false, null);
+        Mockito.when(collection.document("jane@zenika.com")).thenReturn(target);
+
+        assertEquals(1, repository.migrateLegacyEmailCasing());
+
+        Map<String, Object> written = capturedSetData(target);
+        assertEquals("jane@zenika.com", written.get("email"));
+        assertEquals("Jane Doe", written.get("name"));
+        assertEquals(List.of("ADMIN"), written.get("roles"));
+        Mockito.verify(upperReference).delete();
+    }
+
+    @Test
+    public void testMigrateLegacyEmailCasingMergesDuplicateWithRolesUnion() throws Exception {
+        // Vrai doublon : le document minuscule prime, ses champs nuls ou absents sont complétés
+        // depuis le document majuscule, et les roles sont l'union des deux listes.
+        DocumentReference upperReference = deletableReference();
+        Map<String, Object> upperData = new HashMap<>();
+        upperData.put("name", "Jane Doe");
+        upperData.put("email", "Jane@Zenika.com");
+        upperData.put("slackUserId", "U123");
+        upperData.put("roles", List.of("ADMIN", "DT"));
+        QueryDocumentSnapshot upperDoc = casedDocumentOf("Jane@Zenika.com", upperData, upperReference);
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(upperDoc));
+        Map<String, Object> lowerData = new HashMap<>();
+        lowerData.put("name", null);
+        lowerData.put("email", "jane@zenika.com");
+        lowerData.put("roles", List.of("CONSULTANT", "DT"));
+        DocumentReference target = targetReference(true, lowerData);
+        Mockito.when(collection.document("jane@zenika.com")).thenReturn(target);
+
+        assertEquals(1, repository.migrateLegacyEmailCasing());
+
+        Map<String, Object> written = capturedSetData(target);
+        assertEquals("jane@zenika.com", written.get("email"));
+        assertEquals("Jane Doe", written.get("name"));
+        assertEquals("U123", written.get("slackUserId"));
+        assertEquals(List.of("CONSULTANT", "DT", "ADMIN"), written.get("roles"));
+        Mockito.verify(upperReference).delete();
+    }
+
+    @Test
+    public void testMigrateLegacyEmailCasingIsIdempotent() throws Exception {
+        // Après migration, tous les ids sont en minuscules : une seconde exécution ne touche
+        // à rien et retourne 0.
+        DocumentReference reference = Mockito.mock(DocumentReference.class);
+        QueryDocumentSnapshot doc = casedDocumentOf("jane@zenika.com",
+                Map.of("email", "jane@zenika.com"), reference);
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(doc));
+
+        assertEquals(0, repository.migrateLegacyEmailCasing());
+        Mockito.verifyNoInteractions(reference);
+        Mockito.verify(collection, Mockito.never()).document(Mockito.anyString());
     }
 }

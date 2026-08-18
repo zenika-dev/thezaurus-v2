@@ -16,6 +16,7 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -59,6 +60,9 @@ public class UserAdminResource {
     @Path("/{email}/roles")
     public Response updateRoles(@PathParam("email") String email, RolesUpdateRequest request)
             throws ExecutionException, InterruptedException {
+        // Les documents users sont keyés par l'email en minuscules (cf. IapSecurityAugmentor) :
+        // on normalise le path param pour retrouver le document quelle que soit la casse saisie.
+        email = email.toLowerCase(Locale.ROOT);
         if (request == null || request.roles == null || request.roles.isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "La liste des rôles est obligatoire"))
