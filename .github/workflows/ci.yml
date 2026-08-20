@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Une seule exécution par branche/PR : les runs obsolètes sont annulés.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API (Quarkus)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      # `verify` enchaîne spotless:check (phase validate), la compilation,
+      # les tests unitaires et le build Quarkus (quarkus:build).
+      - name: Build & tests
+        run: ./mvnw -B -ntp verify
+
+      - name: Upload des rapports de tests en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-surefire-reports
+          path: api/target/surefire-reports/
+          retention-days: 7
+
+  front:
+    name: Front (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@v4
+
+      # Même version majeure que le Dockerfile (node:20-alpine).
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+
+      # `npm ci` échoue si package.json et package-lock.json divergent :
+      # c'est le premier filet de sécurité sur les PR Dependabot.
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # `next build` fait aussi le type-check TypeScript.
+      - name: Build
+        run: npm run build
