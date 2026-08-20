@@ -170,4 +170,30 @@ Le déploiement est pour le moment manuel. Il faut s'assurer de :
   FIRESTORE_COLLECTION_PREFIX=prod
   ```
 
+## Formatage du code (module `api`)
+
+Le style Java est imposé par [Spotless](https://github.com/diffplug/spotless) avec le formateur
+[palantir-java-format](https://github.com/palantir/palantir-java-format) : indentation de 4 espaces, 120 colonnes,
+imports triés et imports inutilisés supprimés. Aucun réglage d'IDE n'est nécessaire, et les réglages personnels ne
+font plus foi.
+
+`spotless:check` est branché sur la phase `validate` : **tout build du module `api` échoue si un fichier est mal
+formaté**. Pour reformater les sources :
+
+```bash
+cd api && ./mvnw spotless:apply
+```
+
+Pour vérifier sans rien modifier :
+
+```bash
+cd api && ./mvnw spotless:check
+```
+
+Le commit de reformatage initial est listé dans `.git-blame-ignore-revs`. Pour que `git blame` l'ignore :
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
 Made with ❤️ by Zenika
