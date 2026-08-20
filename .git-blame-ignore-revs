@@ -1,0 +1,6 @@
+# Commits de reformatage automatique, a ignorer dans git blame.
+# Activation locale (une fois par clone) :
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style: reformate le module api avec Spotless
+3e06b65ff62c2c9f40958ba3b2ca672a2dbe11c1
