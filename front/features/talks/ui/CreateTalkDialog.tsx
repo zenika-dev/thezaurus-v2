@@ -16,12 +16,16 @@ import FormHelperText from "@mui/material/FormHelperText";
 import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs, { type Dayjs } from "dayjs";
 import "dayjs/locale/fr";
-import type { TalkData, TalkStatus } from "@/entities/talk";
+import { Bot } from "lucide-react";
+import type { TalkData, TalkStatus, TalkReviewResponse } from "@/entities/talk";
 import { agencyLabels, visibilityLabels, formatLabels, languageLabels } from "@/entities/talk";
 import { talkFormSchema, type TalkFormData } from "@/entities/talk";
+import { reviewTalkAction } from "@/entities/talk";
+import { AiReviewDialog } from "./AiReviewDialog";
 
 dayjs.locale("fr");
 
@@ -35,6 +39,9 @@ interface CreateTalkDialogProps {
 
 export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogProps) {
   const [date, setDate] = useState<Dayjs | null>(null);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<TalkReviewResponse | null>(null);
 
   const {
     register,
@@ -42,6 +49,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
     control,
     trigger,
     getValues,
+    setValue,
     reset,
     formState: { errors },
   } = useForm<TalkFormData>({
@@ -65,6 +73,8 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
   const handleCancel = () => {
     reset();
     setDate(null);
+    setAiResult(null);
+    setAiDialogOpen(false);
     onClose();
   };
 
@@ -74,6 +84,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
     onSubmit(buildTalkData(getValues(), "Draft"));
     reset();
     setDate(null);
+    setAiResult(null);
     onClose();
   };
 
@@ -81,7 +92,32 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
     onSubmit(buildTalkData(data, "Idea"));
     reset();
     setDate(null);
+    setAiResult(null);
     onClose();
+  };
+
+  const handleTriggerAiReview = async () => {
+    const values = getValues();
+    setAiDialogOpen(true);
+    setAiLoading(true);
+    try {
+      const res = await reviewTalkAction({
+        title: values.title,
+        abstract: values.abstract,
+        format: values.format,
+        language: values.language,
+      });
+      setAiResult(res);
+    } catch {
+      // Error handling
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleApplyAiSuggestions = (suggestedTitle: string, suggestedAbstract: string) => {
+    setValue("title", suggestedTitle, { shouldValidate: true, shouldDirty: true });
+    setValue("abstract", suggestedAbstract, { shouldValidate: true, shouldDirty: true });
   };
 
   return (
@@ -94,8 +130,24 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
       aria-labelledby={DIALOG_TITLE_ID}
       slotProps={{ paper: { className: "dark:bg-slate-900 dark:bg-none" } }}
     >
-      <DialogTitle id={DIALOG_TITLE_ID} className="pb-0!">
-        Nouveau Talk
+      <DialogTitle id={DIALOG_TITLE_ID} className="pb-0! flex justify-between items-center">
+        <span>Nouveau Talk</span>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={handleTriggerAiReview}
+          disabled={aiLoading}
+          startIcon={
+            aiLoading ? (
+              <CircularProgress size={16} className="text-purple-600" />
+            ) : (
+              <Bot size={18} className="text-purple-600 dark:text-purple-400" />
+            )
+          }
+          className="normal-case border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/50"
+        >
+          {aiLoading ? "Traitement IA en cours..." : "Relire avec l'Assistant talk"}
+        </Button>
       </DialogTitle>
 
       <DialogContent>
@@ -177,18 +229,23 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
             </div>
           </Box>
 
-          <TextField
-            {...register("abstract")}
-            id="talk-abstract"
-            label="Abstract / Description"
-            multiline
-            rows={4}
-            fullWidth
-            required
-            placeholder="Décrivez le contenu de votre talk..."
-            error={!!errors.abstract}
-            helperText={errors.abstract?.message}
-          />
+          <div className="flex flex-col gap-1">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-medium text-text-muted">Abstract & Description</span>
+            </div>
+            <TextField
+              {...register("abstract")}
+              id="talk-abstract"
+              label="Abstract / Description"
+              multiline
+              rows={4}
+              fullWidth
+              required
+              placeholder="Décrivez le contenu de votre talk..."
+              error={!!errors.abstract}
+              helperText={errors.abstract?.message}
+            />
+          </div>
 
           <Box component="fieldset" sx={{ border: "none", p: 0, m: 0 }}>
             <Box component="legend" sx={{ display: "none" }}>Paramètres du talk</Box>
@@ -287,6 +344,16 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
           Créer le talk
         </Button>
       </DialogActions>
+
+      <AiReviewDialog
+        open={aiDialogOpen}
+        loading={aiLoading}
+        originalTitle={getValues().title}
+        originalAbstract={getValues().abstract}
+        reviewResult={aiResult}
+        onClose={() => setAiDialogOpen(false)}
+        onApply={handleApplyAiSuggestions}
+      />
     </Dialog>
     </DatePickerProvider>
   );

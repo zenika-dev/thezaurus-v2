@@ -19,6 +19,27 @@ export interface TalkData {
   replay?: string;
 }
 
+export interface TalkReviewRequest {
+  title: string;
+  abstract: string;
+  format?: string;
+  language?: string;
+}
+
+export interface ReviewImprovement {
+  category: "titre" | "abstract" | "coherence" | string;
+  comment: string;
+  suggestions: string[];
+}
+
+export interface TalkReviewResponse {
+  suggestedTitles: string[];
+  suggestedAbstracts: string[];
+  feedback: string[];
+  keyImprovements: string[];
+  improvements?: ReviewImprovement[];
+}
+
 export const agencyLabels: Record<string, string> = {
   paris:     "Paris",
   nantes:    "Nantes",

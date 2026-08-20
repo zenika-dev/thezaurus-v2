@@ -1,4 +1,4 @@
-import type { TalkData } from "./model";
+import type { TalkData, TalkReviewRequest, TalkReviewResponse } from "./model";
 
 const API_BASE = process.env.API_URL ?? "http://localhost:8080";
 const API_URL = `${API_BASE}/talks`;
@@ -107,5 +107,14 @@ export const talkApi = {
   deleteTalk: async (id: string): Promise<void> => {
     const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete talk");
+  },
+  reviewTalk: async (payload: TalkReviewRequest): Promise<TalkReviewResponse> => {
+    const res = await fetch(`${API_URL}/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("Failed to review talk with AI agent");
+    return res.json();
   },
 };
