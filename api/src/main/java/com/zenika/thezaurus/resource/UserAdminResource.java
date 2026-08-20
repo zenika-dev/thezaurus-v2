@@ -13,12 +13,11 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
  * Administration des utilisateurs, réservée aux admins. Les rôles étant exclus de la
@@ -40,8 +39,7 @@ public class UserAdminResource {
 
     public record UserAdminView(String name, String email, List<Role> roles) {
         static UserAdminView of(User user) {
-            return new UserAdminView(user.name(), user.email(),
-                    user.roles() == null ? List.of() : user.roles());
+            return new UserAdminView(user.name(), user.email(), user.roles() == null ? List.of() : user.roles());
         }
     }
 
@@ -69,7 +67,8 @@ public class UserAdminResource {
                     .build();
         }
 
-        List<String> invalid = request.roles.stream().filter(r -> !Role.isValid(r)).toList();
+        List<String> invalid =
+                request.roles.stream().filter(r -> !Role.isValid(r)).toList();
         if (!invalid.isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "Rôles inconnus : " + invalid + ", rôles autorisés : " + Role.ALL))
@@ -81,7 +80,8 @@ public class UserAdminResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        user = user.withRoles(request.roles.stream().map(Role::valueOf).distinct().toList());
+        user = user.withRoles(
+                request.roles.stream().map(Role::valueOf).distinct().toList());
         userRepository.update(email, user);
         return Response.ok(UserAdminView.of(user)).build();
     }

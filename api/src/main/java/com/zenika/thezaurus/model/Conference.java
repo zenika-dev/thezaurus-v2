@@ -12,8 +12,7 @@ public class Conference {
     private ConferenceType type;
     private ConferenceReach reach;
 
-    public Conference() {
-    }
+    public Conference() {}
 
     public Conference(String id, String name, String date) {
         this.id = id;

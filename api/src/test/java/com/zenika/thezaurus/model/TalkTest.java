@@ -1,21 +1,25 @@
 package com.zenika.thezaurus.model;
 
-import com.google.cloud.firestore.encoding.CustomClassMapper;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.google.cloud.firestore.encoding.CustomClassMapper;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.Test;
 
 public class TalkTest {
 
     @Test
     public void testWithIdKeepsOtherFields() {
-        Talk talk = new Talk("Titre", "Desc", List.of(User.builder().name("Jane").build()),
-                "Nantes", TalkStatus.DRAFT, Visibility.PUBLIC);
+        Talk talk = new Talk(
+                "Titre",
+                "Desc",
+                List.of(User.builder().name("Jane").build()),
+                "Nantes",
+                TalkStatus.DRAFT,
+                Visibility.PUBLIC);
 
         Talk withId = talk.withId("42");
 
@@ -68,9 +72,17 @@ public class TalkTest {
 
     @Test
     public void testFirestoreSerializationOfSpeakers() {
-        Talk talk = new Talk("Titre", "Desc", List.of(User.builder()
-                .name("Jane").email("jane@zenika.com").slackUserId("U123").build()),
-                "Nantes", TalkStatus.DRAFT, Visibility.PUBLIC);
+        Talk talk = new Talk(
+                "Titre",
+                "Desc",
+                List.of(User.builder()
+                        .name("Jane")
+                        .email("jane@zenika.com")
+                        .slackUserId("U123")
+                        .build()),
+                "Nantes",
+                TalkStatus.DRAFT,
+                Visibility.PUBLIC);
 
         @SuppressWarnings("unchecked")
         Map<String, Object> serialized = (Map<String, Object>) CustomClassMapper.serialize(talk);

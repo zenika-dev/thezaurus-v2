@@ -10,14 +10,13 @@ import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.Talk;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class TalkRepository {
@@ -32,14 +31,17 @@ public class TalkRepository {
     private static final String BASE_COLLECTION_NAME = "talks";
 
     private String getCollectionName() {
-        if (collectionPrefix == null || collectionPrefix.isEmpty() || collectionPrefix.get().trim().isEmpty()) {
+        if (collectionPrefix == null
+                || collectionPrefix.isEmpty()
+                || collectionPrefix.get().trim().isEmpty()) {
             return BASE_COLLECTION_NAME;
         }
         return collectionPrefix.get().trim() + "_" + BASE_COLLECTION_NAME;
     }
 
     public List<Talk> findAll() throws ExecutionException, InterruptedException {
-        ApiFuture<QuerySnapshot> query = firestore.collection(getCollectionName()).get();
+        ApiFuture<QuerySnapshot> query =
+                firestore.collection(getCollectionName()).get();
         QuerySnapshot querySnapshot = query.get();
         return querySnapshot.getDocuments().stream()
                 .map(doc -> doc.toObject(Talk.class))
@@ -86,14 +88,15 @@ public class TalkRepository {
         int migrated = 0;
         for (QueryDocumentSnapshot doc : snapshot.getDocuments()) {
             Object rawSpeakers = doc.get("speakers");
-            boolean legacy = rawSpeakers instanceof List<?> elements
-                    && elements.stream().anyMatch(e -> e instanceof String);
+            boolean legacy =
+                    rawSpeakers instanceof List<?> elements && elements.stream().anyMatch(e -> e instanceof String);
             if (!legacy) {
                 continue;
             }
-            List<Object> converted = ((List<?>) rawSpeakers).stream()
-                    .map(e -> e instanceof String name ? Map.of("name", name) : e)
-                    .collect(Collectors.toList());
+            List<Object> converted = ((List<?>) rawSpeakers)
+                    .stream()
+                            .map(e -> e instanceof String name ? Map.of("name", name) : e)
+                            .collect(Collectors.toList());
             doc.getReference().update("speakers", converted).get();
             migrated++;
         }
@@ -101,7 +104,8 @@ public class TalkRepository {
     }
 
     public void delete(String id) throws ExecutionException, InterruptedException {
-        ApiFuture<WriteResult> writeResult = firestore.collection(getCollectionName()).document(id).delete();
+        ApiFuture<WriteResult> writeResult =
+                firestore.collection(getCollectionName()).document(id).delete();
         writeResult.get();
     }
 }

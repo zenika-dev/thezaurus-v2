@@ -1,5 +1,9 @@
 package com.zenika.thezaurus.repository;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.api.core.ApiFutures;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
@@ -12,18 +16,13 @@ import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.User;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UserRepositoryTest {
 
@@ -56,10 +55,16 @@ public class UserRepositoryTest {
 
     @Test
     public void testFindAllMapsDocumentsToUsers() throws Exception {
-        User jane = User.builder().name("Jane Doe").email("jane@zenika.com")
-                .roles(List.of(Role.CONSULTANT)).build();
-        User john = User.builder().name("John Doe").email("john@zenika.com")
-                .roles(List.of(Role.ADMIN, Role.DT)).build();
+        User jane = User.builder()
+                .name("Jane Doe")
+                .email("jane@zenika.com")
+                .roles(List.of(Role.CONSULTANT))
+                .build();
+        User john = User.builder()
+                .name("John Doe")
+                .email("john@zenika.com")
+                .roles(List.of(Role.ADMIN, Role.DT))
+                .build();
         // Les documents sont construits avant le when() : imbriquer un stub dans un autre
         // laisse Mockito avec un stubbing inachevé.
         QueryDocumentSnapshot janeDoc = documentOf(jane);
@@ -183,8 +188,7 @@ public class UserRepositoryTest {
 
     private DocumentReference deletableReference() {
         DocumentReference reference = Mockito.mock(DocumentReference.class);
-        Mockito.when(reference.delete())
-                .thenReturn(ApiFutures.immediateFuture(Mockito.mock(WriteResult.class)));
+        Mockito.when(reference.delete()).thenReturn(ApiFutures.immediateFuture(Mockito.mock(WriteResult.class)));
         return reference;
     }
 
@@ -209,7 +213,8 @@ public class UserRepositoryTest {
     @Test
     public void testMigrateLegacyEmailCasingRenamesDocumentToLowercaseId() throws Exception {
         DocumentReference upperReference = deletableReference();
-        QueryDocumentSnapshot upperDoc = casedDocumentOf("Jane@Zenika.com",
+        QueryDocumentSnapshot upperDoc = casedDocumentOf(
+                "Jane@Zenika.com",
                 Map.of("name", "Jane Doe", "email", "Jane@Zenika.com", "roles", List.of("ADMIN")),
                 upperReference);
         Mockito.when(snapshot.getDocuments()).thenReturn(List.of(upperDoc));
@@ -259,8 +264,7 @@ public class UserRepositoryTest {
         // Après migration, tous les ids sont en minuscules : une seconde exécution ne touche
         // à rien et retourne 0.
         DocumentReference reference = Mockito.mock(DocumentReference.class);
-        QueryDocumentSnapshot doc = casedDocumentOf("jane@zenika.com",
-                Map.of("email", "jane@zenika.com"), reference);
+        QueryDocumentSnapshot doc = casedDocumentOf("jane@zenika.com", Map.of("email", "jane@zenika.com"), reference);
         Mockito.when(snapshot.getDocuments()).thenReturn(List.of(doc));
 
         assertEquals(0, repository.migrateLegacyEmailCasing());

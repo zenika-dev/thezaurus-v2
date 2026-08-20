@@ -4,7 +4,6 @@ import com.zenika.thezaurus.model.Conference;
 import com.zenika.thezaurus.repository.ConferenceRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 

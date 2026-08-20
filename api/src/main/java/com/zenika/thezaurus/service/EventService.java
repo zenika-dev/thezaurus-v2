@@ -12,7 +12,6 @@ import com.zenika.thezaurus.model.Visibility;
 import com.zenika.thezaurus.repository.EventRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
@@ -97,18 +96,20 @@ public class EventService {
                         Collectors.summingInt(eventWithMonth -> 1)));
     }
 
-    private EventsTotals buildTotals(Map<MonthLabel, Integer> internalByMonth, Map<MonthLabel, Integer> externalByMonth) {
-        int totalInternal = internalByMonth.values().stream().mapToInt(Integer::intValue).sum();
-        int totalExternal = externalByMonth.values().stream().mapToInt(Integer::intValue).sum();
+    private EventsTotals buildTotals(
+            Map<MonthLabel, Integer> internalByMonth, Map<MonthLabel, Integer> externalByMonth) {
+        int totalInternal =
+                internalByMonth.values().stream().mapToInt(Integer::intValue).sum();
+        int totalExternal =
+                externalByMonth.values().stream().mapToInt(Integer::intValue).sum();
         return new EventsTotals(totalInternal, totalExternal);
     }
 
-    private List<MonthlyActivity> buildMonthlyActivity(Map<MonthLabel, Integer> internalByMonth, Map<MonthLabel, Integer> externalByMonth) {
+    private List<MonthlyActivity> buildMonthlyActivity(
+            Map<MonthLabel, Integer> internalByMonth, Map<MonthLabel, Integer> externalByMonth) {
         return Arrays.stream(MonthLabel.values())
                 .map(month -> new MonthlyActivity(
-                        month,
-                        internalByMonth.getOrDefault(month, 0),
-                        externalByMonth.getOrDefault(month, 0)))
+                        month, internalByMonth.getOrDefault(month, 0), externalByMonth.getOrDefault(month, 0)))
                 .collect(Collectors.toList());
     }
 
@@ -116,7 +117,8 @@ public class EventService {
         return eventsWithMonth.stream()
                 .map(EventWithMonth::event)
                 .collect(Collectors.groupingBy(Event::type, LinkedHashMap::new, Collectors.toList()))
-                .entrySet().stream()
+                .entrySet()
+                .stream()
                 .map(entry -> toEventTypeSummary(entry.getKey(), entry.getValue()))
                 .sorted(Comparator.comparingInt(EventTypeSummary::total).reversed())
                 .collect(Collectors.toList());
@@ -131,9 +133,13 @@ public class EventService {
 
         List<CityCount> cities = typeEvents.stream()
                 .map(Event::location)
-                .filter(location -> location != null && location.city() != null && !location.city().isBlank())
-                .collect(Collectors.groupingBy(Location::city, LinkedHashMap::new, Collectors.summingInt(location -> 1)))
-                .entrySet().stream()
+                .filter(location -> location != null
+                        && location.city() != null
+                        && !location.city().isBlank())
+                .collect(
+                        Collectors.groupingBy(Location::city, LinkedHashMap::new, Collectors.summingInt(location -> 1)))
+                .entrySet()
+                .stream()
                 .map(entry -> new CityCount(entry.getKey(), entry.getValue()))
                 .sorted(Comparator.comparingInt(CityCount::count).reversed())
                 .collect(Collectors.toList());
@@ -152,6 +158,5 @@ public class EventService {
         }
     }
 
-    private record EventWithMonth(Event event, MonthLabel month) {
-    }
+    private record EventWithMonth(Event event, MonthLabel month) {}
 }

@@ -6,10 +6,9 @@ import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import java.util.concurrent.ExecutionException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
-
-import java.util.concurrent.ExecutionException;
 
 /**
  * Migrations de données jouées au démarrage, avant que l'application ne serve du trafic.
@@ -51,7 +50,9 @@ public class LegacyDataMigration {
         }
         int migratedEmails = userRepository.migrateLegacyEmailCasing();
         if (migratedEmails > 0) {
-            logger.infov("Migration casse des emails : {0} document(s) utilisateur re-keyé(s) en minuscules", migratedEmails);
+            logger.infov(
+                    "Migration casse des emails : {0} document(s) utilisateur re-keyé(s) en minuscules",
+                    migratedEmails);
         }
     }
 }

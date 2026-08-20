@@ -11,7 +11,6 @@ import java.util.Set;
  * constantes {@link Names} (des constantes de compilation sont requises).
  */
 public enum Role {
-
     ADMIN,
     DT,
     CONSULTANT;
@@ -27,8 +26,7 @@ public enum Role {
      * plus : il est lu comme CONSULTANT. Utilisé par la migration des documents legacy.
      */
     public static Role fromLegacy(String role) {
-        return "membre".equalsIgnoreCase(role) ? CONSULTANT
-                : valueOf(role.toUpperCase(Locale.ROOT));
+        return "membre".equalsIgnoreCase(role) ? CONSULTANT : valueOf(role.toUpperCase(Locale.ROOT));
     }
 
     public static final class Names {
@@ -36,7 +34,6 @@ public enum Role {
         public static final String DT = "DT";
         public static final String CONSULTANT = "CONSULTANT";
 
-        private Names() {
-        }
+        private Names() {}
     }
 }

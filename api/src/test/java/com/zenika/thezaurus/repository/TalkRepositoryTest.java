@@ -1,5 +1,7 @@
 package com.zenika.thezaurus.repository;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.api.core.ApiFutures;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
@@ -7,16 +9,13 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TalkRepositoryTest {
 
@@ -52,8 +51,7 @@ public class TalkRepositoryTest {
         QueryDocumentSnapshot legacyDoc = documentOf(List.of("Jane Doe"), legacyRef);
 
         DocumentReference migratedRef = Mockito.mock(DocumentReference.class);
-        QueryDocumentSnapshot migratedDoc =
-                documentOf(List.of(Map.of("name", "John Doe")), migratedRef);
+        QueryDocumentSnapshot migratedDoc = documentOf(List.of(Map.of("name", "John Doe")), migratedRef);
 
         QueryDocumentSnapshot noSpeakersDoc = documentOf(null, Mockito.mock(DocumentReference.class));
 
@@ -93,8 +91,8 @@ public class TalkRepositoryTest {
         // Après une première migration, plus aucun document ne contient de chaîne :
         // une seconde exécution ne réécrit rien et retourne 0.
         DocumentReference reference = Mockito.mock(DocumentReference.class);
-        QueryDocumentSnapshot doc = documentOf(
-                List.of(Map.of("name", "Jane Doe", "email", "jane@zenika.com")), reference);
+        QueryDocumentSnapshot doc =
+                documentOf(List.of(Map.of("name", "Jane Doe", "email", "jane@zenika.com")), reference);
         Mockito.when(snapshot.getDocuments()).thenReturn(List.of(doc));
 
         assertEquals(0, repository.migrateLegacySpeakers());

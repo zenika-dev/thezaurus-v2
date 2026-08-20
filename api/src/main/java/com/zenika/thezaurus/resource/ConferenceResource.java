@@ -15,7 +15,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -56,7 +55,8 @@ public class ConferenceResource {
 
     @PUT
     @Path("/{id}")
-    public Response update(@PathParam("id") String id, Conference conference) throws ExecutionException, InterruptedException {
+    public Response update(@PathParam("id") String id, Conference conference)
+            throws ExecutionException, InterruptedException {
         Response invalid = validateTypeAndReach(conference);
         if (invalid != null) {
             return invalid;

@@ -1,5 +1,9 @@
 package com.zenika.thezaurus.slack.command;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.slack.api.RequestConfigurator;
 import com.slack.api.app_backend.views.payload.ViewSubmissionPayload;
 import com.slack.api.bolt.context.builtin.ViewSubmissionContext;
@@ -13,20 +17,15 @@ import com.slack.api.model.view.ViewState;
 import com.zenika.thezaurus.model.Talk;
 import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.service.TalkService;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TalkCommandTest {
 
@@ -147,7 +146,8 @@ public class TalkCommandTest {
         ArgumentCaptor<RequestConfigurator<UsersInfoRequest.UsersInfoRequestBuilder>> captor =
                 ArgumentCaptor.forClass(RequestConfigurator.class);
         Mockito.verify(client).usersInfo(captor.capture());
-        UsersInfoRequest built = captor.getValue().configure(UsersInfoRequest.builder()).build();
+        UsersInfoRequest built =
+                captor.getValue().configure(UsersInfoRequest.builder()).build();
         assertEquals("U123", built.getUser());
     }
 
@@ -186,14 +186,15 @@ public class TalkCommandTest {
 
         assertTrue(speaker.name().contains("U123"));
         assertNull(speaker.email());
-        assertEquals("U123", speaker.slackUserId(),
+        assertEquals(
+                "U123",
+                speaker.slackUserId(),
                 "Le slackUserId doit rester exploitable pour rattraper l'email plus tard");
     }
 
     @Test
     public void testSubmissionHandlesSlackApiError() throws Exception {
-        Mockito.when(client.usersInfo(Mockito.any(RequestConfigurator.class)))
-                .thenThrow(new IOException("boom"));
+        Mockito.when(client.usersInfo(Mockito.any(RequestConfigurator.class))).thenThrow(new IOException("boom"));
 
         User speaker = submit(List.of("U123")).speakers().get(0);
 

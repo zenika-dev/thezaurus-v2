@@ -9,13 +9,12 @@ import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.BlogPost;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class BlogPostRepository {
@@ -30,14 +29,17 @@ public class BlogPostRepository {
     private static final String BASE_COLLECTION_NAME = "blog_posts";
 
     private String getCollectionName() {
-        if (collectionPrefix == null || collectionPrefix.isEmpty() || collectionPrefix.get().trim().isEmpty()) {
+        if (collectionPrefix == null
+                || collectionPrefix.isEmpty()
+                || collectionPrefix.get().trim().isEmpty()) {
             return BASE_COLLECTION_NAME;
         }
         return collectionPrefix.get().trim() + "_" + BASE_COLLECTION_NAME;
     }
 
     public List<BlogPost> findAll() throws ExecutionException, InterruptedException {
-        ApiFuture<QuerySnapshot> query = firestore.collection(getCollectionName()).get();
+        ApiFuture<QuerySnapshot> query =
+                firestore.collection(getCollectionName()).get();
         QuerySnapshot querySnapshot = query.get();
         return querySnapshot.getDocuments().stream()
                 .map(doc -> doc.toObject(BlogPost.class))
@@ -73,7 +75,8 @@ public class BlogPostRepository {
     }
 
     public void delete(String id) throws ExecutionException, InterruptedException {
-        ApiFuture<WriteResult> writeResult = firestore.collection(getCollectionName()).document(id).delete();
+        ApiFuture<WriteResult> writeResult =
+                firestore.collection(getCollectionName()).document(id).delete();
         writeResult.get();
     }
 }

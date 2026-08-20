@@ -1,5 +1,11 @@
 package com.zenika.thezaurus.resource;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.Talk;
 import com.zenika.thezaurus.model.User;
@@ -8,21 +14,16 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import java.util.Collections;
-import java.util.List;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 @QuarkusTest
-@TestSecurity(user = "dev@zenika.com", roles = {Role.Names.CONSULTANT})
+@TestSecurity(
+        user = "dev@zenika.com",
+        roles = {Role.Names.CONSULTANT})
 public class TalkResourceTest {
 
     @InjectMock
@@ -32,23 +33,20 @@ public class TalkResourceTest {
     public void testList() throws Exception {
         Mockito.when(service.findAll()).thenReturn(Collections.singletonList(new Talk("1", "Titre", "Description")));
 
-        given()
-          .when().get("/talks")
-          .then()
-             .statusCode(200)
-             .body("size()", is(1))
-             .body("[0].id", is("1"))
-             .body("[0].title", is("Titre"));
+        given().when()
+                .get("/talks")
+                .then()
+                .statusCode(200)
+                .body("size()", is(1))
+                .body("[0].id", is("1"))
+                .body("[0].title", is("Titre"));
     }
 
     @Test
     public void testGetNotFound() throws Exception {
         Mockito.when(service.findById("999")).thenReturn(null);
 
-        given()
-          .when().get("/talks/999")
-          .then()
-             .statusCode(404);
+        given().when().get("/talks/999").then().statusCode(404);
     }
 
     @Test
@@ -58,14 +56,14 @@ public class TalkResourceTest {
 
         Mockito.when(service.create(Mockito.any(Talk.class))).thenReturn(created);
 
-        given()
-          .contentType(ContentType.JSON)
-          .body(input)
-          .when().post("/talks")
-          .then()
-             .statusCode(201)
-             .body("id", is("new-id"))
-             .body("title", is("New Talk"));
+        given().contentType(ContentType.JSON)
+                .body(input)
+                .when()
+                .post("/talks")
+                .then()
+                .statusCode(201)
+                .body("id", is("new-id"))
+                .body("title", is("New Talk"));
     }
 
     @Test
@@ -76,12 +74,12 @@ public class TalkResourceTest {
         String payload = "{\"title\":\"New Talk\",\"description\":\"Desc\","
                 + "\"speakers\":[{\"name\":\"Jane Doe\",\"email\":\"jane@zenika.com\"}]}";
 
-        given()
-          .contentType(ContentType.JSON)
-          .body(payload)
-          .when().post("/talks")
-          .then()
-             .statusCode(201);
+        given().contentType(ContentType.JSON)
+                .body(payload)
+                .when()
+                .post("/talks")
+                .then()
+                .statusCode(201);
 
         ArgumentCaptor<Talk> captor = ArgumentCaptor.forClass(Talk.class);
         Mockito.verify(service).create(captor.capture());
@@ -98,16 +96,17 @@ public class TalkResourceTest {
         String payload = "{\"title\":\"New Talk\",\"description\":\"Desc\","
                 + "\"speakers\":[{\"name\":\"Intrus\",\"email\":\"intrus@evil.com\",\"roles\":[\"ADMIN\"]}]}";
 
-        given()
-          .contentType(ContentType.JSON)
-          .body(payload)
-          .when().post("/talks")
-          .then()
-             .statusCode(201);
+        given().contentType(ContentType.JSON)
+                .body(payload)
+                .when()
+                .post("/talks")
+                .then()
+                .statusCode(201);
 
         ArgumentCaptor<Talk> captor = ArgumentCaptor.forClass(Talk.class);
         Mockito.verify(service).create(captor.capture());
-        assertNull(captor.getValue().speakers().get(0).roles(),
+        assertNull(
+                captor.getValue().speakers().get(0).roles(),
                 "Les rôles ne doivent pas pouvoir être injectés depuis un payload client");
     }
 
@@ -115,51 +114,54 @@ public class TalkResourceTest {
     public void testCreateRejectsUnstructuredSpeakers() throws Exception {
         // Le contrat OpenAPI annonce des objets : une chaîne doit être refusée proprement en 400,
         // pas absorbée en silence ni transformée en 500.
-        String payload = "{\"title\":\"New Talk\",\"description\":\"Desc\","
-                + "\"speakers\":[\"Jane Doe\"]}";
+        String payload = "{\"title\":\"New Talk\",\"description\":\"Desc\"," + "\"speakers\":[\"Jane Doe\"]}";
 
-        given()
-          .contentType(ContentType.JSON)
-          .body(payload)
-          .when().post("/talks")
-          .then()
-             .statusCode(400);
+        given().contentType(ContentType.JSON)
+                .body(payload)
+                .when()
+                .post("/talks")
+                .then()
+                .statusCode(400);
 
         Mockito.verify(service, Mockito.never()).create(Mockito.any(Talk.class));
     }
 
     @Test
     public void testGetTalksDoesNotExposeSpeakerRoles() throws Exception {
-        Talk talk = new Talk("Titre", "Description", List.of(
-                User.builder().name("Jane").email("jane@zenika.com")
-                        .roles(List.of(Role.ADMIN)).build()),
-                null, null, null).withId("1");
+        Talk talk = new Talk(
+                        "Titre",
+                        "Description",
+                        List.of(User.builder()
+                                .name("Jane")
+                                .email("jane@zenika.com")
+                                .roles(List.of(Role.ADMIN))
+                                .build()),
+                        null,
+                        null,
+                        null)
+                .withId("1");
         Mockito.when(service.findAll()).thenReturn(Collections.singletonList(talk));
 
-        given()
-          .when().get("/talks")
-          .then()
-             .statusCode(200)
-             .body("[0].speakers[0].name", is("Jane"))
-             .body("[0].speakers[0].roles", is(nullValue()));
+        given().when()
+                .get("/talks")
+                .then()
+                .statusCode(200)
+                .body("[0].speakers[0].name", is("Jane"))
+                .body("[0].speakers[0].roles", is(nullValue()));
     }
 
     @Test
     public void testDeleteForbiddenForConsultant() {
-        given()
-          .when().delete("/talks/1")
-          .then()
-             .statusCode(403);
+        given().when().delete("/talks/1").then().statusCode(403);
     }
 
     @Test
-    @TestSecurity(user = "admin@zenika.com", roles = {Role.Names.ADMIN})
+    @TestSecurity(
+            user = "admin@zenika.com",
+            roles = {Role.Names.ADMIN})
     public void testDeleteAsAdmin() throws Exception {
         Mockito.when(service.delete("1")).thenReturn(true);
 
-        given()
-          .when().delete("/talks/1")
-          .then()
-             .statusCode(204);
+        given().when().delete("/talks/1").then().statusCode(204);
     }
 }

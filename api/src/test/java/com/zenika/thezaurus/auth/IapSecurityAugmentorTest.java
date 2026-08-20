@@ -1,5 +1,8 @@
 package com.zenika.thezaurus.auth;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.repository.UserRepository;
@@ -7,16 +10,12 @@ import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.mutiny.Uni;
+import java.util.List;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IapSecurityAugmentorTest {
 
@@ -24,7 +23,8 @@ public class IapSecurityAugmentorTest {
     private UserRepository userRepository;
 
     /** Exécute le supplier en ligne, comme le ferait Quarkus sur un worker thread. */
-    private final AuthenticationRequestContext context = supplier -> Uni.createFrom().item(supplier);
+    private final AuthenticationRequestContext context =
+            supplier -> Uni.createFrom().item(supplier);
 
     @BeforeEach
     public void setUp() {
@@ -63,8 +63,11 @@ public class IapSecurityAugmentorTest {
 
     @Test
     public void testUserWithMultipleRolesGetsAllRolesOnIdentity() throws Exception {
-        User user = User.builder().email("maxime.mainguet@zenika.com").name("Maxime")
-                .roles(List.of(Role.CONSULTANT, Role.DT)).build();
+        User user = User.builder()
+                .email("maxime.mainguet@zenika.com")
+                .name("Maxime")
+                .roles(List.of(Role.CONSULTANT, Role.DT))
+                .build();
         Mockito.when(userRepository.findByEmail("maxime.mainguet@zenika.com")).thenReturn(user);
 
         SecurityIdentity result = augment(jwtIdentity("maxime.mainguet@zenika.com", "Maxime"));
@@ -77,8 +80,11 @@ public class IapSecurityAugmentorTest {
 
     @Test
     public void testExistingUserIsReadOnly() throws Exception {
-        User existing = User.builder().email("old@zenika.com").name("Already Set")
-                .roles(List.of(Role.ADMIN)).build();
+        User existing = User.builder()
+                .email("old@zenika.com")
+                .name("Already Set")
+                .roles(List.of(Role.ADMIN))
+                .build();
         Mockito.when(userRepository.findByEmail("old@zenika.com")).thenReturn(existing);
 
         SecurityIdentity result = augment(jwtIdentity("old@zenika.com", "Different Name"));
@@ -92,8 +98,11 @@ public class IapSecurityAugmentorTest {
 
     @Test
     public void testExistingUserWithMissingNameIsBackfilledFromSsoClaim() throws Exception {
-        User existing = User.builder().email("legacy@zenika.com").name(null)
-                .roles(List.of(Role.ADMIN)).build();
+        User existing = User.builder()
+                .email("legacy@zenika.com")
+                .name(null)
+                .roles(List.of(Role.ADMIN))
+                .build();
         Mockito.when(userRepository.findByEmail("legacy@zenika.com")).thenReturn(existing);
 
         SecurityIdentity result = augment(jwtIdentity("legacy@zenika.com", "Legacy User"));
@@ -123,8 +132,11 @@ public class IapSecurityAugmentorTest {
     public void testUppercaseEmailIsNormalizedAndEnriched() throws Exception {
         // L'email sert de clé de document Firestore et de principal : la casse du JWT ne doit
         // ni refuser l'accès ni créer un doublon.
-        User user = User.builder().email("jane@zenika.com").name("Jane")
-                .roles(List.of(Role.CONSULTANT)).build();
+        User user = User.builder()
+                .email("jane@zenika.com")
+                .name("Jane")
+                .roles(List.of(Role.CONSULTANT))
+                .build();
         Mockito.when(userRepository.findByEmail("jane@zenika.com")).thenReturn(user);
 
         SecurityIdentity result = augment(jwtIdentity("JANE@ZENIKA.COM", "Jane"));
@@ -146,7 +158,8 @@ public class IapSecurityAugmentorTest {
     public void testMockAuthGrantsDevIdentityToAnonymous() {
         augmentor.mockAuth = true;
 
-        SecurityIdentity result = augment(QuarkusSecurityIdentity.builder().setAnonymous(true).build());
+        SecurityIdentity result =
+                augment(QuarkusSecurityIdentity.builder().setAnonymous(true).build());
 
         assertEquals("dev@zenika.com", result.getPrincipal().getName());
         assertTrue(result.hasRole(Role.Names.ADMIN));
@@ -156,7 +169,8 @@ public class IapSecurityAugmentorTest {
 
     @Test
     public void testAnonymousIsUntouchedWithoutMockAuth() {
-        SecurityIdentity anonymous = QuarkusSecurityIdentity.builder().setAnonymous(true).build();
+        SecurityIdentity anonymous =
+                QuarkusSecurityIdentity.builder().setAnonymous(true).build();
 
         SecurityIdentity result = augment(anonymous);
 

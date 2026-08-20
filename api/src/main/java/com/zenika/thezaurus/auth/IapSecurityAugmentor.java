@@ -1,5 +1,8 @@
 package com.zenika.thezaurus.auth;
 
+import com.zenika.thezaurus.model.Role;
+import com.zenika.thezaurus.model.User;
+import com.zenika.thezaurus.repository.UserRepository;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
@@ -7,17 +10,11 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jboss.logging.Logger;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
-import com.zenika.thezaurus.model.Role;
-import com.zenika.thezaurus.model.User;
-import com.zenika.thezaurus.repository.UserRepository;
-
 import java.util.List;
 import java.util.Locale;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
@@ -74,7 +71,11 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
             User user = userRepository.findByEmail(email);
             if (user == null) {
                 // Création auto avec rôle par défaut 'consultant', nom récupéré depuis le SSO
-                user = User.builder().email(email).name(name).roles(List.of(Role.CONSULTANT)).build();
+                user = User.builder()
+                        .email(email)
+                        .name(name)
+                        .roles(List.of(Role.CONSULTANT))
+                        .build();
                 userRepository.create(user);
                 logger.infof("Utilisateur %s créé automatiquement avec le rôle '%s'", email, Role.CONSULTANT);
             } else if ((user.name() == null || user.name().isBlank()) && name != null && !name.isBlank()) {
@@ -83,8 +84,8 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
                 userRepository.update(email, user);
             }
 
-            QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity)
-                    .setPrincipal(() -> email);
+            QuarkusSecurityIdentity.Builder builder =
+                    QuarkusSecurityIdentity.builder(identity).setPrincipal(() -> email);
             if (user.roles() != null) {
                 user.roles().stream().map(Role::name).forEach(builder::addRole);
             }

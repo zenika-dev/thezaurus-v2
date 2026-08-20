@@ -12,14 +12,13 @@ import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.User;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class UserRepository {
@@ -32,7 +31,8 @@ public class UserRepository {
     private static final String COLLECTION_NAME = "users";
 
     public List<User> findAll(int maxResults) throws ExecutionException, InterruptedException {
-        ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME).limit(maxResults).get();
+        ApiFuture<QuerySnapshot> future =
+                firestore.collection(COLLECTION_NAME).limit(maxResults).get();
         return future.get().getDocuments().stream()
                 .map(document -> document.toObject(User.class))
                 .toList();
@@ -87,7 +87,8 @@ public class UserRepository {
                 } catch (IllegalArgumentException e) {
                     // Une valeur inattendue (champ vidé ou édité à la main dans la console) ne doit
                     // pas empêcher le boot ni bloquer la migration des documents suivants.
-                    logger.errorv("Migration rôles legacy : valeur ''{0}'' inconnue sur le document {1}, document ignoré",
+                    logger.errorv(
+                            "Migration rôles legacy : valeur ''{0}'' inconnue sur le document {1}, document ignoré",
                             legacyRole, doc.getId());
                     continue;
                 }
@@ -124,8 +125,7 @@ public class UserRepository {
                 data = mergeUserData(existing.getData(), doc.getData());
             } else {
                 data = new HashMap<>(doc.getData());
-                data.put("email", data.get("email") instanceof String email
-                        ? email.toLowerCase(Locale.ROOT) : lowerId);
+                data.put("email", data.get("email") instanceof String email ? email.toLowerCase(Locale.ROOT) : lowerId);
             }
             target.set(data).get();
             doc.getReference().delete().get();

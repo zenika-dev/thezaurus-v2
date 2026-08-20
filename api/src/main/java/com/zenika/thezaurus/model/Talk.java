@@ -16,7 +16,13 @@ public record Talk(
         this(id, title, description, null, null, null, null, null);
     }
 
-    public Talk(String title, String description, List<User> speakers, String office, TalkStatus status, Visibility visibility) {
+    public Talk(
+            String title,
+            String description,
+            List<User> speakers,
+            String office,
+            TalkStatus status,
+            Visibility visibility) {
         this(null, title, description, speakers, office, null, status, visibility);
     }
 

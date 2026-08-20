@@ -1,9 +1,8 @@
 package com.zenika.thezaurus.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Builder;
-
 import java.util.List;
+import lombok.Builder;
 
 /**
  * <ul>
