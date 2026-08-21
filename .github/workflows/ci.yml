@@ -38,7 +38,7 @@ jobs:
 
       - name: Upload des rapports de tests en cas d'échec
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: api-surefire-reports
           path: api/target/surefire-reports/
