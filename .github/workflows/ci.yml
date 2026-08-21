@@ -55,7 +55,7 @@ jobs:
 
       # Même version majeure que le Dockerfile (node:20-alpine).
       - name: Setup Node 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "20"
           cache: npm
