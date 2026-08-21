@@ -22,7 +22,7 @@ jobs:
       run:
         working-directory: api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup JDK 21
         uses: actions/setup-java@v4
@@ -51,7 +51,7 @@ jobs:
       run:
         working-directory: front
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Même version majeure que le Dockerfile (node:20-alpine).
       - name: Setup Node 20
