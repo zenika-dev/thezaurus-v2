@@ -25,10 +25,7 @@ public class ReasoningEngineService {
 
     private static final Logger LOG = Logger.getLogger(ReasoningEngineService.class);
 
-    @ConfigProperty(
-            name = "thezaurus.reasoning-engine.url",
-            defaultValue = "https://europe-west1-aiplatform.googleapis.com/v1/projects/thezaurus-494709/locations/europe-west1/reasoningEngines/217923204625203200:streamQuery?alt=sse"
-    )
+    @ConfigProperty(name = "thezaurus.reasoning-engine.url", defaultValue = "")
     String reasoningEngineUrl;
 
     @Inject
