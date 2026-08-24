@@ -132,10 +132,13 @@ Utilisez ensuite l'URL HTTPS fournie par ngrok (ex : `https://xxxx.ngrok-free.ap
    - **API** : `http://localhost:8080`
    - **Swagger UI** : `http://localhost:8080/q/swagger-ui/`
    - **Émulateur Firestore** : `http://localhost:9000` (mode `dev` uniquement)
+   - **Emulator UI (Firebase)** : `http://localhost:4000/firestore/local-dev/data` (mode `dev` uniquement) — parcourt les collections/documents dans un navigateur, sans rien installer.
 
 ### Vérifier les données de l'émulateur (mode dev)
 
-L'API REST de l'émulateur permet d'inspecter les documents directement :
+Le plus simple : ouvrir l'**Emulator UI** ci-dessus dans un navigateur.
+
+L'API REST de l'émulateur permet aussi d'inspecter les documents en ligne de commande :
 
 ```bash
 curl "http://localhost:9000/v1/projects/local-dev/databases/(default)/documents/dev_talks"
