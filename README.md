@@ -173,6 +173,46 @@ Le déploiement est pour le moment manuel. Il faut s'assurer de :
   FIRESTORE_COLLECTION_PREFIX=prod
   ```
 
+### Release automatique (semantic-release)
+
+La création des releases (tag Git, GitHub Release, `CHANGELOG.md`) est automatisée via [semantic-release](https://github.com/semantic-release/semantic-release) et déclenchée par GitHub Actions (`.github/workflows/release.yml`).
+
+**Déclencheur** : le workflow se lance dès qu'une Pull Request dont la branche source commence par `release/` est **mergée dans `main`**.
+
+**1. Installer les dépendances (une fois) :**
+```bash
+npm install
+```
+
+**2. Écrire des commits au format [Conventional Commits](https://www.conventionalcommits.org/)** — c'est ce qui pilote le calcul automatique de version :
+
+| Préfixe | Effet | Exemple |
+|---|---|---|
+| `fix:` | bump **patch** (1.0.0 → 1.0.1) | `fix: corrige le format de date sur les talks` |
+| `feat:` | bump **minor** (1.0.0 → 1.1.0) | `feat: ajoute l'export CSV des conférences` |
+| `feat!:` ou body avec `BREAKING CHANGE:` | bump **major** (1.0.0 → 2.0.0) | `feat!: change le format de l'API de recherche` |
+| `chore:`, `docs:`, `refactor:`, `test:`... | pas de release | `chore: met à jour les dépendances` |
+
+**3. Développer sur une branche `release/<nom>`, puis merger dans `main` :**
+```bash
+git checkout -b release/export-csv
+# ... commits avec feat:/fix: ...
+git push -u origin release/export-csv
+gh pr create --base main --head release/export-csv --title "release: export CSV"
+gh pr merge --squash
+```
+
+⚠️ En cas de **squash merge**, GitHub reprend le titre de la PR comme message du commit final : ce titre doit respecter le format conventionnel (ex: `feat: ajoute l'export CSV`), sinon aucune release n'est déclenchée.
+
+**4. Vérifier ce qui va se passer avant de merger (dry-run local, optionnel) :**
+```bash
+npx semantic-release --dry-run --no-ci
+```
+
+**5. Résultat** : une fois la PR mergée, la CI publie automatiquement le tag `vX.Y.Z`, la GitHub Release avec les notes générées, et met à jour `CHANGELOG.md` à la racine du repo.
+
+> **Portée actuelle** : une seule release globale pour tout le monorepo (front + api + agents confondus). Les versions dans `front/package.json` et `api/pom.xml` ne sont pas synchronisées automatiquement avec le tag de release.
+
 ## Formatage du code (module `api`)
 
 Le style Java est imposé par [Spotless](https://github.com/diffplug/spotless) avec le formateur
