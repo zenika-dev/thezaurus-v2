@@ -63,6 +63,36 @@ public class UserRepository {
     }
 
     /**
+     * Écriture ciblée : {@link #update(String, User)} ferait un {@code set} qui écrase le document
+     * entier, donc les rôles et le {@code slackUserId}. Échoue si le document n'existe pas.
+     */
+    public void updateNotificationPreferences(String email, boolean emailEnabled, boolean slackEnabled)
+            throws ExecutionException, InterruptedException {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("emailNotificationsEnabled", emailEnabled);
+        updates.put("slackNotificationsEnabled", slackEnabled);
+        firestore.collection(COLLECTION_NAME).document(email).update(updates).get();
+    }
+
+    /** Écriture ciblée, cf. {@link #updateNotificationPreferences}. */
+    public void updateSlackUserId(String email, String slackUserId) throws ExecutionException, InterruptedException {
+        firestore
+                .collection(COLLECTION_NAME)
+                .document(email)
+                .update(Map.of("slackUserId", slackUserId))
+                .get();
+    }
+
+    /** Écriture ciblée, cf. {@link #updateNotificationPreferences}. */
+    public void updateName(String email, String name) throws ExecutionException, InterruptedException {
+        firestore
+                .collection(COLLECTION_NAME)
+                .document(email)
+                .update(Map.of("name", name))
+                .get();
+    }
+
+    /**
      * Réécrit au format courant les utilisateurs qui portent encore l'ancien champ {@code role}
      * mono-valué : le champ est supprimé et, si {@code roles} n'existe pas déjà, il est créé avec
      * l'équivalent normalisé ({@link Role#fromLegacy} : "membre" devient CONSULTANT). Travaille

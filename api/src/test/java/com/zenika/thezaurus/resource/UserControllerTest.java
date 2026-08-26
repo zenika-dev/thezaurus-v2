@@ -8,6 +8,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.repository.UserRepository;
+import com.zenika.thezaurus.slack.SlackUserResolver;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -20,6 +21,9 @@ public class UserControllerTest {
 
     @InjectMock
     UserRepository userRepository;
+
+    @InjectMock
+    SlackUserResolver slackUserResolver;
 
     @Test
     @TestSecurity(
@@ -85,5 +89,61 @@ public class UserControllerTest {
     @Test
     public void testGetCurrentUserUnauthorizedWhenAnonymous() {
         given().when().get("/api/me").then().statusCode(401);
+    }
+
+    // --- Rattachement Slack au login -----------------------------------------------------------
+    // /api/me est appelé une fois par connexion : c'est le déclencheur du rattachement.
+
+    @Test
+    @TestSecurity(
+            user = "jane@zenika.com",
+            roles = {Role.Names.CONSULTANT})
+    public void testMeTriggersSlackResolutionWhenSlackUserIdIsAbsent() throws Exception {
+        User jane = User.builder()
+                .name("Jane Doe")
+                .email("jane@zenika.com")
+                .roles(List.of(Role.CONSULTANT))
+                .build();
+        Mockito.when(userRepository.findByEmail("jane@zenika.com")).thenReturn(jane);
+
+        given().when().get("/api/me").then().statusCode(200);
+
+        Mockito.verify(slackUserResolver).resolveAndPersistAsync("jane@zenika.com");
+    }
+
+    @Test
+    @TestSecurity(
+            user = "jane@zenika.com",
+            roles = {Role.Names.CONSULTANT})
+    public void testMeDoesNotRetriggerSlackResolutionWhenAlreadyLinked() throws Exception {
+        User jane = User.builder()
+                .name("Jane Doe")
+                .email("jane@zenika.com")
+                .slackUserId("U123")
+                .roles(List.of(Role.CONSULTANT))
+                .build();
+        Mockito.when(userRepository.findByEmail("jane@zenika.com")).thenReturn(jane);
+
+        given().when().get("/api/me").then().statusCode(200);
+
+        Mockito.verifyNoInteractions(slackUserResolver);
+    }
+
+    @Test
+    @TestSecurity(
+            user = "jane@zenika.com",
+            roles = {Role.Names.CONSULTANT})
+    public void testMeStillAnswersWhenSlackResolutionBlowsUp() throws Exception {
+        // Enrichissement, jamais un prérequis : la connexion doit aboutir.
+        User jane = User.builder()
+                .name("Jane Doe")
+                .email("jane@zenika.com")
+                .roles(List.of(Role.CONSULTANT))
+                .build();
+        Mockito.when(userRepository.findByEmail("jane@zenika.com")).thenReturn(jane);
+        Mockito.when(slackUserResolver.resolveAndPersistAsync(Mockito.anyString()))
+                .thenThrow(new RuntimeException("Slack est tombé"));
+
+        given().when().get("/api/me").then().statusCode(200).body("email", is("jane@zenika.com"));
     }
 }

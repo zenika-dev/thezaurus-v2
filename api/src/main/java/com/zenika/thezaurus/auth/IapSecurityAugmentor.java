@@ -78,10 +78,15 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
                         .build();
                 userRepository.create(user);
                 logger.infof("Utilisateur %s créé automatiquement avec le rôle '%s'", email, Role.CONSULTANT);
-            } else if ((user.name() == null || user.name().isBlank()) && name != null && !name.isBlank()) {
-                // Compte existant créé avant l'ajout du champ name : on le complète depuis le SSO
-                user = user.withName(name);
-                userRepository.update(email, user);
+            } else if (name != null && !name.isBlank() && !name.equals(user.name())) {
+                // Le SSO fait autorité sur le nom. Best-effort : cet augmentor tourne à chaque
+                // requête, un échec d'écriture ne doit pas refuser l'authentification.
+                try {
+                    userRepository.updateName(email, name);
+                    user = user.withName(name);
+                } catch (Exception e) {
+                    logger.warnf(e, "Synchronisation du nom SSO de %s impossible, nom laissé en l'état", email);
+                }
             }
 
             QuarkusSecurityIdentity.Builder builder =

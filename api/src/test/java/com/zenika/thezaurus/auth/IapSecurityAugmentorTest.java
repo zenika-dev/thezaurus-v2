@@ -79,7 +79,7 @@ public class IapSecurityAugmentorTest {
     }
 
     @Test
-    public void testExistingUserIsReadOnly() throws Exception {
+    public void testExistingUserWithUnchangedNameIsReadOnly() throws Exception {
         User existing = User.builder()
                 .email("old@zenika.com")
                 .name("Already Set")
@@ -87,13 +87,34 @@ public class IapSecurityAugmentorTest {
                 .build();
         Mockito.when(userRepository.findByEmail("old@zenika.com")).thenReturn(existing);
 
-        SecurityIdentity result = augment(jwtIdentity("old@zenika.com", "Different Name"));
+        SecurityIdentity result = augment(jwtIdentity("old@zenika.com", "Already Set"));
 
         assertEquals("old@zenika.com", result.getPrincipal().getName());
         assertTrue(result.hasRole(Role.Names.ADMIN));
-        // L'authentification ne doit écrire que sur une création : pas de write par requête.
+        // Il tourne à chaque requête : sans changement de nom, aucune écriture.
+        Mockito.verify(userRepository, Mockito.never()).updateName(Mockito.anyString(), Mockito.anyString());
         Mockito.verify(userRepository, Mockito.never()).update(Mockito.anyString(), Mockito.any());
         Mockito.verify(userRepository, Mockito.never()).create(Mockito.any());
+    }
+
+    @Test
+    public void testDivergentNameIsRealignedOnTheSsoClaim() throws Exception {
+        // Le SSO fait autorité : un nom hérité de Slack est réécrit.
+        User existing = User.builder()
+                .email("old@zenika.com")
+                .name("pseudo-slack")
+                .slackUserId("U123")
+                .roles(List.of(Role.ADMIN))
+                .build();
+        Mockito.when(userRepository.findByEmail("old@zenika.com")).thenReturn(existing);
+
+        SecurityIdentity result = augment(jwtIdentity("old@zenika.com", "Jane Doe"));
+
+        Mockito.verify(userRepository).updateName("old@zenika.com", "Jane Doe");
+        // Écriture ciblée : un set() du User entier écraserait roles et slackUserId.
+        Mockito.verify(userRepository, Mockito.never()).update(Mockito.anyString(), Mockito.any());
+        Mockito.verify(userRepository, Mockito.never()).create(Mockito.any());
+        assertTrue(result.hasRole(Role.Names.ADMIN));
     }
 
     @Test
@@ -107,13 +128,26 @@ public class IapSecurityAugmentorTest {
 
         SecurityIdentity result = augment(jwtIdentity("legacy@zenika.com", "Legacy User"));
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        Mockito.verify(userRepository).update(Mockito.eq("legacy@zenika.com"), captor.capture());
-        assertEquals("Legacy User", captor.getValue().name());
-        assertEquals(List.of(Role.ADMIN), captor.getValue().roles());
+        Mockito.verify(userRepository).updateName("legacy@zenika.com", "Legacy User");
+        Mockito.verify(userRepository, Mockito.never()).update(Mockito.anyString(), Mockito.any());
         Mockito.verify(userRepository, Mockito.never()).create(Mockito.any());
         assertEquals("legacy@zenika.com", result.getPrincipal().getName());
         assertTrue(result.hasRole(Role.Names.ADMIN));
+    }
+
+    @Test
+    public void testBlankSsoNameNeverErasesTheStoredName() throws Exception {
+        // Un claim name absent du JWT ne doit pas vider le nom déjà connu.
+        User existing = User.builder()
+                .email("old@zenika.com")
+                .name("Jane Doe")
+                .roles(List.of(Role.ADMIN))
+                .build();
+        Mockito.when(userRepository.findByEmail("old@zenika.com")).thenReturn(existing);
+
+        augment(jwtIdentity("old@zenika.com", null));
+
+        Mockito.verify(userRepository, Mockito.never()).updateName(Mockito.anyString(), Mockito.anyString());
     }
 
     @Test

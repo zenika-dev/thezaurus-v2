@@ -19,6 +19,7 @@ import com.zenika.thezaurus.model.User;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -270,5 +271,61 @@ public class UserRepositoryTest {
         assertEquals(0, repository.migrateLegacyEmailCasing());
         Mockito.verifyNoInteractions(reference);
         Mockito.verify(collection, Mockito.never()).document(Mockito.anyString());
+    }
+
+    // --- Écritures ciblées ---------------------------------------------------------------------
+    // update(Map) et jamais set(), qui écrase le document entier et perdrait roles/slackUserId.
+
+    private DocumentReference documentReferenceFor(String email) {
+        DocumentReference reference = Mockito.mock(DocumentReference.class);
+        Mockito.when(reference.update(Mockito.anyMap()))
+                .thenReturn(ApiFutures.immediateFuture(Mockito.mock(WriteResult.class)));
+        Mockito.when(collection.document(email)).thenReturn(reference);
+        return reference;
+    }
+
+    private Map<String, Object> capturedUpdateData(DocumentReference reference) {
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        Mockito.verify(reference).update(captor.capture());
+        return captor.getValue();
+    }
+
+    @Test
+    public void testUpdateNotificationPreferencesWritesOnlyPreferenceFields() throws Exception {
+        DocumentReference reference = documentReferenceFor("jane@zenika.com");
+
+        repository.updateNotificationPreferences("jane@zenika.com", true, false);
+
+        Map<String, Object> written = capturedUpdateData(reference);
+        assertEquals(Set.of("emailNotificationsEnabled", "slackNotificationsEnabled"), written.keySet());
+        assertEquals(true, written.get("emailNotificationsEnabled"));
+        assertEquals(false, written.get("slackNotificationsEnabled"));
+        // roles et slackUserId hors de la charge écrite, et aucun set().
+        Mockito.verify(reference, Mockito.never()).set(Mockito.any());
+    }
+
+    @Test
+    public void testUpdateSlackUserIdWritesOnlySlackUserIdField() throws Exception {
+        DocumentReference reference = documentReferenceFor("jane@zenika.com");
+
+        repository.updateSlackUserId("jane@zenika.com", "U123");
+
+        Map<String, Object> written = capturedUpdateData(reference);
+        assertEquals(Set.of("slackUserId"), written.keySet());
+        assertEquals("U123", written.get("slackUserId"));
+        Mockito.verify(reference, Mockito.never()).set(Mockito.any());
+    }
+
+    @Test
+    public void testUpdateNameWritesOnlyNameField() throws Exception {
+        DocumentReference reference = documentReferenceFor("jane@zenika.com");
+
+        repository.updateName("jane@zenika.com", "Jane Doe");
+
+        Map<String, Object> written = capturedUpdateData(reference);
+        assertEquals(Set.of("name"), written.keySet());
+        assertEquals("Jane Doe", written.get("name"));
+        Mockito.verify(reference, Mockito.never()).set(Mockito.any());
     }
 }
