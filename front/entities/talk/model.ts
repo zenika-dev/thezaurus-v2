@@ -22,14 +22,6 @@ export interface TalkData {
 export interface TalkReviewRequest {
   title: string;
   abstract: string;
-  format?: string;
-  language?: string;
-}
-
-export interface ReviewImprovement {
-  category: "titre" | "abstract" | "coherence" | string;
-  comment: string;
-  suggestions: string[];
 }
 
 export interface TalkReviewResponse {
@@ -37,7 +29,14 @@ export interface TalkReviewResponse {
   suggestedAbstracts: string[];
   feedback: string[];
   keyImprovements: string[];
-  improvements?: ReviewImprovement[];
+}
+
+export interface ApiErrorResponse {
+  timestamp: string;
+  status: number;
+  error: string;
+  message: string;
+  path: string;
 }
 
 export const agencyLabels: Record<string, string> = {

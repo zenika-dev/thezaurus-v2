@@ -23,7 +23,6 @@ import type { TalkData, TalkStatus, TalkReviewResponse } from "@/entities/talk";
 import { agencyLabels, reviewTalkAction } from "@/entities/talk";
 import { isValidUrl } from "@/shared/lib";
 import { StatusTag, statusConfig } from "./TalkTags";
-import { AiReviewDialog } from "./AiReviewDialog";
 
 interface TalkDetailsDialogProps {
   talk: TalkData | null;
@@ -69,8 +68,6 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
       const res = await reviewTalkAction({
         title: talk.title,
         abstract: talk.abstract,
-        format: talk.format,
-        language: talk.language,
       });
       setAiResult(res);
     } catch {
@@ -240,16 +237,6 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
           <Button variant="outlined" onClick={onClose}>Fermer</Button>
         </DialogActions>
       </Dialog>
-
-      <AiReviewDialog
-        open={aiDialogOpen}
-        loading={aiLoading}
-        originalTitle={talk.title}
-        originalAbstract={talk.abstract}
-        reviewResult={aiResult}
-        onClose={() => setAiDialogOpen(false)}
-        onApply={handleApplyAiSuggestions}
-      />
     </>
   );
 }

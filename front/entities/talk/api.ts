@@ -1,4 +1,4 @@
-import type { TalkData, TalkReviewRequest, TalkReviewResponse } from "./model";
+import type {ApiErrorResponse, TalkData, TalkReviewRequest, TalkReviewResponse} from "./model";
 
 const API_BASE = process.env.API_URL ?? "http://localhost:8080";
 const API_URL = `${API_BASE}/talks`;
@@ -109,12 +109,19 @@ export const talkApi = {
     if (!res.ok) throw new Error("Failed to delete talk");
   },
   reviewTalk: async (payload: TalkReviewRequest): Promise<TalkReviewResponse> => {
-    const res = await fetch(`${API_URL}/review`, {
+    const response = await fetch(`${API_URL}/review`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("Failed to review talk with AI agent");
-    return res.json();
+    if (!response.ok) {
+        let errorMessage = "Une erreur est survenue lors de l'analyse du talk.";
+        const errorData: ApiErrorResponse = await response.json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      throw new Error(errorMessage);
+    }
+    return await response.json();
   },
 };
