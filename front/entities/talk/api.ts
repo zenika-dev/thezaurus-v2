@@ -1,6 +1,5 @@
-import type {ApiErrorResponse, TalkData, TalkReviewRequest, TalkReviewResponse} from "./model";
 import { apiFetch } from "@/shared/api";
-import type { TalkData } from "./model";
+import type { ApiErrorResponse, TalkData, TalkReviewRequest, TalkReviewResponse } from "./model";
 
 export interface BackendSpeaker {
   name?: string;
@@ -126,7 +125,7 @@ export const talkApi = {
     if (!res.ok) throw new Error("Failed to delete talk");
   },
   reviewTalk: async (payload: TalkReviewRequest): Promise<TalkReviewResponse> => {
-    const response = await fetch(`${API_URL}/review`, {
+    const response = await apiFetch("/talks/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
