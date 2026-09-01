@@ -1,6 +1,7 @@
 "use client";
 
 import { Drawer, styled } from "@mui/material";
+import Divider from "@mui/material/Divider";
 import { SideMenuHeader } from "./SideMenuHeader";
 import { SideMenuNavList } from "./SideMenuNavList";
 import { type NavItemConfig } from "./SideMenuNavItem";
@@ -34,6 +35,7 @@ const StyledDrawer = styled(Drawer, { shouldForwardProp: (p) => p !== "open" })(
   }),
 );
 
+import { SideMenuProfileLink } from "./SideMenuProfileLink";
 import { SideMenuThemeToggle } from "./SideMenuThemeToggle";
 
 export interface SideMenuViewProps {
@@ -54,6 +56,8 @@ export function SideMenuView({ open, onToggle, navItems }: SideMenuViewProps) {
     >
       <SideMenuHeader open={open} onToggle={onToggle} />
       <SideMenuNavList open={open} items={navItems} />
+      <Divider sx={{ mx: 2, borderColor: "var(--color-border)" }} />
+      <SideMenuProfileLink open={open} />
       <SideMenuThemeToggle open={open} />
     </StyledDrawer>
   );

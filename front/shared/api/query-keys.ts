@@ -15,4 +15,8 @@ export const queryKeys = {
     all: ["events"] as const,
     dashboard: (year: number) => ["events", "dashboard", year] as const,
   },
+  profile: {
+    all: ["profile"] as const,
+    me: () => ["profile", "me"] as const,
+  },
 } as const;
