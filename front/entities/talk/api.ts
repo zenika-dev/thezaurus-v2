@@ -1,3 +1,4 @@
+import type {ApiErrorResponse, TalkData, TalkReviewRequest, TalkReviewResponse} from "./model";
 import { apiFetch } from "@/shared/api";
 import type { TalkData } from "./model";
 
@@ -123,5 +124,21 @@ export const talkApi = {
   deleteTalk: async (id: string): Promise<void> => {
     const res = await apiFetch(`/talks/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete talk");
+  },
+  reviewTalk: async (payload: TalkReviewRequest): Promise<TalkReviewResponse> => {
+    const response = await fetch(`${API_URL}/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+        let errorMessage = "Une erreur est survenue lors de l'analyse du talk.";
+        const errorData: ApiErrorResponse = await response.json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      throw new Error(errorMessage);
+    }
+    return await response.json();
   },
 };
