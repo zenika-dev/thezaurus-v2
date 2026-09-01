@@ -1,1 +1,2 @@
-export { Events } from "./Events";
+export { EventsDashboard } from "./EventsDashboard";
+export { EventsDashboardSkeleton } from "./EventsDashboardSkeleton";

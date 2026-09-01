@@ -11,13 +11,12 @@ import com.zenika.thezaurus.model.Event;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class EventRepository {
@@ -60,7 +59,8 @@ public class EventRepository {
     }
 
     public List<Event> findAllByYear(int year) throws ExecutionException, InterruptedException {
-        ApiFuture<QuerySnapshot> query = firestore.collection(collectionName)
+        ApiFuture<QuerySnapshot> query = firestore
+                .collection(collectionName)
                 .whereGreaterThanOrEqualTo("date", year + "-01-01")
                 .whereLessThan("date", (year + 1) + "-01-01")
                 .get();
@@ -99,7 +99,8 @@ public class EventRepository {
     }
 
     public void delete(String id) throws ExecutionException, InterruptedException {
-        ApiFuture<WriteResult> writeResult = firestore.collection(collectionName).document(id).delete();
+        ApiFuture<WriteResult> writeResult =
+                firestore.collection(collectionName).document(id).delete();
         writeResult.get();
     }
 }

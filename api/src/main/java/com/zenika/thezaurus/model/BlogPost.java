@@ -12,8 +12,7 @@ public class BlogPost {
     private BlogPostStatus status;
     private List<String> tags;
 
-    public BlogPost() {
-    }
+    public BlogPost() {}
 
     public BlogPost(String id, String title, String link) {
         this.id = id;

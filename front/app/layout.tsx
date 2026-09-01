@@ -33,7 +33,7 @@ export default function RootLayout({
       <body className="min-h-full flex w-full">
         <AppRouterCacheProvider>
           <Providers>
-            <ProtectedRoute allowedRoles={["membre", "admin"]}>
+            <ProtectedRoute allowedRoles={["ADMIN", "DT", "CONSULTANT"]}>
               <SideMenu />
               <main className="flex-1 flex flex-col min-w-0 overflow-auto bg-surface">
                 {children}

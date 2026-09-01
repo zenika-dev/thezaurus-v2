@@ -1,5 +1,8 @@
 package com.zenika.thezaurus.resource;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
 import com.zenika.thezaurus.model.CityCount;
 import com.zenika.thezaurus.model.Event;
 import com.zenika.thezaurus.model.EventTypeSummary;
@@ -7,20 +10,21 @@ import com.zenika.thezaurus.model.EventsDashboard;
 import com.zenika.thezaurus.model.EventsTotals;
 import com.zenika.thezaurus.model.MonthLabel;
 import com.zenika.thezaurus.model.MonthlyActivity;
+import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.service.EventService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.util.Collections;
-import java.util.List;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.is;
-
 @QuarkusTest
+@TestSecurity(
+        user = "dev@zenika.com",
+        roles = {Role.Names.CONSULTANT})
 public class EventResourceTest {
 
     @InjectMock
@@ -28,25 +32,23 @@ public class EventResourceTest {
 
     @Test
     public void testList() throws Exception {
-        Mockito.when(service.findAll()).thenReturn(Collections.singletonList(new Event("1", "NightClazz Nantes", "NightClazz")));
+        Mockito.when(service.findAll())
+                .thenReturn(Collections.singletonList(new Event("1", "NightClazz Nantes", "NightClazz")));
 
-        given()
-          .when().get("/events")
-          .then()
-             .statusCode(200)
-             .body("size()", is(1))
-             .body("[0].id", is("1"))
-             .body("[0].name", is("NightClazz Nantes"));
+        given().when()
+                .get("/events")
+                .then()
+                .statusCode(200)
+                .body("size()", is(1))
+                .body("[0].id", is("1"))
+                .body("[0].name", is("NightClazz Nantes"));
     }
 
     @Test
     public void testGetNotFound() throws Exception {
         Mockito.when(service.findById("999")).thenReturn(null);
 
-        given()
-          .when().get("/events/999")
-          .then()
-             .statusCode(404);
+        given().when().get("/events/999").then().statusCode(404);
     }
 
     @Test
@@ -56,14 +58,14 @@ public class EventResourceTest {
 
         Mockito.when(service.create(Mockito.any(Event.class))).thenReturn(created);
 
-        given()
-          .contentType(ContentType.JSON)
-          .body(input)
-          .when().post("/events")
-          .then()
-             .statusCode(201)
-             .body("id", is("new-id"))
-             .body("name", is("NightClazz Nantes"));
+        given().contentType(ContentType.JSON)
+                .body(input)
+                .when()
+                .post("/events")
+                .then()
+                .statusCode(201)
+                .body("id", is("new-id"))
+                .body("name", is("NightClazz Nantes"));
     }
 
     @Test
@@ -76,16 +78,31 @@ public class EventResourceTest {
 
         Mockito.when(service.getDashboard(2026)).thenReturn(dashboard);
 
-        given()
-          .queryParam("year", 2026)
-          .when().get("/events/dashboard")
-          .then()
-             .statusCode(200)
-             .body("year", is(2026))
-             .body("totals.internal", is(30))
-             .body("totals.external", is(19))
-             .body("monthly[0].month", is("Jan"))
-             .body("eventTypes[0].name", is("NightClazz"))
-             .body("eventTypes[0].cities[0].city", is("Nantes"));
+        given().queryParam("year", 2026)
+                .when()
+                .get("/events/dashboard")
+                .then()
+                .statusCode(200)
+                .body("year", is(2026))
+                .body("totals.internal", is(30))
+                .body("totals.external", is(19))
+                .body("monthly[0].month", is("Jan"))
+                .body("eventTypes[0].name", is("NightClazz"))
+                .body("eventTypes[0].cities[0].city", is("Nantes"));
+    }
+
+    @Test
+    public void testDeleteForbiddenForConsultant() {
+        given().when().delete("/events/1").then().statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(
+            user = "admin@zenika.com",
+            roles = {Role.Names.ADMIN})
+    public void testDeleteAsAdmin() throws Exception {
+        Mockito.when(service.delete("1")).thenReturn(true);
+
+        given().when().delete("/events/1").then().statusCode(204);
     }
 }

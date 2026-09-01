@@ -1,17 +1,16 @@
 package com.zenika.thezaurus.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.zenika.thezaurus.model.Event;
 import com.zenika.thezaurus.model.EventsDashboard;
 import com.zenika.thezaurus.model.Location;
 import com.zenika.thezaurus.model.Visibility;
 import com.zenika.thezaurus.repository.EventRepository;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class EventServiceTest {
 
@@ -31,11 +30,11 @@ public class EventServiceTest {
 
     @Test
     public void testGetDashboardAggregatesByYearMonthAndType() throws Exception {
-        Mockito.when(repository.findAllByYear(2026)).thenReturn(List.of(
-                event("NightClazz", Visibility.PRIVATE, "2026-01-15", "Nantes"),
-                event("NightClazz", Visibility.PRIVATE, "2026-01-20", "Nantes"),
-                event("Conférence", Visibility.PUBLIC, "2026-02-10", "Paris")
-        ));
+        Mockito.when(repository.findAllByYear(2026))
+                .thenReturn(List.of(
+                        event("NightClazz", Visibility.PRIVATE, "2026-01-15", "Nantes"),
+                        event("NightClazz", Visibility.PRIVATE, "2026-01-20", "Nantes"),
+                        event("Conférence", Visibility.PUBLIC, "2026-02-10", "Paris")));
 
         EventsDashboard dashboard = service.getDashboard(2026);
 
@@ -51,7 +50,8 @@ public class EventServiceTest {
         assertEquals(2, dashboard.eventTypes().size());
         var nightClazz = dashboard.eventTypes().stream()
                 .filter(t -> t.name().equals("NightClazz"))
-                .findFirst().orElseThrow();
+                .findFirst()
+                .orElseThrow();
         assertEquals("internal", nightClazz.visibility());
         assertEquals(2, nightClazz.total());
         assertEquals(1, nightClazz.cities().size());

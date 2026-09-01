@@ -1,3 +1,5 @@
+import type { BackendSpeaker } from "./api";
+
 export type TalkStatus = "Draft" | "Idea" | "Submitted" | "Accepted" | "Replayed";
 
 export interface TalkData {
@@ -6,6 +8,11 @@ export interface TalkData {
   speaker: string;
   cospeaker: string;
   email: string;
+  /**
+   * Speakers tels que renvoyés par le backend, conservés tels quels pour être réémis à
+   * l'enregistrement. Le formulaire n'expose qu'un sous-ensemble de leurs champs.
+   */
+  speakersSource?: BackendSpeaker[];
   agency: string;
   abstract: string;
   format: string;

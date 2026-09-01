@@ -15,6 +15,10 @@ oauth_config:
   scopes:
     bot:
       - commands
+      # users.info : nom réel des speakers sélectionnés dans la modale /talk
+      - users:read
+      # users.info : email des speakers, requis pour les notifications par mail
+      - users:read.email
   pkce_enabled: false
 settings:
   interactivity:

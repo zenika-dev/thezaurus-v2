@@ -132,10 +132,13 @@ Utilisez ensuite l'URL HTTPS fournie par ngrok (ex : `https://xxxx.ngrok-free.ap
    - **API** : `http://localhost:8080`
    - **Swagger UI** : `http://localhost:8080/q/swagger-ui/`
    - **Émulateur Firestore** : `http://localhost:9000` (mode `dev` uniquement)
+   - **Emulator UI (Firebase)** : `http://localhost:4000/firestore/local-dev/data` (mode `dev` uniquement) — parcourt les collections/documents dans un navigateur, sans rien installer.
 
 ### Vérifier les données de l'émulateur (mode dev)
 
-L'API REST de l'émulateur permet d'inspecter les documents directement :
+Le plus simple : ouvrir l'**Emulator UI** ci-dessus dans un navigateur.
+
+L'API REST de l'émulateur permet aussi d'inspecter les documents en ligne de commande :
 
 ```bash
 curl "http://localhost:9000/v1/projects/local-dev/databases/(default)/documents/dev_talks"
@@ -169,5 +172,31 @@ Le déploiement est pour le moment manuel. Il faut s'assurer de :
   FIRESTORE_DATABASE_ID=thezaurus-prod
   FIRESTORE_COLLECTION_PREFIX=prod
   ```
+
+## Formatage du code (module `api`)
+
+Le style Java est imposé par [Spotless](https://github.com/diffplug/spotless) avec le formateur
+[palantir-java-format](https://github.com/palantir/palantir-java-format) : indentation de 4 espaces, 120 colonnes,
+imports triés et imports inutilisés supprimés. Aucun réglage d'IDE n'est nécessaire, et les réglages personnels ne
+font plus foi.
+
+`spotless:check` est branché sur la phase `validate` : **tout build du module `api` échoue si un fichier est mal
+formaté**. Pour reformater les sources :
+
+```bash
+cd api && ./mvnw spotless:apply
+```
+
+Pour vérifier sans rien modifier :
+
+```bash
+cd api && ./mvnw spotless:check
+```
+
+Le commit de reformatage initial est listé dans `.git-blame-ignore-revs`. Pour que `git blame` l'ignore :
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
 
 Made with ❤️ by Zenika

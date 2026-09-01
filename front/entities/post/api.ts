@@ -1,11 +1,10 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { apiFetch } from "@/shared/api";
 import type { BlogPostData, BlogPostStatus } from "./model";
 
 dayjs.extend(customParseFormat);
 
-const API_BASE = process.env.API_URL ?? "http://localhost:8080";
-const API_URL = `${API_BASE}/blog-posts`;
 
 function toFrontendStatus(s: string): BlogPostStatus {
   switch (s) {
@@ -94,13 +93,13 @@ export function mapFrontendToBackend(p: BlogPostData): BackendPostPayload {
 
 export const postApi = {
   getPosts: async (): Promise<BlogPostData[]> => {
-    const res = await fetch(API_URL);
+    const res = await apiFetch("/blog-posts");
     if (!res.ok) throw new Error("Failed to fetch posts");
     const data = await res.json();
     return data.map(mapBackendToFrontend);
   },
   createPost: async (post: BlogPostData): Promise<BlogPostData> => {
-    const res = await fetch(API_URL, {
+    const res = await apiFetch("/blog-posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(mapFrontendToBackend(post)),
@@ -109,7 +108,7 @@ export const postApi = {
     return mapBackendToFrontend(await res.json());
   },
   updatePost: async (post: BlogPostData): Promise<BlogPostData> => {
-    const res = await fetch(`${API_URL}/${post.id}`, {
+    const res = await apiFetch(`/blog-posts/${post.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(mapFrontendToBackend(post)),
@@ -118,7 +117,7 @@ export const postApi = {
     return post;
   },
   deletePost: async (id: string): Promise<void> => {
-    const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`/blog-posts/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete post");
   },
 };

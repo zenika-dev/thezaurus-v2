@@ -1,1 +1,1 @@
-export { Events } from "./ui";
+export { EventsDashboard, EventsDashboardSkeleton } from "./ui";

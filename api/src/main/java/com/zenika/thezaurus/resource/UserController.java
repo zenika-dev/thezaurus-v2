@@ -1,30 +1,37 @@
 package com.zenika.thezaurus.resource;
 
+import com.zenika.thezaurus.model.Role;
+import com.zenika.thezaurus.repository.UserRepository;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-@Path("/api/me")
+@Path("/api")
 @Produces(MediaType.APPLICATION_JSON)
 public class UserController {
 
     @Inject
     SecurityIdentity identity;
 
-    @ConfigProperty(name = "mock.auth", defaultValue = "false")
-    boolean mockAuth;
+    @Inject
+    UserRepository userRepository;
+
+    @ConfigProperty(name = "thezaurus.users.max-results", defaultValue = "500")
+    int maxResults;
 
     @GET
-    @RolesAllowed({"membre", "admin"})
+    @Path("/me")
+    @RolesAllowed({Role.Names.ADMIN, Role.Names.DT, Role.Names.CONSULTANT})
     public Response getCurrentUser() {
         if (identity.isAnonymous()) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
@@ -36,4 +43,20 @@ public class UserController {
 
         return Response.ok(userProfile).build();
     }
+
+    /**
+     * Annuaire des utilisateurs persistés, pour alimenter le picker de speakers.
+     * Projection volontairement réduite à {name, email} : les rôles ne sortent pas de l'API
+     * (l'administration passe par UserAdminResource, réservé aux admins).
+     */
+    @GET
+    @Path("/users")
+    @RolesAllowed({Role.Names.ADMIN, Role.Names.DT, Role.Names.CONSULTANT})
+    public List<UserSummary> listUsers() throws ExecutionException, InterruptedException {
+        return userRepository.findAll(maxResults).stream()
+                .map(u -> new UserSummary(u.name(), u.email()))
+                .toList();
+    }
+
+    public record UserSummary(String name, String email) {}
 }
