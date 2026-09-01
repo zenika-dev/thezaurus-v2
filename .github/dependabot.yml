@@ -9,12 +9,37 @@ updates:
     directory: "/front" # Location of package manifests
     schedule:
       interval: "weekly"
+    # Une seule PR pour tous les patch/minor ; les majeures restent isolées
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "maven" # See documentation for possible values
     directory: "/api" # Location of package manifests
     schedule:
       interval: "weekly"
+    groups:
+      maven-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
   # Maintient à jour les actions utilisées par .github/workflows/ci.yml
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
