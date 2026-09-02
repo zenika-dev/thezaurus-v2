@@ -1,5 +1,6 @@
 package com.zenika.thezaurus.migration;
 
+import com.zenika.thezaurus.repository.ConferenceRepository;
 import com.zenika.thezaurus.repository.TalkRepository;
 import com.zenika.thezaurus.repository.UserRepository;
 import io.quarkus.runtime.StartupEvent;
@@ -29,6 +30,9 @@ public class LegacyDataMigration {
     @Inject
     UserRepository userRepository;
 
+    @Inject
+    ConferenceRepository conferenceRepository;
+
     /**
      * Désactivé en profil test : les tests n'ont pas de Firestore (tout est mocké) et
      * l'instanciation du client au démarrage ferait échouer le boot de Quarkus.
@@ -47,6 +51,12 @@ public class LegacyDataMigration {
         int migratedUsers = userRepository.migrateLegacyRoles();
         if (migratedUsers > 0) {
             logger.infov("Migration rôles legacy : {0} utilisateur(s) réécrit(s) au format roles[]", migratedUsers);
+        }
+        int migratedConferenceDates = conferenceRepository.migrateLegacyDates();
+        if (migratedConferenceDates > 0) {
+            logger.infov(
+                    "Migration dates de conférences : {0} conférence(s) réécrite(s) au format ConferencePeriod",
+                    migratedConferenceDates);
         }
         int migratedEmails = userRepository.migrateLegacyEmailCasing();
         if (migratedEmails > 0) {

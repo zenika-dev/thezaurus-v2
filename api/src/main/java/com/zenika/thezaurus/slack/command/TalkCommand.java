@@ -18,6 +18,7 @@ import com.slack.api.model.block.composition.OptionObject;
 import com.slack.api.model.view.View;
 import com.slack.api.model.view.ViewState;
 import com.zenika.thezaurus.model.Conference;
+import com.zenika.thezaurus.model.ConferencePeriod;
 import com.zenika.thezaurus.model.Talk;
 import com.zenika.thezaurus.model.TalkStatus;
 import com.zenika.thezaurus.model.User;
@@ -212,7 +213,8 @@ public class TalkCommand implements SlackCommand {
 
         Talk talk = new Talk(title, description, speakers, office, status, visibility);
         if ((conferenceName != null && !conferenceName.isBlank()) || conferenceDate != null) {
-            talk = talk.withConference(new Conference(null, conferenceName, conferenceDate));
+            talk = talk.withConference(
+                    new Conference(null, conferenceName, ConferencePeriod.singleDay(conferenceDate)));
         }
 
         try {

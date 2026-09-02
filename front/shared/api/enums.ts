@@ -7,6 +7,7 @@ export const enumValues = {
   BlogPostStatus: ["IDEA", "DRAFT", "REVIEW", "PUBLISHED"],
   ConferenceReach: ["Locale", "Régionale", "Nationale"],
   ConferenceType: ["Marketing / business", "Technique stratégique", "Technique généraliste", "Technique", "Hors scope"],
+  DatePrecision: ["DAY", "MONTH"],
   MonthLabel: ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"],
   Role: ["ADMIN", "DT", "CONSULTANT"],
   TalkStatus: ["DRAFT", "PLANNED", "SUBMITTED", "ACCEPTED", "REJECTED", "DONE"],

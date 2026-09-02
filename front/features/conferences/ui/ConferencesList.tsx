@@ -141,7 +141,7 @@ export function ConferencesList() {
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex flex-col gap-2">
                     <span className="font-bold text-text">
-                      {conference.title}
+                      {conference.name}
                     </span>
                     <div className="flex flex-col gap-1.5 text-xs text-text-muted">
                       <span className="flex items-center gap-1.5">
