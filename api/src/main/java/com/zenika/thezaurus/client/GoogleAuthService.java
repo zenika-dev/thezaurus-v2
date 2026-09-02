@@ -2,11 +2,10 @@ package com.zenika.thezaurus.client;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.jboss.logging.Logger;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class GoogleAuthService {

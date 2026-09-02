@@ -81,7 +81,7 @@ public class TalkResource {
     public Response review(TalkReviewRequest request) {
         if (request == null || request.title() == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error","Le titre et l'abstract sont requis"))
+                    .entity(Map.of("error", "Le titre et l'abstract sont requis"))
                     .build();
         }
 

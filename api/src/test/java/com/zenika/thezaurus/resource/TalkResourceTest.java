@@ -1,36 +1,29 @@
 package com.zenika.thezaurus.resource;
 
-import com.zenika.thezaurus.exception.TalkReviewException;
-import com.zenika.thezaurus.model.Talk;
-import com.zenika.thezaurus.model.TalkReviewRequest;
-import com.zenika.thezaurus.model.TalkReviewResponse;
-import com.zenika.thezaurus.service.TalkReviewService;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.zenika.thezaurus.exception.TalkReviewException;
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.Talk;
+import com.zenika.thezaurus.model.TalkReviewRequest;
+import com.zenika.thezaurus.model.TalkReviewResponse;
 import com.zenika.thezaurus.model.User;
+import com.zenika.thezaurus.service.TalkReviewService;
 import com.zenika.thezaurus.service.TalkService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.DisplayName;
 import java.util.Collections;
 import java.util.List;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-
-import java.util.Collections;
-import java.util.List;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
 @TestSecurity(
@@ -191,50 +184,50 @@ public class TalkResourceTest {
                 List.of("Quarkus et Front-end Unis"),
                 List.of("Abstract retravaillé"),
                 List.of("[Titre] Très bon titre"),
-                List.of("Point fort 1")
-        );
+                List.of("Point fort 1"));
 
         Mockito.when(talkReviewService.reviewTalk(Mockito.any(TalkReviewRequest.class)))
                 .thenReturn(mockResponse);
 
-        given()
-          .contentType(ContentType.JSON)
-          .body(request)
-          .when().post("/talks/review")
-          .then()
-             .statusCode(200)
-             .body("suggestedTitles[0]", is("Quarkus et Front-end Unis"))
-             .body("suggestedAbstracts[0]", is("Abstract retravaillé"))
-             .body("feedback[0]", is("[Titre] Très bon titre"))
-             .body("keyImprovements[0]", is("Point fort 1"));
+        given().contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post("/talks/review")
+                .then()
+                .statusCode(200)
+                .body("suggestedTitles[0]", is("Quarkus et Front-end Unis"))
+                .body("suggestedAbstracts[0]", is("Abstract retravaillé"))
+                .body("feedback[0]", is("[Titre] Très bon titre"))
+                .body("keyImprovements[0]", is("Point fort 1"));
     }
 
     @Test
     @DisplayName("POST /talks/review - requête sans titre - retourne HTTP 400 Bad Request")
     public void testReviewTalkBadRequestMissingTitle() {
-        given()
-          .contentType(ContentType.JSON)
-          .body("{\"abstractText\":\"Abstract sans titre\"}")
-          .when().post("/talks/review")
-          .then()
-             .statusCode(400)
-             .body("error", is("Le titre et l'abstract sont requis"));
+        given().contentType(ContentType.JSON)
+                .body("{\"abstractText\":\"Abstract sans titre\"}")
+                .when()
+                .post("/talks/review")
+                .then()
+                .statusCode(400)
+                .body("error", is("Le titre et l'abstract sont requis"));
     }
 
     @Test
-    @DisplayName("POST /talks/review - exception de TalkReviewService - retourne HTTP 502 Bad Gateway via ExceptionMapper")
+    @DisplayName(
+            "POST /talks/review - exception de TalkReviewService - retourne HTTP 502 Bad Gateway via ExceptionMapper")
     public void testReviewTalkServiceException() {
         TalkReviewRequest request = new TalkReviewRequest("Titre Erreur", "Abstract Erreur");
 
         Mockito.when(talkReviewService.reviewTalk(Mockito.any(TalkReviewRequest.class)))
                 .thenThrow(new TalkReviewException("Reasoning Engine AI Agent indisponible"));
 
-        given()
-          .contentType(ContentType.JSON)
-          .body(request)
-          .when().post("/talks/review")
-          .then()
-             .statusCode(502)
-             .body("message", is("Reasoning Engine AI Agent indisponible"));
+        given().contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post("/talks/review")
+                .then()
+                .statusCode(502)
+                .body("message", is("Reasoning Engine AI Agent indisponible"));
     }
 }
