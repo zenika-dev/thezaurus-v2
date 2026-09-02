@@ -1509,6 +1509,12 @@ export interface components {
             conference?: components["schemas"]["Conference"];
             status?: components["schemas"]["TalkStatus"];
             visibility?: components["schemas"]["Visibility"];
+            format?: string;
+            date?: string;
+            language?: string;
+            notes?: string;
+            slides?: string;
+            replay?: string;
         };
         TalkReviewRequest: {
             title?: string;
