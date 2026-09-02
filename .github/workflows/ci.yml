@@ -19,6 +19,13 @@ jobs:
   # correctifs sur la branche de la PR : ni le formatage ni la fraîcheur du contrat n'ont
   # à être corrigés à la main. Un seul job, un seul checkout, des commits séquentiels — deux
   # jobs qui pousseraient en parallèle sur la même branche se bloqueraient l'un l'autre.
+  #
+  # Chaque commit auto-généré porte [skip ci] : un push sur une branche de PR déclenche un
+  # `pull_request: synchronize`, qui relance ce workflow sur le même groupe de concurrence
+  # (`ci-CI-<ref-de-la-PR>`, stable entre synchronize) — et `cancel-in-progress: true`
+  # annulerait alors CE run en plein milieu, avant les commits suivants ou les jobs
+  # `api`/`front`. [skip ci] empêche ce nouveau run de démarrer ; le run courant continue
+  # normalement et ses jobs `api`/`front` verront bien l'état final une fois `format` terminé.
   format:
     name: Auto-fix (formatage + contrat OpenAPI)
     # Le GITHUB_TOKEN est en lecture seule sur les PR issues d'un fork : on ne
@@ -68,7 +75,7 @@ jobs:
             echo "Aucun écart de formatage."
             exit 0
           fi
-          git commit -am "style(api): applique le formatage spotless"
+          git commit -am "style(api): applique le formatage spotless [skip ci]"
           git push
 
       # Même build que le job `api`, sans les tests : seul target/openapi/openapi.json
@@ -85,7 +92,7 @@ jobs:
             exit 0
           fi
           git add api/openapi.json
-          git commit -m "chore(contract): met à jour api/openapi.json"
+          git commit -m "chore(contract): met à jour api/openapi.json [skip ci]"
           git push
 
       - name: Install (front)
@@ -106,7 +113,7 @@ jobs:
             exit 0
           fi
           git add front/shared/api/schema.d.ts front/shared/api/enums.ts
-          git commit -m "chore(contract): régénère les types TypeScript du contrat"
+          git commit -m "chore(contract): régénère les types TypeScript du contrat [skip ci]"
           git push
 
   api:
