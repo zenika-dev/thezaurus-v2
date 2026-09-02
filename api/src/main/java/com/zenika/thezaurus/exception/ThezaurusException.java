@@ -5,8 +5,7 @@ import jakarta.ws.rs.core.Response;
 /**
  * ThezaurusException : class de base des exceptions dont toutes les exceptions hériterons
  */
-
-public class ThezaurusException extends RuntimeException{
+public class ThezaurusException extends RuntimeException {
 
     private final Response.Status status;
 
