@@ -5,7 +5,7 @@ import { useTheme } from "next-themes";
 import { DatePickerProvider } from "@/shared/ui";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ConferenceDate } from "@/entities/conference";
+import type { ConferencePeriod } from "@/entities/conference";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -42,6 +42,12 @@ dayjs.locale("fr");
 
 const DIALOG_TITLE_ID = "create-conference-dialog-title";
 
+/**
+ * Mode de saisie de la date, purement local au formulaire : il détermine quels sélecteurs afficher.
+ * Le modèle persisté, lui, ne connaît que deux bornes et une précision.
+ */
+type DateInputMode = "single" | "range" | "month";
+
 interface CreateConferenceDialogProps {
   open: boolean;
   onClose: () => void;
@@ -58,7 +64,7 @@ export function CreateConferenceDialog({
   onClose,
   onSubmit,
 }: CreateConferenceDialogProps) {
-  const [dateType, setDateType] = useState<ConferenceDate["type"]>("single");
+  const [dateType, setDateType] = useState<DateInputMode>("single");
   const [date, setDate] = useState<Dayjs | null>(null);
   const [dateEnd, setDateEnd] = useState<Dayjs | null>(null);
   const [dateMonth, setDateMonth] = useState<Dayjs | null>(null);
@@ -131,7 +137,7 @@ export function CreateConferenceDialog({
   } = useForm<ConferenceFormData>({
     resolver: zodResolver(conferenceFormSchema),
     defaultValues: {
-      title: "",
+      name: "",
       location: "",
       cfpLink: "",
       cfpStatus: "None",
@@ -212,21 +218,28 @@ export function CreateConferenceDialog({
     return isValid;
   };
 
-  const buildConferenceDate = (): ConferenceDate => {
+  /**
+   * Normalise la saisie vers les deux bornes du contrat. Le mois est stocké comme la période
+   * couvrant le mois entier : c'est `precision` qui porte l'information « dates non arrêtées », et
+   * qui empêche l'affichage de rendre « 1-31 mars » là où il faut lire « mars ».
+   */
+  const buildConferencePeriod = (): ConferencePeriod => {
     switch (dateType) {
-      case "single":
-        return { type: "single", date: date!.format("YYYY-MM-DD") };
+      case "single": {
+        const day = date!.format("YYYY-MM-DD");
+        return { start: day, end: day, precision: "DAY" };
+      }
       case "range":
         return {
-          type: "range",
           start: date!.format("YYYY-MM-DD"),
           end: dateEnd!.format("YYYY-MM-DD"),
+          precision: "DAY",
         };
       case "month":
         return {
-          type: "month",
-          year: dateMonth!.year(),
-          month: dateMonth!.month() + 1,
+          start: dateMonth!.startOf("month").format("YYYY-MM-DD"),
+          end: dateMonth!.endOf("month").format("YYYY-MM-DD"),
+          precision: "MONTH",
         };
     }
   };
@@ -253,7 +266,7 @@ export function CreateConferenceDialog({
       id: crypto.randomUUID(),
       ...data,
       cfpStatus: finalCfpStatus,
-      date: buildConferenceDate(),
+      date: buildConferencePeriod(),
       location: parsedLocation,
       ...(cfpClosingDate &&
         cfpClosingDate.isValid() && {
@@ -308,14 +321,14 @@ export function CreateConferenceDialog({
             sx={{ display: "flex", flexDirection: "column", gap: 2 }}
           >
             <TextField
-              {...register("title")}
+              {...register("name")}
               id="conference-title"
               label="Titre de la conférence"
               required
               fullWidth
               placeholder="Ex: Devoxx"
-              error={!!errors.title}
-              helperText={errors.title?.message}
+              error={!!errors.name}
+              helperText={errors.name?.message}
             />
 
             <div className="grid grid-cols-2 gap-4">
