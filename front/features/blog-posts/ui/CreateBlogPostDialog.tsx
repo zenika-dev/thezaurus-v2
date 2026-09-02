@@ -24,7 +24,7 @@ import { ExternalLinkIcon, FileText, Library } from "lucide-react";
 import dayjs, { type Dayjs } from "dayjs";
 import "dayjs/locale/fr";
 import type { BlogPostData } from "@/entities/post";
-import { blogPostTags, blogPostStatusConfig } from "@/entities/post";
+import { blogPostTags, blogPostStatusConfig, BLOG_POST_STATUSES } from "@/entities/post";
 import { blogPostFormSchema, type BlogPostFormData } from "@/entities/post";
 import { isValidUrl } from "@/shared/lib";
 
@@ -55,12 +55,12 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
     resolver: zodResolver(blogPostFormSchema),
     defaultValues: {
       title: "", author: "", tags: [],
-      status: "Idea", zenikaBlogLink: "", googleDocDraftLink: "",
+      status: "IDEA", link: "", googleDocDraftLink: "",
     },
   });
 
   // eslint-disable-next-line react-hooks/incompatible-library
-  const zenikaBlogLink = watch("zenikaBlogLink");
+  const link = watch("link");
   const googleDocDraftLink = watch("googleDocDraftLink");
   const currentStatus = watch("status");
   const { resolvedTheme } = useTheme();
@@ -97,13 +97,14 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
     return valid;
   };
 
-  const onSave = (data: BlogPostFormData) => {
+  const onSave = ({ author, ...data }: BlogPostFormData) => {
     if (!validateDates()) return;
     onSubmit({
       id: crypto.randomUUID(),
       ...data,
+      writers: [author],
       creationDate: creationDate!.format("DD-MM-YYYY"),
-      expectedPublicationDate: expectedPublicationDate?.format("DD-MM-YYYY") ?? "",
+      publicationDate: expectedPublicationDate?.format("DD-MM-YYYY") ?? "",
     });
     handleClose();
   };
@@ -133,10 +134,11 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
                 style={{ fontWeight: "bold", color: appliedStatusColor }}
                 inputProps={{ "aria-label": "Statut de l'article" }}
               >
-                <MenuItem value="Idea">Idea</MenuItem>
-                <MenuItem value="Draft">Draft</MenuItem>
-                <MenuItem value="Review">Review</MenuItem>
-                <MenuItem value="Published">Published</MenuItem>
+                {BLOG_POST_STATUSES.map((s) => (
+                  <MenuItem key={s} value={s}>
+                    {blogPostStatusConfig[s].label}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           )}
@@ -237,7 +239,7 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
             />
 
             <TextField
-              {...register("zenikaBlogLink")}
+              {...register("link")}
               id="post-zenika-link"
               label="Lien blog Zenika"
               placeholder="https://..."
@@ -249,12 +251,12 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
                       <Library size={16} aria-hidden="true" />
                     </InputAdornment>
                   ),
-                  endAdornment: zenikaBlogLink && isValidUrl(zenikaBlogLink) ? (
+                  endAdornment: link && isValidUrl(link) ? (
                     <InputAdornment position="end">
                       <IconButton
                         size="small"
                         component="a"
-                        href={zenikaBlogLink}
+                        href={link}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Ouvrir le lien blog Zenika"
