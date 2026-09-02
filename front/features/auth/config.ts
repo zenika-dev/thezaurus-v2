@@ -21,9 +21,17 @@ export const authOptions: NextAuthOptions = {
         token.idToken = account.id_token;
         try {
           const API_BASE = process.env.API_URL ?? "http://localhost:8080";
-          const res = await fetch(`${API_BASE}/api/me`, {
-            headers: { Authorization: `Bearer ${account.id_token}` },
-          });
+
+          const { headers } = await import("next/headers");
+          const incoming = await headers();
+          // L'appel au sidecar en localhost ne passe pas par IAP : on relaie l'assertion
+          // de la requête entrante du navigateur plutôt que d'en fabriquer une nouvelle.
+          const iapAssertion = incoming.get("x-goog-iap-jwt-assertion");
+          const authHeader: Record<string, string> = iapAssertion
+            ? { "x-goog-iap-jwt-assertion": iapAssertion }
+            : { Authorization: `Bearer ${account.id_token}` };
+
+          const res = await fetch(`${API_BASE}/api/me`, { headers: authHeader });
 
           if (!res.ok) {
             throw new Error("Not authenticated");
