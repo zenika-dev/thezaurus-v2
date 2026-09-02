@@ -22,6 +22,8 @@ export type BackendVisibility = Schemas["Visibility"];
 export type BackendConference = Schemas["Conference"];
 export type BackendConferenceType = Schemas["ConferenceType"];
 export type BackendConferenceReach = Schemas["ConferenceReach"];
+export type BackendConferencePeriod = Schemas["ConferencePeriod"];
+export type BackendDatePrecision = Schemas["DatePrecision"];
 export type BackendLocation = Schemas["Location"];
 
 export type BackendUser = Schemas["User"];

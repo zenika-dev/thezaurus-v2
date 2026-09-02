@@ -1064,7 +1064,7 @@
             "type" : "string"
           },
           "date" : {
-            "type" : "string"
+            "$ref" : "#/components/schemas/ConferencePeriod"
           },
           "cfpLink" : {
             "type" : "string"
@@ -1090,6 +1090,20 @@
           }
         }
       },
+      "ConferencePeriod" : {
+        "type" : "object",
+        "properties" : {
+          "start" : {
+            "type" : "string"
+          },
+          "end" : {
+            "type" : "string"
+          },
+          "precision" : {
+            "$ref" : "#/components/schemas/DatePrecision"
+          }
+        }
+      },
       "ConferenceReach" : {
         "type" : "string",
         "enum" : [ "Locale", "Régionale", "Nationale" ]
@@ -1097,6 +1111,10 @@
       "ConferenceType" : {
         "type" : "string",
         "enum" : [ "Marketing / business", "Technique stratégique", "Technique généraliste", "Technique", "Hors scope" ]
+      },
+      "DatePrecision" : {
+        "type" : "string",
+        "enum" : [ "DAY", "MONTH" ]
       },
       "Event" : {
         "type" : "object",

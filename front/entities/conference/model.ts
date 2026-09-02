@@ -1,42 +1,60 @@
-export type ConferenceCFPStatus = "Open" | "Closed" | "None";
+import { enumValues } from "@/shared/api";
+import type {
+  BackendConferenceReach,
+  BackendConferenceType,
+  BackendDatePrecision,
+  BackendLocation,
+} from "@/shared/api";
 
-export const CONFERENCE_TYPES = [
-  "Marketing / business",
-  "Technique stratégique",
-  "Technique généraliste",
-  "Technique",
-  "Hors scope",
-] as const;
+/**
+ * Types *et* valeurs viennent du contrat OpenAPI : `ConferenceType` et `ConferenceReach` sont de
+ * vraies enums Java, que le contrat décrit exactement. Aucune valeur n'est recopiée ici — ajouter
+ * une valeur côté Java et régénérer suffit à la faire apparaître dans les formulaires.
+ */
+export type ConferenceType = BackendConferenceType;
 
-export type ConferenceType = (typeof CONFERENCE_TYPES)[number];
+export const CONFERENCE_TYPES = enumValues.ConferenceType;
 
-export const CONFERENCE_REACHES = ["Locale", "Régionale", "Nationale"] as const;
+export type ConferenceReach = BackendConferenceReach;
 
-export type ConferenceReach = (typeof CONFERENCE_REACHES)[number];
+export const CONFERENCE_REACHES = enumValues.ConferenceReach;
 
-export type ConferenceDate =
-    | { type: "single"; date: string }
-    | { type: "range"; start: string; end: string }
-    | { type: "month"; year: number; month: number };
+/**
+ * `cfpStatus` est un `String` libre côté back : le contrat ne peut pas le contraindre. Cette union
+ * reste donc une convention purement frontend, validée à l'exécution par `toFrontendCfpStatus`.
+ */
+export const CONFERENCE_CFP_STATUSES = ["Open", "Closed", "None"] as const;
 
-export interface ConferenceLocation {
-    city?: string;
-    country?: string;
-    address?: string;
-    postalCode?: string;
+export type ConferenceCFPStatus = (typeof CONFERENCE_CFP_STATUSES)[number];
+
+export type ConferenceLocation = BackendLocation;
+
+export type DatePrecision = BackendDatePrecision;
+
+/**
+ * Période d'une conférence : deux bornes ISO inclusives et la précision avec laquelle elles sont
+ * connues. Version totale du type généré, dont tous les champs sont optionnels.
+ *
+ * Les trois cas d'affichage s'en déduisent sans champ discriminant : `precision === "MONTH"` pour
+ * un mois, sinon `start === end` pour une date unique et `start < end` pour un intervalle.
+ */
+export interface ConferencePeriod {
+  start: string;
+  end: string;
+  precision: DatePrecision;
 }
 
 export interface ConferenceData {
-    id: string;
-    title: string;
-    location: ConferenceLocation;
-    date: ConferenceDate;
-    cfpLink?: string;
-    cfpClosingDate?: string;
-    cfpStatus: ConferenceCFPStatus;
-    submittedTalksAmount: number;
-    type: ConferenceType;
-    reach: ConferenceReach;
+  id: string;
+  name: string;
+  location: ConferenceLocation;
+  date: ConferencePeriod;
+  cfpLink?: string;
+  cfpClosingDate?: string;
+  cfpStatus: ConferenceCFPStatus;
+  submittedTalksAmount: number;
+  type: ConferenceType;
+  reach: ConferenceReach;
 }
 
 export const conferenceCFPStatusConfig: Record<ConferenceCFPStatus, { text: string; bg: string; darkText: string; darkBg: string }> = {
@@ -45,6 +63,10 @@ export const conferenceCFPStatusConfig: Record<ConferenceCFPStatus, { text: stri
   None: { text: "#888888", bg: "transparent", darkText: "#888888", darkBg: "transparent" },
 };
 
+/**
+ * Le `Record` sur l'union du contrat vaut contrôle d'exhaustivité : ajouter une valeur à
+ * `ConferenceType` côté Java fait échouer la compilation ici tant qu'elle n'a pas de couleur.
+ */
 export const conferenceTypeConfig: Record<ConferenceType, { text: string; bg: string; darkText: string; darkBg: string }> = {
   "Marketing / business": { text: "#000000", bg: "#F7F7F7", darkText: "#FFFFFF", darkBg: "#5E5E5E" },
   "Technique stratégique": { text: "#9A0530", bg: "#FFEDD4", darkText: "#FFDD58", darkBg: "#7E2A0C" },

@@ -1426,7 +1426,7 @@ export interface components {
         Conference: {
             id?: string;
             name?: string;
-            date?: string;
+            date?: components["schemas"]["ConferencePeriod"];
             cfpLink?: string;
             location?: components["schemas"]["Location"];
             cfpStatus?: string;
@@ -1436,10 +1436,17 @@ export interface components {
             type?: components["schemas"]["ConferenceType"];
             reach?: components["schemas"]["ConferenceReach"];
         };
+        ConferencePeriod: {
+            start?: string;
+            end?: string;
+            precision?: components["schemas"]["DatePrecision"];
+        };
         /** @enum {string} */
         ConferenceReach: "Locale" | "Régionale" | "Nationale";
         /** @enum {string} */
         ConferenceType: "Marketing / business" | "Technique stratégique" | "Technique généraliste" | "Technique" | "Hors scope";
+        /** @enum {string} */
+        DatePrecision: "DAY" | "MONTH";
         Event: {
             id?: string;
             name?: string;
