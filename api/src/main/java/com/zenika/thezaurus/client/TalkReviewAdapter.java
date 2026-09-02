@@ -5,9 +5,6 @@ import com.zenika.thezaurus.model.AgentPayload;
 import com.zenika.thezaurus.model.TalkReviewRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -15,6 +12,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Optional;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
 /**
  * Adaptateur d'infrastructure HTTP dédié aux communications avec l'agent IA Vertex AI Reasoning Engine.
@@ -39,9 +38,8 @@ public class TalkReviewAdapter {
         this.objectMapper = objectMapper;
         this.googleAuthService = googleAuthService;
         this.reasoningEngineUrl = reasoningEngineUrl;
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(CONNECT_TIMEOUT)
-                .build();
+        this.httpClient =
+                HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
     }
 
     /**
@@ -63,7 +61,8 @@ public class TalkReviewAdapter {
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody));
 
-            googleAuthService.getAccessToken()
+            googleAuthService
+                    .getAccessToken()
                     .ifPresent(token -> reqBuilder.header("Authorization", "Bearer " + token));
 
             LOG.infof("Calling Vertex AI Reasoning Engine streamQuery endpoint: %s", reasoningEngineUrl);

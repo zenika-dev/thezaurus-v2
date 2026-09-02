@@ -6,6 +6,4 @@ public record TalkReviewResponse(
         List<String> suggestedTitles,
         List<String> suggestedAbstracts,
         List<String> feedback,
-        List<String> keyImprovements
-) {
-}
+        List<String> keyImprovements) {}

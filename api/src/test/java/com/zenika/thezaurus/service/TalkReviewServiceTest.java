@@ -1,10 +1,17 @@
 package com.zenika.thezaurus.service;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.zenika.thezaurus.client.TalkReviewAdapter;
 import com.zenika.thezaurus.exception.TalkReviewException;
 import com.zenika.thezaurus.mapper.TalkReviewMapper;
 import com.zenika.thezaurus.model.TalkReviewRequest;
 import com.zenika.thezaurus.model.TalkReviewResponse;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,14 +19,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.Optional;
-
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TalkReviewServiceTest {
@@ -36,10 +35,8 @@ class TalkReviewServiceTest {
     @Test
     @DisplayName("reviewTalk - avec requête nulle - lève IllegalArgumentException")
     void reviewTalk_WithNullRequest_ThrowsIllegalArgumentException() {
-        IllegalArgumentException exception = Assertions.assertThrows(
-                IllegalArgumentException.class,
-                () -> talkReviewService.reviewTalk(null)
-        );
+        IllegalArgumentException exception =
+                Assertions.assertThrows(IllegalArgumentException.class, () -> talkReviewService.reviewTalk(null));
 
         Assertions.assertEquals("Le titre du talk est requis.", exception.getMessage());
         verify(talkReviewAdapter, never()).sendStreamQuery(anyString(), anyString());
@@ -50,10 +47,8 @@ class TalkReviewServiceTest {
     void reviewTalk_WithNullTitle_ThrowsIllegalArgumentException() {
         TalkReviewRequest request = new TalkReviewRequest(null, "Abstract valide");
 
-        IllegalArgumentException exception = Assertions.assertThrows(
-                IllegalArgumentException.class,
-                () -> talkReviewService.reviewTalk(request)
-        );
+        IllegalArgumentException exception =
+                Assertions.assertThrows(IllegalArgumentException.class, () -> talkReviewService.reviewTalk(request));
 
         Assertions.assertEquals("Le titre du talk est requis.", exception.getMessage());
         verify(talkReviewAdapter, never()).sendStreamQuery(anyString(), anyString());
@@ -64,10 +59,8 @@ class TalkReviewServiceTest {
     void reviewTalk_WithBlankTitle_ThrowsIllegalArgumentException() {
         TalkReviewRequest request = new TalkReviewRequest("   ", "Abstract valide");
 
-        IllegalArgumentException exception = Assertions.assertThrows(
-                IllegalArgumentException.class,
-                () -> talkReviewService.reviewTalk(request)
-        );
+        IllegalArgumentException exception =
+                Assertions.assertThrows(IllegalArgumentException.class, () -> talkReviewService.reviewTalk(request));
 
         Assertions.assertEquals("Le titre du talk est requis.", exception.getMessage());
         verify(talkReviewAdapter, never()).sendStreamQuery(anyString(), anyString());
@@ -81,15 +74,11 @@ class TalkReviewServiceTest {
         when(talkReviewAdapter.sendStreamQuery("Titre de talk", "Abstract de talk"))
                 .thenReturn(Optional.empty());
 
-        TalkReviewException exception = Assertions.assertThrows(
-                TalkReviewException.class,
-                () -> talkReviewService.reviewTalk(request)
-        );
+        TalkReviewException exception =
+                Assertions.assertThrows(TalkReviewException.class, () -> talkReviewService.reviewTalk(request));
 
         Assertions.assertEquals(
-                "Impossible d'obtenir la revue du talk auprès du Reasoning Engine AI Agent.",
-                exception.getMessage()
-        );
+                "Impossible d'obtenir la revue du talk auprès du Reasoning Engine AI Agent.", exception.getMessage());
         verify(talkReviewAdapter).sendStreamQuery("Titre de talk", "Abstract de talk");
         verify(talkReviewMapper, never()).toDomain(anyString());
     }
@@ -102,18 +91,13 @@ class TalkReviewServiceTest {
 
         when(talkReviewAdapter.sendStreamQuery("Titre de talk", "Abstract de talk"))
                 .thenReturn(Optional.of(rawSseResponse));
-        when(talkReviewMapper.toDomain(rawSseResponse))
-                .thenReturn(Optional.empty());
+        when(talkReviewMapper.toDomain(rawSseResponse)).thenReturn(Optional.empty());
 
-        TalkReviewException exception = Assertions.assertThrows(
-                TalkReviewException.class,
-                () -> talkReviewService.reviewTalk(request)
-        );
+        TalkReviewException exception =
+                Assertions.assertThrows(TalkReviewException.class, () -> talkReviewService.reviewTalk(request));
 
         Assertions.assertEquals(
-                "Impossible d'obtenir la revue du talk auprès du Reasoning Engine AI Agent.",
-                exception.getMessage()
-        );
+                "Impossible d'obtenir la revue du talk auprès du Reasoning Engine AI Agent.", exception.getMessage());
         verify(talkReviewAdapter).sendStreamQuery("Titre de talk", "Abstract de talk");
         verify(talkReviewMapper).toDomain(rawSseResponse);
     }
@@ -128,13 +112,11 @@ class TalkReviewServiceTest {
                 List.of("Titre 1", "Titre 2"),
                 List.of("Abstract 1"),
                 List.of("[Titre] Bon titre"),
-                List.of("Amélioration 1")
-        );
+                List.of("Amélioration 1"));
 
         when(talkReviewAdapter.sendStreamQuery("Titre de talk", "Abstract de talk"))
                 .thenReturn(Optional.of(rawSseResponse));
-        when(talkReviewMapper.toDomain(rawSseResponse))
-                .thenReturn(Optional.of(expectedResponse));
+        when(talkReviewMapper.toDomain(rawSseResponse)).thenReturn(Optional.of(expectedResponse));
 
         TalkReviewResponse actualResponse = talkReviewService.reviewTalk(request);
 
@@ -152,14 +134,11 @@ class TalkReviewServiceTest {
     void reviewTalk_WithNullAbstract_PassesEmptyStringToAdapter() {
         TalkReviewRequest request = new TalkReviewRequest("Titre de talk", null);
         String rawSseResponse = "data: {}";
-        TalkReviewResponse expectedResponse = new TalkReviewResponse(
-                List.of("Titre 1"), List.of(), List.of(), List.of()
-        );
+        TalkReviewResponse expectedResponse =
+                new TalkReviewResponse(List.of("Titre 1"), List.of(), List.of(), List.of());
 
-        when(talkReviewAdapter.sendStreamQuery("Titre de talk", ""))
-                .thenReturn(Optional.of(rawSseResponse));
-        when(talkReviewMapper.toDomain(rawSseResponse))
-                .thenReturn(Optional.of(expectedResponse));
+        when(talkReviewAdapter.sendStreamQuery("Titre de talk", "")).thenReturn(Optional.of(rawSseResponse));
+        when(talkReviewMapper.toDomain(rawSseResponse)).thenReturn(Optional.of(expectedResponse));
 
         TalkReviewResponse actualResponse = talkReviewService.reviewTalk(request);
 

@@ -21,13 +21,14 @@ public class TalkReviewService {
         validateRequest(request);
 
         String title = request.title().trim();
-        String abstractText = request.abstractText() != null ? request.abstractText().trim() : "";
+        String abstractText =
+                request.abstractText() != null ? request.abstractText().trim() : "";
 
-        return talkReviewAdapter.sendStreamQuery(title, abstractText)
+        return talkReviewAdapter
+                .sendStreamQuery(title, abstractText)
                 .flatMap(talkReviewMapper::toDomain)
                 .orElseThrow(() -> new TalkReviewException(
-                        "Impossible d'obtenir la revue du talk auprès du Reasoning Engine AI Agent."
-                ));
+                        "Impossible d'obtenir la revue du talk auprès du Reasoning Engine AI Agent."));
     }
 
     private void validateRequest(TalkReviewRequest request) {

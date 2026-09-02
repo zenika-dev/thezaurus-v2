@@ -7,12 +7,11 @@ import com.zenika.thezaurus.model.ImprovementItem;
 import com.zenika.thezaurus.model.TalkReviewResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class TalkReviewMapper {
@@ -34,10 +33,7 @@ public class TalkReviewMapper {
                 return Optional.empty();
             }
 
-            AgentResponse agentResponse = objectMapper.readValue(
-                    jsonPayload,
-                    AgentResponse.class
-            );
+            AgentResponse agentResponse = objectMapper.readValue(jsonPayload, AgentResponse.class);
 
             return Optional.ofNullable(mapToTalkReviewResponse(agentResponse));
 
@@ -68,7 +64,9 @@ public class TalkReviewMapper {
 
         try {
             JsonNode root = objectMapper.readTree(rawJson);
-            if (root.has("content") && root.get("content").has("parts") && root.get("content").get("parts").isArray()) {
+            if (root.has("content")
+                    && root.get("content").has("parts")
+                    && root.get("content").get("parts").isArray()) {
                 JsonNode parts = root.get("content").get("parts");
                 if (!parts.isEmpty() && parts.get(0).has("text")) {
                     return unwrapContentIfNeeded(parts.get(0).get("text").asText());
@@ -84,7 +82,9 @@ public class TalkReviewMapper {
     }
 
     private TalkReviewResponse mapToTalkReviewResponse(AgentResponse response) {
-        if (response == null || response.improvements() == null || response.improvements().isEmpty()) {
+        if (response == null
+                || response.improvements() == null
+                || response.improvements().isEmpty()) {
             return null;
         }
 
@@ -98,18 +98,20 @@ public class TalkReviewMapper {
             String comment = item.comment() != null ? item.comment().trim() : "";
 
             if (!comment.isBlank()) {
-                String prefix = switch (category) {
-                    case "titre" -> "[Titre] ";
-                    case "abstract" -> "[Abstract] ";
-                    case "coherence" -> "[Cohérence] ";
-                    default -> "";
-                };
+                String prefix =
+                        switch (category) {
+                            case "titre" -> "[Titre] ";
+                            case "abstract" -> "[Abstract] ";
+                            case "coherence" -> "[Cohérence] ";
+                            default -> "";
+                        };
                 feedback.add(prefix + comment);
             }
 
             if (item.suggestions() != null) {
                 for (String suggestion : item.suggestions()) {
-                    String cleanSuggestion = suggestion.replaceAll("^\"|\"$", "").trim();
+                    String cleanSuggestion =
+                            suggestion.replaceAll("^\"|\"$", "").trim();
                     switch (category) {
                         case "titre" -> suggestedTitles.add(cleanSuggestion);
                         case "abstract" -> suggestedAbstracts.add(cleanSuggestion);
