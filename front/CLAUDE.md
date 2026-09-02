@@ -16,6 +16,7 @@ All commands run from `front/`.
 | Production build | `npm run build` |
 | Lint | `npm run lint` |
 | Bundle analysis | `ANALYZE=true npm run build` |
+| Regenerate backend types | `npm run generate:api` |
 
 **Full local stack** (from repo root `thezaurus-v2/`):
 ```bash
@@ -77,3 +78,10 @@ return <HydrationBoundary state={dehydrate(queryClient)}><BlogPosts /></Hydratio
 - Types always inferred from Zod schemas (`z.infer<typeof schema>`), never duplicated.
 - Date formats: UI `DD-MM-YYYY` ↔ backend ISO `YYYY-MM-DDT00:00:00`. Use conversion utils in `shared/api/`.
 - Status enums: frontend PascalCase ↔ backend `SCREAMING_SNAKE_CASE`. Use `toFrontendStatus`/`toBackendStatus` in `shared/api/`.
+- **Backend payload types and enum values are generated, never hand-written.** `shared/api/schema.d.ts`
+  (types) and `shared/api/enums.ts` (runtime values) come from `api/openapi.json`, itself written by
+  the Quarkus build. Import the readable aliases from `shared/api` (`BackendBlogPost`, `BackendTalk`,
+  …) and `enumValues` for option lists — declaring an `interface BackendXxx` or retyping an enum's
+  values by hand reintroduces the drift this setup exists to prevent. All three files are committed
+  and CI fails if any is stale; regenerate with `npm run generate:api` after any change to the API's
+  REST resources or models.
