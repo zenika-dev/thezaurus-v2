@@ -23,6 +23,7 @@ import type { TalkData, TalkStatus, TalkReviewResponse } from "@/entities/talk";
 import { agencyLabels, reviewTalkAction } from "@/entities/talk";
 import { isValidUrl } from "@/shared/lib";
 import { StatusTag, statusConfig } from "./TalkTags";
+import { TalkAssistantDialog } from "./TalkAssistantDialog";
 
 interface TalkDetailsDialogProps {
   talk: TalkData | null;
@@ -38,6 +39,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<TalkReviewResponse | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
@@ -64,14 +66,15 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
   const handleTriggerAiReview = async () => {
     setAiDialogOpen(true);
     setAiLoading(true);
+    setAiError(null);
     try {
       const res = await reviewTalkAction({
         title: talk.title,
         abstract: talk.abstract,
       });
       setAiResult(res);
-    } catch {
-      // Error handling
+    } catch (err: unknown) {
+      setAiError(err instanceof Error ? err.message : "Erreur de communication avec l'assistant IA.");
     } finally {
       setAiLoading(false);
     }
@@ -237,6 +240,17 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
           <Button variant="outlined" onClick={onClose}>Fermer</Button>
         </DialogActions>
       </Dialog>
+
+      <TalkAssistantDialog
+        open={aiDialogOpen}
+        loading={aiLoading}
+        error={aiError}
+        title={talk.title}
+        abstract={talk.abstract}
+        assistantReviewResult={aiResult}
+        onClose={() => setAiDialogOpen(false)}
+        onApply={handleApplyAiSuggestions}
+      />
     </>
   );
 }
