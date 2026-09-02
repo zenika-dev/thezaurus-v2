@@ -1,0 +1,83 @@
+name: Veille Node LTS
+
+# Dependabot ne connait pas le calendrier LTS de Node : ses PR @types/node
+# parlent des types, pas du runtime. Ce controle mensuel compare front/.nvmrc
+# au calendrier de endoflife.date et n'ouvre une issue qu'au jalon reel.
+on:
+  schedule:
+    - cron: "0 9 1 * *" # le 1er de chaque mois, 9h UTC
+  workflow_dispatch:
+    inputs:
+      today:
+        description: "Date simulee (AAAA-MM-JJ) ; vide = aujourd'hui"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: Compare front/.nvmrc au calendrier Node
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Controle et alerte
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TODAY: ${{ inputs.today }}
+        run: |
+          MAJOR=$(tr -dc '0-9' < front/.nvmrc)
+          curl -sSf https://endoflife.date/api/nodejs.json -o cycles.json
+
+          SUMMARY=$(jq -r \
+            --arg major "$MAJOR" \
+            --argjson today "$(date -u -d "${TODAY:-now}" +%s)" \
+            --argjson warn 180 '
+              def epoch: strptime("%Y-%m-%d") | mktime;
+              def days($d): (($d | epoch) - $today) / 86400 | floor;
+              [
+                (.[] | select(.cycle == $major) |
+                  if   days(.eol) < 0      then "Node \($major) est en fin de vie depuis le \(.eol)"
+                  elif days(.eol) <= $warn then "Node \($major) arrive en fin de vie le \(.eol) (dans \(days(.eol)) jours)"
+                  elif days(.support) <= 0 then "Node \($major) est en phase maintenance depuis le \(.support)"
+                  else empty end),
+                (.[] | select(
+                    (.cycle | tonumber) > ($major | tonumber)
+                    and (.lts | type) == "string"
+                    and days(.lts) <= 0
+                    and days(.eol) > 0) |
+                  "Node \(.cycle) est LTS depuis le \(.lts)")
+              ] | join(", ")' cycles.json)
+
+          if [ -z "$SUMMARY" ]; then
+            echo "Rien a signaler (Node $MAJOR)."
+            exit 0
+          fi
+
+          # Le resume sert de titre, donc de cle de deduplication : un jalon
+          # deja arbitre reste ferme, un jalon nouveau reouvre une alerte.
+          TITLE="[veille-node] $SUMMARY"
+          echo "$TITLE"
+
+          # Comparaison exacte plutot que --search, qui tokenise mal les crochets.
+          if gh issue list --state all --limit 200 --json title --jq '.[].title' \
+               | grep -qxF "$TITLE"; then
+            echo "Issue deja existante, rien a faire."
+            exit 0
+          fi
+
+          {
+            echo "$SUMMARY."
+            echo
+            echo "Ces quatre points doivent bouger ensemble :"
+            echo "- front/.nvmrc (dev + CI, via node-version-file)"
+            echo "- front/Dockerfile (les trois etages node:<version>-alpine)"
+            echo "- @types/node dans front/package.json"
+            echo "- front/package-lock.json (npm install)"
+            echo
+            echo "Source : https://endoflife.date/nodejs"
+          } | gh issue create --title "$TITLE" --body-file -

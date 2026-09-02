@@ -107,11 +107,11 @@ jobs:
         with:
           ref: ${{ github.head_ref || github.ref_name }}
 
-      # Même version majeure que le Dockerfile (node:20-alpine).
-      - name: Setup Node 20
+      # front/.nvmrc fait foi ; garder le Dockerfile aligné (node:<version>-alpine).
+      - name: Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version-file: front/.nvmrc
           cache: npm
           cache-dependency-path: front/package-lock.json
 
