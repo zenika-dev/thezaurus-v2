@@ -9,6 +9,7 @@ public class BlogPost {
     private String creationDate;
     private String publicationDate;
     private String link;
+    private String googleDocDraftLink;
     private BlogPostStatus status;
     private List<String> tags;
 
@@ -66,6 +67,18 @@ public class BlogPost {
 
     public void setLink(String link) {
         this.link = link;
+    }
+
+    /**
+     * Brouillon Google Doc, saisi dans le formulaire avant publication. Le champ existait cote
+     * front sans contrepartie ici : la valeur saisie etait perdue a chaque enregistrement.
+     */
+    public String getGoogleDocDraftLink() {
+        return googleDocDraftLink;
+    }
+
+    public void setGoogleDocDraftLink(String googleDocDraftLink) {
+        this.googleDocDraftLink = googleDocDraftLink;
     }
 
     public BlogPostStatus getStatus() {
