@@ -1027,6 +1027,9 @@
           "link" : {
             "type" : "string"
           },
+          "googleDocDraftLink" : {
+            "type" : "string"
+          },
           "status" : {
             "$ref" : "#/components/schemas/BlogPostStatus"
           },

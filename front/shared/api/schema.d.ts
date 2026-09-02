@@ -1413,6 +1413,7 @@ export interface components {
             creationDate?: string;
             publicationDate?: string;
             link?: string;
+            googleDocDraftLink?: string;
             status?: components["schemas"]["BlogPostStatus"];
             tags?: string[];
         };

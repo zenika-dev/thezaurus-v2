@@ -40,7 +40,7 @@ export function BlogPostsList() {
             <div className="flex flex-col gap-0.5">
               <span className="font-bold text-text">{post.title}</span>
               <span className="text-sm text-text-muted">
-                {post.author} · {post.creationDate}
+                {post.writers[0]} · {post.creationDate}
               </span>
               <div className="flex gap-1 mt-1 flex-wrap">
                 {post.tags.slice(0, 5).map((tag) => (
