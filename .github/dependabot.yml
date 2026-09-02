@@ -9,6 +9,11 @@ updates:
     directory: "/front" # Location of package manifests
     schedule:
       interval: "weekly"
+    # typescript-eslint (via eslint-config-next) plafonne son peer TS a <6.1.0 et
+    # refuse de demarrer au-dela : https://github.com/typescript-eslint/typescript-eslint/issues/10940
+    ignore:
+      - dependency-name: "typescript"
+        versions: [">=6.1"]
     # Une seule PR pour tous les patch/minor ; les majeures restent isolées
     groups:
       npm-minor-patch:
