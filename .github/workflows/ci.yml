@@ -15,13 +15,15 @@ permissions:
   contents: read
 
 jobs:
-  # Reformate l'API et pousse le correctif sur la branche de la PR, pour que
-  # spotless ne soit plus un motif d'échec à corriger à la main.
+  # Reformate l'API et régénère le contrat OpenAPI (spec + types front), puis pousse les
+  # correctifs sur la branche de la PR : ni le formatage ni la fraîcheur du contrat n'ont
+  # à être corrigés à la main. Un seul job, un seul checkout, des commits séquentiels — deux
+  # jobs qui pousseraient en parallèle sur la même branche se bloqueraient l'un l'autre.
   format:
-    name: Formatage (spotless)
+    name: Auto-fix (formatage + contrat OpenAPI)
     # Le GITHUB_TOKEN est en lecture seule sur les PR issues d'un fork : on ne
     # tente le commit que pour les branches du dépôt. Les forks restent couverts
-    # par le spotless:check de `mvnw verify`.
+    # par les vérifications (spotless:check, contrat à jour) des jobs `api`/`front`.
     if: >-
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository
@@ -43,6 +45,19 @@ jobs:
           distribution: temurin
           cache: maven
 
+      - name: Setup Node 20
+        uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+
+      - name: Configuration git (commits automatiques)
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Application du formatage
         run: ./mvnw -B -ntp spotless:apply
 
@@ -53,9 +68,45 @@ jobs:
             echo "Aucun écart de formatage."
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "style(api): applique le formatage spotless"
+          git push
+
+      # Même build que le job `api`, sans les tests : seul target/openapi/openapi.json
+      # nous intéresse ici, dérivé des annotations JAX-RS déjà reformatées à l'étape précédente.
+      - name: Génération du contrat OpenAPI
+        run: ./mvnw -B -ntp package -DskipTests
+
+      - name: Commit si le contrat OpenAPI a changé
+        working-directory: .
+        run: |
+          cp api/target/openapi/openapi.json api/openapi.json
+          if git diff --quiet -- api/openapi.json; then
+            echo "Contrat OpenAPI déjà à jour."
+            exit 0
+          fi
+          git add api/openapi.json
+          git commit -m "chore(contract): met à jour api/openapi.json"
+          git push
+
+      - name: Install (front)
+        working-directory: front
+        run: npm ci
+
+      # Régénère schema.d.ts et enums.ts depuis le contrat, potentiellement mis à jour
+      # par l'étape précédente.
+      - name: Régénération des types du contrat
+        working-directory: front
+        run: npm run generate:api
+
+      - name: Commit si les types générés ont changé
+        working-directory: .
+        run: |
+          if git diff --quiet -- front/shared/api/schema.d.ts front/shared/api/enums.ts; then
+            echo "Types du contrat déjà à jour."
+            exit 0
+          fi
+          git add front/shared/api/schema.d.ts front/shared/api/enums.ts
+          git commit -m "chore(contract): régénère les types TypeScript du contrat"
           git push
 
   api:
@@ -108,6 +159,11 @@ jobs:
   front:
     name: Front (Next.js)
     runs-on: ubuntu-latest
+    # Le job `format` régénère aussi schema.d.ts/enums.ts : sans cette dépendance, ce job
+    # checkerait la branche avant le push de `format` et échouerait sur un contrat périmé
+    # pour de mauvaises raisons.
+    needs: [format]
+    if: ${{ !cancelled() && (needs.format.result == 'success' || needs.format.result == 'skipped') }}
     defaults:
       run:
         working-directory: front
