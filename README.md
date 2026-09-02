@@ -33,6 +33,40 @@ Une API Quarkus est disponible dans le dossier `api` pour gérer les entités su
 - **Status** (`/status`) : `GET` (Statut simple de l'application)
 - **Health Checks** (`/q/health`) : Points de terminaison standards Quarkus (Liveness/Readiness)
 
+### Contrat OpenAPI et types partagés
+
+Les types TypeScript décrivant les payloads de l'API ne sont **pas écrits à la main** : ils sont
+générés depuis le contrat OpenAPI que Quarkus dérive des annotations JAX-RS.
+
+```
+Resources JAX-RS ──(build Maven)──> api/openapi.json ──(openapi-typescript)──> front/shared/api/schema.d.ts
+                                                     └─(script maison)───────> front/shared/api/enums.ts
+```
+
+`schema.d.ts` ne contient que des types, effacés à la compilation. `enums.ts` en est le pendant
+runtime : les mêmes enums sous forme de tableaux, pour alimenter les listes déroulantes et les
+`z.enum` sans recopier une seule valeur du back.
+
+Les fichiers intermédiaires sont **versionnés**, pour deux raisons : le job CI `front` reste
+indépendant du job `api` (pas de build Maven ni d'échange d'artefact), et toute évolution du
+contrat apparaît noir sur blanc dans le diff de la PR.
+
+Après toute modification d'une ressource REST ou d'un modèle côté `api`, régénérer :
+
+```bash
+cd api && ./mvnw package -DskipTests && cp target/openapi/openapi.json openapi.json
+```
+
+```bash
+cd front && npm run generate:api
+```
+
+La CI échoue si l'un de ces fichiers est obsolète. Côté front, les types se consomment via les
+alias lisibles exportés par `shared/api` (`BackendBlogPost`, `BackendTalk`, `BackendConference`, …)
+plutôt que par `components["schemas"][…]`.
+
+La spec reste également servie à chaud sur `/q/openapi` (et l'UI Swagger sur `/q/swagger-ui` en dev).
+
 ## Configuration
 
 Toute la configuration passe par un fichier `.env` **à la racine du projet**, lu automatiquement par Docker Compose (et jamais versionné) :
