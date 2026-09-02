@@ -1292,6 +1292,24 @@
           },
           "visibility" : {
             "$ref" : "#/components/schemas/Visibility"
+          },
+          "format" : {
+            "type" : "string"
+          },
+          "date" : {
+            "type" : "string"
+          },
+          "language" : {
+            "type" : "string"
+          },
+          "notes" : {
+            "type" : "string"
+          },
+          "slides" : {
+            "type" : "string"
+          },
+          "replay" : {
+            "type" : "string"
           }
         }
       },
