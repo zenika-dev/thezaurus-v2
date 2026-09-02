@@ -88,6 +88,15 @@ jobs:
       - name: Build & tests
         run: ./mvnw -B -ntp verify
 
+      # `verify` régénère target/openapi/openapi.json depuis les annotations JAX-RS.
+      # La copie versionnée doit être identique : c'est elle qui sert de source aux types
+      # TypeScript du front, et son diff rend toute évolution du contrat visible en revue.
+      - name: Contrat OpenAPI à jour
+        run: |
+          cp target/openapi/openapi.json openapi.json
+          git diff --exit-code openapi.json \
+            || { echo "::error::api/openapi.json est obsolète. Lancez './mvnw package -DskipTests' puis 'cp target/openapi/openapi.json openapi.json' et committez le résultat."; exit 1; }
+
       - name: Upload des rapports de tests en cas d'échec
         if: failure()
         uses: actions/upload-artifact@v7
@@ -119,6 +128,14 @@ jobs:
       # c'est le premier filet de sécurité sur les PR Dependabot.
       - name: Install
         run: npm ci
+
+      # Régénère types et enums depuis api/openapi.json (versionné, donc pas besoin du build
+      # Maven ici : les jobs `api` et `front` restent indépendants).
+      - name: Types du contrat à jour
+        run: |
+          npm run generate:api
+          git diff --exit-code shared/api/schema.d.ts shared/api/enums.ts \
+            || { echo "::error::Les types générés sont obsolètes. Lancez 'npm run generate:api' et committez le résultat."; exit 1; }
 
       - name: Lint
         run: npm run lint
