@@ -16,7 +16,7 @@ const spec = JSON.parse(readFileSync(SPEC, "utf8"));
 const schemas = spec.components?.schemas ?? {};
 
 const enums = Object.entries(schemas)
-  .filter(([, s]) => s.type === "string" && Array.isArray(s.enum))
+  .filter(([, s]) => Array.isArray(s.enum))
   .sort(([a], [b]) => a.localeCompare(b));
 
 if (enums.length === 0) {
