@@ -4,22 +4,14 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
 /**
- * Période sur laquelle se tient une conférence : deux bornes ISO {@code YYYY-MM-DD} inclusives,
- * plus la précision avec laquelle elles sont connues.
+ * Période d'une conférence : deux bornes ISO {@code YYYY-MM-DD} inclusives, plus la précision
+ * connue. Sans champ discriminant : date unique si {@code start == end}, intervalle sinon, mois
+ * entier si précision {@link DatePrecision#MONTH}.
  *
- * <p>Les trois cas d'usage se dérivent de ces trois champs, sans champ discriminant :
- *
- * <ul>
- *   <li>date unique : {@code start.equals(end)}, précision {@link DatePrecision#DAY} ;
- *   <li>intervalle : {@code start < end}, précision {@link DatePrecision#DAY} ;
- *   <li>mois : bornes couvrant le mois entier, précision {@link DatePrecision#MONTH}.
- * </ul>
- *
- * <p>Les bornes sont des {@code String} ISO et non des {@link LocalDate} : c'est la convention de
- * persistance du projet (le mapper POJO de Firestore ne connaît pas {@code java.time}), et l'ordre
- * lexicographique de l'ISO coïncide avec l'ordre chronologique — ce qui rend {@code start}
- * directement utilisable dans un {@code orderBy} Firestore, là où l'ancien format « chaîne
- * surchargée » interdisait tout tri côté serveur.
+ * <p>Les bornes sont des {@code String} et non des {@link LocalDate} : le mapper POJO Firestore ne
+ * connaît pas {@code java.time}, et l'ordre lexicographique ISO coïncide avec l'ordre
+ * chronologique, ce qui permet un {@code orderBy} Firestore direct sur {@code start} — impossible
+ * avec l'ancien format « chaîne surchargée ».
  */
 public class ConferencePeriod {
 
@@ -36,8 +28,7 @@ public class ConferencePeriod {
     }
 
     /**
-     * Période d'une seule journée, cas des saisies qui n'exposent qu'un unique sélecteur de date
-     * (formulaire Slack notamment).
+     * Période d'une seule journée (formulaire Slack, qui n'expose qu'un sélecteur de date).
      *
      * @return la période correspondante, ou {@code null} si la date est absente ou invalide
      */

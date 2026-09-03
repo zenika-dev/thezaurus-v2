@@ -5,11 +5,7 @@ import type { BlogPostData } from "./model";
 
 dayjs.extend(customParseFormat);
 
-/**
- * Seule transformation qui subsiste : le back stocke des dates ISO (`YYYY-MM-DDT00:00:00`) et
- * l'interface manipule le format d'affichage français `DD-MM-YYYY`. Les renommages et la
- * traduction des statuts ont disparu — le modèle UI porte désormais les noms du contrat.
- */
+/** Le back stocke des dates ISO (`YYYY-MM-DDT00:00:00`), l'interface affiche du `DD-MM-YYYY`. */
 function toFrontendDate(dateStr: string | undefined | null): string {
   if (!dateStr) return "";
   if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) return dateStr;
@@ -28,8 +24,7 @@ function toLocalDateTime(dateStr: string | undefined): string | null {
 
 /**
  * Le back accepte `null` pour les dates absentes, ce que le schéma généré ne décrit pas : les
- * champs Java ne portent pas d'annotation `@Schema`, donc ils ressortent simplement optionnels.
- * On élargit ces deux champs sans redéclarer le reste du payload, qui suit le contrat.
+ * champs Java n'ont pas d'annotation `@Schema` et ressortent simplement optionnels.
  */
 type BackendBlogPostPayload = Omit<BackendBlogPost, "creationDate" | "publicationDate"> & {
   creationDate: string | null;
@@ -37,8 +32,8 @@ type BackendBlogPostPayload = Omit<BackendBlogPost, "creationDate" | "publicatio
 };
 
 /**
- * Ne fait plus que totaliser le payload et convertir les dates : le contrat déclare tous les
- * champs optionnels, faute d'annotations `@Schema(required = true)` sur les modèles Java.
+ * Ne fait que totaliser le payload et convertir les dates : le contrat déclare tous les champs
+ * optionnels, faute d'annotations `@Schema(required = true)` sur les modèles Java.
  */
 export function mapBackendToFrontend(p: BackendBlogPost): BlogPostData {
   return {

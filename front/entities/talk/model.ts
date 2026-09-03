@@ -7,17 +7,14 @@ import type {
 } from "@/shared/api";
 
 /**
- * Un speaker est un `User` côté back. L'alias garde le vocabulaire du domaine talk tout en restant
- * dérivé du contrat. `slackUserId` est renseigné par la commande Slack : le formulaire ne l'expose
- * pas mais doit le préserver.
+ * Un speaker est un `User` côté back. `slackUserId` est renseigné par la commande Slack : le
+ * formulaire ne l'expose pas mais doit le préserver.
  */
 export type TalkSpeaker = BackendUser;
 
 /**
- * Statut et visibilité gardent la casse du back. L'ancienne traduction vers `Draft` / `Idea` /
- * `external` ne renommait pas seulement : elle *perdait* des valeurs. `PLANNED` et `REJECTED`
- * retombaient tous deux sur « Idea », si bien qu'éditer un talk refusé depuis le front le
- * repassait en `PLANNED`.
+ * Statut et visibilité gardent la casse du back : une traduction vers un nom réduit (`Draft` /
+ * `Idea` / `external`) risquerait de faire collapser deux valeurs distinctes sur le même libellé.
  */
 export type TalkStatus = BackendTalkStatus;
 
@@ -47,11 +44,8 @@ export interface TalkData {
 
 /**
  * Le formulaire n'expose que deux noms et un email, alors que le back porte une liste complète.
- * Cette fonction réécrit les deux premiers speakers en préservant leurs champs non éditables
- * (`slackUserId`, email du co-speaker) ainsi que les suivants, ajoutés via la commande Slack.
- *
- * C'est ce que faisait le champ miroir `speakersSource` — devenu inutile maintenant que le modèle
- * porte directement la liste du contrat.
+ * Réécrit les deux premiers speakers en préservant leurs champs non éditables (`slackUserId`,
+ * email du co-speaker) ainsi que les suivants, ajoutés via la commande Slack.
  */
 export function withEditedSpeakers(
   current: TalkSpeaker[],
@@ -122,8 +116,6 @@ export const languageLabels: Record<string, string> = {
 /**
  * Le `Record` sur l'union du contrat vaut contrôle d'exhaustivité : ajouter une valeur à
  * `TalkStatus` côté Java fait échouer la compilation ici tant qu'elle n'a pas de libellé.
- * Les libellés reprennent l'affichage existant ; `REJECTED`, jusqu'ici indiscernable de
- * `PLANNED`, en gagne un propre.
  */
 export const talkStatusConfig: Record<TalkStatus, { label: string; text: string; bg: string; darkText: string; darkBg: string }> = {
   DRAFT:     { label: "Draft",     text: "#000000", bg: "#F7F7F7", darkText: "#FFFFFF", darkBg: "#5E5E5E" },
