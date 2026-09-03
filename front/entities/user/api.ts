@@ -1,10 +1,15 @@
-import { apiFetch } from "@/shared/api";
+import { apiFetch, type BackendNotificationPreferences } from "@/shared/api";
 import type { NotificationPreferences, UserProfile } from "./model";
 
+/**
+ * `ProfileResource.getProfile()` retourne un `Response` brut (branche 404), donc SmallRye ne
+ * génère aucun schéma pour cette réponse : ce type reste à écrire à la main. Seul le nid
+ * `notificationPreferences` est dérivé du contrat, via le type généré pour le PUT correspondant.
+ */
 interface BackendProfile {
   name?: string | null;
   email?: string | null;
-  notificationPreferences?: { email?: boolean; slack?: boolean } | null;
+  notificationPreferences?: BackendNotificationPreferences | null;
   slackLinked?: boolean;
 }
 
