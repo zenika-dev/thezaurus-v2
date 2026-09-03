@@ -2,6 +2,7 @@ package com.zenika.thezaurus.model;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.Map;
 
 /**
  * Période d'une conférence : deux bornes ISO {@code YYYY-MM-DD} inclusives, plus la précision
@@ -99,5 +100,13 @@ public class ConferencePeriod {
 
     public void setPrecision(DatePrecision precision) {
         this.precision = precision;
+    }
+
+    /**
+     * Représentation pour une mise à jour partielle Firestore ({@code update(field, Map)}), à la
+     * place d'une écriture complète du document via {@code set(pojo)}.
+     */
+    public Map<String, Object> toFirestoreMap() {
+        return Map.of("start", start, "end", end, "precision", precision.name());
     }
 }

@@ -15,7 +15,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -144,13 +143,7 @@ public class ConferenceRepository {
                         doc.getId(), legacy);
                 period = new ConferencePeriod("", "", DatePrecision.DAY);
             }
-            batch.update(
-                    doc.getReference(),
-                    "date",
-                    Map.of(
-                            "start", period.getStart(),
-                            "end", period.getEnd(),
-                            "precision", period.getPrecision().name()));
+            batch.update(doc.getReference(), "date", period.toFirestoreMap());
             migrated++;
             if (++pending == BATCH_SIZE) {
                 batch.commit().get();
