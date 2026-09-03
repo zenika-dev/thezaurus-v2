@@ -15,18 +15,13 @@ permissions:
   contents: read
 
 jobs:
-  # Reformate l'API et régénère le contrat OpenAPI (spec + types front), puis pousse les
-  # correctifs sur la branche de la PR. Un seul job aux commits séquentiels : deux jobs
-  # poussant en parallèle sur la même branche se bloqueraient l'un l'autre.
-  #
-  # Chaque commit porte [skip ci] : sans ça, le push déclencherait un `pull_request: synchronize`
-  # qui relance ce workflow sur le même groupe de concurrence et annule (cancel-in-progress) CE
-  # run en plein milieu, avant que `api`/`front` ne voient l'état final.
+  # Reformate l'API et pousse le correctif sur la branche de la PR, pour que
+  # spotless ne soit plus un motif d'échec à corriger à la main.
   format:
-    name: Auto-fix (formatage + contrat OpenAPI)
+    name: Formatage (spotless)
     # Le GITHUB_TOKEN est en lecture seule sur les PR issues d'un fork : on ne
     # tente le commit que pour les branches du dépôt. Les forks restent couverts
-    # par les vérifications (spotless:check, contrat à jour) des jobs `api`/`front`.
+    # par le spotless:check de `mvnw verify`.
     if: >-
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository
@@ -48,22 +43,12 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Setup Node 20
-        uses: actions/setup-node@v7
-        with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: front/package-lock.json
-
-      - name: Configuration git (commits automatiques)
-        working-directory: .
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
       - name: Application du formatage
         run: ./mvnw -B -ntp spotless:apply
 
+      # [skip ci] : sans ça, ce push déclencherait un `pull_request: synchronize` qui relance
+      # ce workflow sur le même groupe de concurrence et annule (cancel-in-progress) le run
+      # courant avant que `api`/`front` ne s'exécutent.
       - name: Commit si le formatage a modifié des fichiers
         working-directory: .
         run: |
@@ -71,45 +56,9 @@ jobs:
             echo "Aucun écart de formatage."
             exit 0
           fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "style(api): applique le formatage spotless [skip ci]"
-          git push
-
-      # Même build que le job `api`, sans les tests : seul target/openapi/openapi.json
-      # nous intéresse ici, dérivé des annotations JAX-RS déjà reformatées à l'étape précédente.
-      - name: Génération du contrat OpenAPI
-        run: ./mvnw -B -ntp package -DskipTests
-
-      - name: Commit si le contrat OpenAPI a changé
-        working-directory: .
-        run: |
-          cp api/target/openapi/openapi.json api/openapi.json
-          if git diff --quiet -- api/openapi.json; then
-            echo "Contrat OpenAPI déjà à jour."
-            exit 0
-          fi
-          git add api/openapi.json
-          git commit -m "chore(contract): met à jour api/openapi.json [skip ci]"
-          git push
-
-      - name: Install (front)
-        working-directory: front
-        run: npm ci
-
-      # Régénère schema.d.ts et enums.ts depuis le contrat, potentiellement mis à jour
-      # par l'étape précédente.
-      - name: Régénération des types du contrat
-        working-directory: front
-        run: npm run generate:api
-
-      - name: Commit si les types générés ont changé
-        working-directory: .
-        run: |
-          if git diff --quiet -- front/shared/api/schema.d.ts front/shared/api/enums.ts; then
-            echo "Types du contrat déjà à jour."
-            exit 0
-          fi
-          git add front/shared/api/schema.d.ts front/shared/api/enums.ts
-          git commit -m "chore(contract): régénère les types TypeScript du contrat [skip ci]"
           git push
 
   api:
@@ -121,6 +70,8 @@ jobs:
     # `needs` seul suffirait à sauter ce job quand `format` est sauté (push sur
     # main, PR de fork) : cette condition le fait tourner malgre tout.
     if: ${{ !cancelled() && (needs.format.result == 'success' || needs.format.result == 'skipped') }}
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: api
@@ -142,12 +93,31 @@ jobs:
       - name: Build & tests
         run: ./mvnw -B -ntp verify
 
-      # `verify` régénère target/openapi/openapi.json depuis les annotations JAX-RS.
-      # La copie versionnée doit être identique : c'est elle qui sert de source aux types
-      # TypeScript du front, et son diff rend toute évolution du contrat visible en revue.
+      # `verify` régénère target/openapi/openapi.json depuis les annotations JAX-RS. La copie
+      # versionnée doit être identique : c'est elle qui sert de source aux types TypeScript du
+      # front, et son diff rend toute évolution du contrat visible en revue.
+      - name: Copie du contrat OpenAPI généré
+        run: cp target/openapi/openapi.json openapi.json
+
+      # Corrige et pousse directement sur les PR du dépôt, en réutilisant le build ci-dessus
+      # plutôt que d'en refaire un dans un job dédié. Les forks retombent sur la vérification
+      # stricte qui suit (GITHUB_TOKEN en lecture seule, pas de commit possible).
+      - name: Commit si le contrat OpenAPI a changé
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          if git diff --quiet -- openapi.json; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add openapi.json
+          git commit -m "chore(contract): met à jour api/openapi.json [skip ci]"
+          git push
+
       - name: Contrat OpenAPI à jour
         run: |
-          cp target/openapi/openapi.json openapi.json
           git diff --exit-code openapi.json \
             || { echo "::error::api/openapi.json est obsolète. Lancez './mvnw package -DskipTests' puis 'cp target/openapi/openapi.json openapi.json' et committez le résultat."; exit 1; }
 
@@ -162,11 +132,13 @@ jobs:
   front:
     name: Front (Next.js)
     runs-on: ubuntu-latest
-    # Le job `format` régénère aussi schema.d.ts/enums.ts : sans cette dépendance, ce job
-    # checkerait la branche avant le push de `format` et échouerait sur un contrat périmé
-    # pour de mauvaises raisons.
-    needs: [format]
-    if: ${{ !cancelled() && (needs.format.result == 'success' || needs.format.result == 'skipped') }}
+    # `api` peut pousser un contrat corrigé : sans attendre sa fin, ce job régénérerait ses
+    # types depuis un contrat pas encore corrigé, sans jamais s'en apercevoir (le push d'`api`
+    # porte [skip ci], donc rien ne redéclenche ce job une fois le retard pris).
+    needs: [api]
+    if: ${{ needs.api.result == 'success' }}
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: front
@@ -188,11 +160,26 @@ jobs:
       - name: Install
         run: npm ci
 
-      # Régénère types et enums depuis api/openapi.json (versionné, donc pas besoin du build
-      # Maven ici : les jobs `api` et `front` restent indépendants).
+      - name: Régénération des types du contrat
+        run: npm run generate:api
+
+      - name: Commit si les types générés ont changé
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        working-directory: .
+        run: |
+          if git diff --quiet -- front/shared/api/schema.d.ts front/shared/api/enums.ts; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add front/shared/api/schema.d.ts front/shared/api/enums.ts
+          git commit -m "chore(contract): régénère les types TypeScript du contrat [skip ci]"
+          git push
+
       - name: Types du contrat à jour
         run: |
-          npm run generate:api
           git diff --exit-code shared/api/schema.d.ts shared/api/enums.ts \
             || { echo "::error::Les types générés sont obsolètes. Lancez 'npm run generate:api' et committez le résultat."; exit 1; }
 
