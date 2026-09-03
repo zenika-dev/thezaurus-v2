@@ -80,11 +80,13 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
     }
   };
 
-  const handleApplyAiSuggestions = (suggestedTitle: string, suggestedAbstract: string) => {
+  // `onApply` vient de TalkAssistantDialog, un widget générique qui ignore le modèle Talk et ne
+  // connaît que "titre" + "abstract" ; on relie ici son vocabulaire à `description`, le champ réel.
+  const handleApplyAiSuggestions = (suggestedTitle: string, suggestedDescription: string) => {
     onUpdate({
       ...talk,
       title: suggestedTitle,
-      description: suggestedAbstract,
+      description: suggestedDescription,
     });
   };
 
