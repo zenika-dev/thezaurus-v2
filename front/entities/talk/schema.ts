@@ -2,9 +2,8 @@ import { z } from "zod";
 import { TALK_VISIBILITIES } from "./model";
 
 /**
- * Le formulaire reste plat — deux intervenants nommés, une conférence désignée par son nom — là où
- * le modèle porte des listes et des objets. La reconstruction se fait à la soumission
- * (`withEditedSpeakers`), sans perdre ce que le formulaire n'édite pas.
+ * Formulaire plat (deux intervenants nommés, une conférence par son nom) reconstruit vers le
+ * modèle à la soumission (`withEditedSpeakers`).
  */
 export const talkFormSchema = z.object({
   title:      z.string().min(1, "Le titre est requis"),

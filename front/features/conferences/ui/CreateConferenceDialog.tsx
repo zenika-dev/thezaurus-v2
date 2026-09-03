@@ -219,9 +219,8 @@ export function CreateConferenceDialog({
   };
 
   /**
-   * Normalise la saisie vers les deux bornes du contrat. Le mois est stocké comme la période
-   * couvrant le mois entier : c'est `precision` qui porte l'information « dates non arrêtées », et
-   * qui empêche l'affichage de rendre « 1-31 mars » là où il faut lire « mars ».
+   * Le mois est stocké comme la période couvrant le mois entier : c'est `precision` qui porte
+   * l'information « dates non arrêtées » et évite d'afficher « 1-31 mars » au lieu de « mars ».
    */
   const buildConferencePeriod = (): ConferencePeriod => {
     switch (dateType) {

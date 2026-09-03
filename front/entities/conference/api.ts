@@ -7,9 +7,8 @@ import {
 } from "./model";
 
 /**
- * `cfpStatus` est un `String` libre côté back, contrairement à `type` et `reach` qui sont de vraies
- * enums Java et ressortent typées dans le contrat. Le contrat ne peut donc pas garantir les trois
- * valeurs attendues ici : on les valide à l'exécution.
+ * `cfpStatus` est un `String` libre côté back (pas une vraie enum Java) : le contrat ne peut pas
+ * en garantir les valeurs, on les valide donc à l'exécution.
  */
 function toFrontendCfpStatus(s: string | undefined): ConferenceCFPStatus {
   return CONFERENCE_CFP_STATUSES.includes(s as ConferenceCFPStatus)
@@ -24,9 +23,8 @@ function toFrontendCfpStatus(s: string | undefined): ConferenceCFPStatus {
 const UNKNOWN_PERIOD: ConferencePeriod = { start: "", end: "", precision: "DAY" };
 
 /**
- * Il ne reste plus de restructuration : la période est structurée des deux côtés, et les noms sont
- * ceux du contrat. Cette fonction ne fait que **totaliser** le payload — le contrat déclare tous
- * les champs optionnels, faute d'annotations `@Schema(required = true)` sur les modèles Java.
+ * Ne fait que totaliser le payload : le contrat déclare tous les champs optionnels, faute
+ * d'annotations `@Schema(required = true)` sur les modèles Java.
  */
 export const mapBackendToFrontend = (c: BackendConference): ConferenceData => ({
   id: c.id ?? "",
@@ -45,9 +43,8 @@ export const mapBackendToFrontend = (c: BackendConference): ConferenceData => ({
 });
 
 /**
- * Plus de mapping sortant : le modèle UI a exactement la forme du contrat. Ce passage par
- * `BackendConference` n'existe que pour que le compilateur le vérifie — si le back renomme un
- * champ, la régénération du contrat fait échouer la compilation ici.
+ * Le modèle UI a exactement la forme du contrat. Le passage par `BackendConference` n'existe que
+ * pour le vérifier au compilateur — si le back renomme un champ, ça casse ici.
  */
 const toPayload = (c: ConferenceData): BackendConference => c;
 
