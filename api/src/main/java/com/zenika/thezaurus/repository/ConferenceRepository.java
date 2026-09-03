@@ -6,6 +6,7 @@ import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
+import com.google.cloud.firestore.WriteBatch;
 import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.Conference;
 import com.zenika.thezaurus.model.ConferencePeriod;
@@ -34,6 +35,9 @@ public class ConferenceRepository {
     Optional<String> collectionPrefix;
 
     private static final String BASE_COLLECTION_NAME = "conferences";
+
+    /** Limite Firestore : un WriteBatch accepte au plus 500 opérations. */
+    private static final int BATCH_SIZE = 500;
 
     private String getCollectionName() {
         if (collectionPrefix == null
@@ -93,11 +97,17 @@ public class ConferenceRepository {
      * stocké, donc les documents déjà migrés ({@code Map}) sont ignorés ; les chaînes non reconnues
      * sont laissées telles quelles et signalées.
      *
+     * <p>Les écritures sont groupées par {@link WriteBatch} de {@link #BATCH_SIZE} plutôt
+     * qu'envoyées une par une : au démarrage, un aller-retour Firestore par document risquerait
+     * de dépasser les délais des sondes de liveness/readiness sur une collection volumineuse.
+     *
      * @return le nombre de documents réécrits
      */
     public int migrateLegacyDates() throws ExecutionException, InterruptedException {
         QuerySnapshot snapshot = firestore.collection(getCollectionName()).get().get();
         int migrated = 0;
+        WriteBatch batch = firestore.batch();
+        int pending = 0;
         for (QueryDocumentSnapshot doc : snapshot.getDocuments()) {
             if (!(doc.get("date") instanceof String legacy)) {
                 continue;
@@ -108,15 +118,22 @@ public class ConferenceRepository {
                         "Conférence {0} : date « {1} » non reconnue, document laissé en l''état", doc.getId(), legacy);
                 continue;
             }
-            doc.getReference()
-                    .update(
-                            "date",
-                            Map.of(
-                                    "start", period.getStart(),
-                                    "end", period.getEnd(),
-                                    "precision", period.getPrecision().name()))
-                    .get();
+            batch.update(
+                    doc.getReference(),
+                    "date",
+                    Map.of(
+                            "start", period.getStart(),
+                            "end", period.getEnd(),
+                            "precision", period.getPrecision().name()));
             migrated++;
+            if (++pending == BATCH_SIZE) {
+                batch.commit().get();
+                batch = firestore.batch();
+                pending = 0;
+            }
+        }
+        if (pending > 0) {
+            batch.commit().get();
         }
         return migrated;
     }
