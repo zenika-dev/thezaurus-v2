@@ -13,6 +13,7 @@ export type BackendBlogPostStatus = Schemas["BlogPostStatus"];
 export type BackendTalk = Schemas["Talk"];
 export type BackendTalkStatus = Schemas["TalkStatus"];
 export type BackendVisibility = Schemas["Visibility"];
+export type BackendTalkReviewRequest = Schemas["TalkReviewRequest"];
 
 export type BackendConference = Schemas["Conference"];
 export type BackendConferenceType = Schemas["ConferenceType"];
