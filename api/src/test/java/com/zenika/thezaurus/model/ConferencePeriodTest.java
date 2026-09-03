@@ -3,9 +3,17 @@ package com.zenika.thezaurus.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class ConferencePeriodTest {
+
+    @Test
+    public void toFirestoreMapExposesTheThreeFieldsForAPartialUpdate() {
+        ConferencePeriod period = new ConferencePeriod("2026-03-01", "2026-03-03", DatePrecision.DAY);
+
+        assertEquals(Map.of("start", "2026-03-01", "end", "2026-03-03", "precision", "DAY"), period.toFirestoreMap());
+    }
 
     @Test
     public void singleDayBuildsADayPrecisionPeriod() {
