@@ -3,13 +3,10 @@ package com.zenika.thezaurus.model;
 import java.util.List;
 
 /**
- * Les six derniers champs existaient cote formulaire sans contrepartie ici : ils etaient
- * saisissables mais jamais persistes, et relus a vide au rafraichissement suivant.
+ * Les six derniers champs existaient cote formulaire sans contrepartie ici : saisissables mais
+ * jamais persistes, relus a vide au rafraichissement suivant.
  *
- * @param format format de presentation (conference, atelier…), saisi a la creation
  * @param date date de presentation au format ISO {@code YYYY-MM-DD}
- * @param language langue de presentation, saisie a la creation
- * @param notes notes libres saisies a la creation
  * @param slides lien vers les supports, saisi apres coup depuis la fiche du talk
  * @param replay lien vers l'enregistrement, saisi apres coup depuis la fiche du talk
  */

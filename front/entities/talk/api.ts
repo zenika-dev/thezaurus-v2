@@ -2,9 +2,8 @@ import { apiFetch, type BackendTalk } from "@/shared/api";
 import type { ApiErrorResponse, TalkData, TalkReviewRequest, TalkReviewResponse } from "./model";
 
 /**
- * Il ne reste plus aucune transformation : le modèle UI porte les noms, la casse et la structure du
- * contrat. Cette fonction ne fait que **totaliser** le payload — le contrat déclare tous les champs
- * optionnels, faute d'annotations `@Schema(required = true)` sur les modèles Java.
+ * Ne fait que totaliser le payload : le contrat déclare tous les champs optionnels, faute
+ * d'annotations `@Schema(required = true)` sur les modèles Java.
  */
 export function mapBackendToFrontend(t: BackendTalk): TalkData {
   return {
@@ -26,9 +25,8 @@ export function mapBackendToFrontend(t: BackendTalk): TalkData {
 }
 
 /**
- * Plus de mapping sortant : le modèle UI a exactement la forme du contrat. Ce passage par
- * `BackendTalk` n'existe que pour que le compilateur le vérifie — si le back renomme un champ, la
- * régénération du contrat fait échouer la compilation ici.
+ * Le modèle UI a exactement la forme du contrat. Le passage par `BackendTalk` n'existe que pour
+ * le vérifier au compilateur — si le back renomme un champ, ça casse ici.
  */
 const toPayload = (t: TalkData): BackendTalk => ({ ...t, conference: t.conference ?? undefined });
 
