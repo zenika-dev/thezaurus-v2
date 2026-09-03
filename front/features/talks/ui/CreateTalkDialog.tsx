@@ -133,9 +133,11 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
       setAssistantLoading(false);
     }
   };
-  const handleApplyAssistantSuggestions = (suggestedTitle: string, suggestedAbstract: string) => {
+  // `onApply` vient de TalkAssistantDialog, un widget générique qui ignore le modèle Talk et ne
+  // connaît que "titre" + "abstract" ; on relie ici son vocabulaire à `description`, le champ réel.
+  const handleApplyAssistantSuggestions = (suggestedTitle: string, suggestedDescription: string) => {
     setValue("title", suggestedTitle, { shouldValidate: true, shouldDirty: true });
-    setValue("description", suggestedAbstract, { shouldValidate: true, shouldDirty: true });
+    setValue("description", suggestedDescription, { shouldValidate: true, shouldDirty: true });
   };
 
   return (
