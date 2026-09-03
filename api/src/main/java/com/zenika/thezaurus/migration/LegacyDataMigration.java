@@ -1,8 +1,6 @@
 package com.zenika.thezaurus.migration;
 
 import com.zenika.thezaurus.repository.ConferenceRepository;
-import com.zenika.thezaurus.repository.TalkRepository;
-import com.zenika.thezaurus.repository.UserRepository;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -25,12 +23,6 @@ public class LegacyDataMigration {
     Logger logger;
 
     @Inject
-    TalkRepository talkRepository;
-
-    @Inject
-    UserRepository userRepository;
-
-    @Inject
     ConferenceRepository conferenceRepository;
 
     /**
@@ -44,25 +36,11 @@ public class LegacyDataMigration {
         if (!enabled) {
             return;
         }
-        int migratedTalks = talkRepository.migrateLegacySpeakers();
-        if (migratedTalks > 0) {
-            logger.infov("Migration speakers legacy : {0} talk(s) réécrit(s) au format User", migratedTalks);
-        }
-        int migratedUsers = userRepository.migrateLegacyRoles();
-        if (migratedUsers > 0) {
-            logger.infov("Migration rôles legacy : {0} utilisateur(s) réécrit(s) au format roles[]", migratedUsers);
-        }
         int migratedConferenceDates = conferenceRepository.migrateLegacyDates();
         if (migratedConferenceDates > 0) {
             logger.infov(
                     "Migration dates de conférences : {0} conférence(s) réécrite(s) au format ConferencePeriod",
                     migratedConferenceDates);
-        }
-        int migratedEmails = userRepository.migrateLegacyEmailCasing();
-        if (migratedEmails > 0) {
-            logger.infov(
-                    "Migration casse des emails : {0} document(s) utilisateur re-keyé(s) en minuscules",
-                    migratedEmails);
         }
     }
 }
