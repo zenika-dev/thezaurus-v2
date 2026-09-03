@@ -5,9 +5,8 @@ import type { ConferencePeriod } from "./model";
 dayjs.locale("fr");
 
 /**
- * Les trois formes d'affichage se déduisent de la période, sans champ discriminant : `MONTH` masque
- * les bornes (elles couvrent le mois entier faute de dates arrêtées), sinon `start === end` désigne
- * une journée et le reste un intervalle.
+ * Pas de champ discriminant : `MONTH` masque les bornes (mois entier faute de dates arrêtées),
+ * sinon `start === end` désigne une journée et le reste un intervalle.
  */
 export function formatConferenceDate(d: ConferencePeriod): string {
     if (!d.start) return "";
@@ -35,11 +34,7 @@ export function getConferenceYear(d: ConferencePeriod): number {
     return dayjs(d.start).year();
 }
 
-/**
- * L'ISO se trie lexicographiquement dans l'ordre chronologique : la borne de début suffit. Ce tri
- * pourrait désormais être délégué au back (`orderBy("date.start")`), ce que l'ancien format
- * « chaîne surchargée » interdisait.
- */
+/** L'ISO se trie lexicographiquement dans l'ordre chronologique : la borne de début suffit. */
 export function getConferenceSortKey(d: ConferencePeriod): string {
     return d.start;
 }

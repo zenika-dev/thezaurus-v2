@@ -1,11 +1,8 @@
 package com.zenika.thezaurus.model;
 
 /**
- * Précision avec laquelle la période d'une conférence est connue.
- *
- * <p>La distinction n'est pas déductible des bornes : une conférence annoncée « mars 2026 » couvre
- * le mois entier faute de dates arrêtées, alors qu'une conférence du 1er au 31 mars dure réellement
- * un mois. Sans ce champ, les deux cas seraient indiscernables et affichés de la même façon.
+ * Précision de la période d'une conférence. Non déductible des bornes : « mars 2026 » (dates non
+ * arrêtées) et un événement du 1er au 31 mars ont les mêmes bornes mais un affichage différent.
  */
 public enum DatePrecision {
     /** Les bornes sont les jours réels de la conférence. */

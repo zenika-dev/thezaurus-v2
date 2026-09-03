@@ -88,13 +88,10 @@ public class ConferenceRepository {
     }
 
     /**
-     * Réécrit les conférences dont le champ {@code date} est encore une chaîne surchargée
-     * ({@code "2026-03-01"}, {@code "2026-03-01/2026-03-03"} ou {@code "2026-03"}) vers le format
-     * structuré {@link ConferencePeriod}.
-     *
-     * <p>Idempotente : la détection porte sur le type du champ stocké, donc les documents déjà
-     * migrés (une {@code Map}) sont ignorés. Les chaînes non reconnues sont laissées telles quelles
-     * et signalées, pour être corrigées à la main plutôt que réécrites arbitrairement.
+     * Réécrit les conférences dont {@code date} est encore une chaîne surchargée vers le format
+     * structuré {@link ConferencePeriod}. Idempotente : la détection porte sur le type du champ
+     * stocké, donc les documents déjà migrés ({@code Map}) sont ignorés ; les chaînes non reconnues
+     * sont laissées telles quelles et signalées.
      *
      * @return le nombre de documents réécrits
      */

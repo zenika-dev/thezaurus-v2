@@ -32,11 +32,8 @@ export type ConferenceLocation = BackendLocation;
 export type DatePrecision = BackendDatePrecision;
 
 /**
- * Période d'une conférence : deux bornes ISO inclusives et la précision avec laquelle elles sont
- * connues. Version totale du type généré, dont tous les champs sont optionnels.
- *
- * Les trois cas d'affichage s'en déduisent sans champ discriminant : `precision === "MONTH"` pour
- * un mois, sinon `start === end` pour une date unique et `start < end` pour un intervalle.
+ * Version totale du type généré (tous les champs y sont optionnels). Pas de champ discriminant :
+ * `precision === "MONTH"` pour un mois, sinon `start === end` pour une date unique.
  */
 export interface ConferencePeriod {
   start: string;

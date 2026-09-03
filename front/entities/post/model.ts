@@ -1,19 +1,14 @@
 import { enumValues } from "@/shared/api";
 import type { BackendBlogPostStatus } from "@/shared/api";
 
-/**
- * Le statut garde la casse du back : traduire `DRAFT` ↔ `Draft` à la frontière ne servait qu'à
- * renommer. Le libellé affiché est porté par `blogPostStatusConfig`, donc par la couche de
- * présentation — le seul endroit où une traduction a du sens.
- */
+/** Le statut garde la casse du back ; le libellé affiché est porté par `blogPostStatusConfig`. */
 export type BlogPostStatus = BackendBlogPostStatus;
 
 export const BLOG_POST_STATUSES = enumValues.BlogPostStatus;
 
 /**
- * Modèle manipulé par l'interface. Il a exactement la forme du contrat, à deux nuances près : tous
- * les champs sont totaux (le contrat les déclare optionnels), et les dates sont au format
- * d'affichage `DD-MM-YYYY` plutôt qu'en ISO.
+ * Forme du contrat, à deux nuances : les champs sont totaux (le contrat les déclare optionnels),
+ * et les dates sont au format d'affichage `DD-MM-YYYY` plutôt qu'en ISO.
  */
 export interface BlogPostData {
   id: string;
@@ -27,11 +22,7 @@ export interface BlogPostData {
   status: BlogPostStatus;
 }
 
-/**
- * Le formulaire n'expose qu'un auteur alors que le back en porte une liste. Remplacer l'auteur
- * principal sans écraser les suivants : c'est exactement ce que l'ancien mapping perdait, en
- * réémettant `writers: [author]` à chaque enregistrement.
- */
+/** Le formulaire n'expose qu'un auteur ; remplace le principal sans écraser les suivants. */
 export function withPrimaryWriter(writers: string[], name: string): string[] {
   return [name, ...writers.slice(1)];
 }

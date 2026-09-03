@@ -16,16 +16,12 @@ permissions:
 
 jobs:
   # Reformate l'API et régénère le contrat OpenAPI (spec + types front), puis pousse les
-  # correctifs sur la branche de la PR : ni le formatage ni la fraîcheur du contrat n'ont
-  # à être corrigés à la main. Un seul job, un seul checkout, des commits séquentiels — deux
-  # jobs qui pousseraient en parallèle sur la même branche se bloqueraient l'un l'autre.
+  # correctifs sur la branche de la PR. Un seul job aux commits séquentiels : deux jobs
+  # poussant en parallèle sur la même branche se bloqueraient l'un l'autre.
   #
-  # Chaque commit auto-généré porte [skip ci] : un push sur une branche de PR déclenche un
-  # `pull_request: synchronize`, qui relance ce workflow sur le même groupe de concurrence
-  # (`ci-CI-<ref-de-la-PR>`, stable entre synchronize) — et `cancel-in-progress: true`
-  # annulerait alors CE run en plein milieu, avant les commits suivants ou les jobs
-  # `api`/`front`. [skip ci] empêche ce nouveau run de démarrer ; le run courant continue
-  # normalement et ses jobs `api`/`front` verront bien l'état final une fois `format` terminé.
+  # Chaque commit porte [skip ci] : sans ça, le push déclencherait un `pull_request: synchronize`
+  # qui relance ce workflow sur le même groupe de concurrence et annule (cancel-in-progress) CE
+  # run en plein milieu, avant que `api`/`front` ne voient l'état final.
   format:
     name: Auto-fix (formatage + contrat OpenAPI)
     # Le GITHUB_TOKEN est en lecture seule sur les PR issues d'un fork : on ne

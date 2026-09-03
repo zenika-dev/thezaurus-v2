@@ -4,13 +4,9 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
- * Génère les *valeurs* des enums du contrat OpenAPI.
- *
- * `openapi-typescript` ne produit que des types, effacés à la compilation : impossible d'en tirer
- * les listes dont l'application a besoin à l'exécution (options des listes déroulantes, `z.enum`).
- * Ce script complète donc `schema.d.ts` en émettant les mêmes enums sous forme de tableaux
- * `as const`, depuis la même source de vérité — de sorte qu'aucune valeur du back ne soit recopiée
- * à la main nulle part.
+ * Génère les *valeurs* des enums du contrat OpenAPI : `openapi-typescript` ne produit que des
+ * types, effacés à la compilation, alors que l'appli a besoin de ces listes à l'exécution
+ * (options de formulaire, `z.enum`).
  */
 const here = dirname(fileURLToPath(import.meta.url));
 const SPEC = resolve(here, "../../api/openapi.json");
