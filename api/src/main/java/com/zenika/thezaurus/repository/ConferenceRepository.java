@@ -10,14 +10,15 @@ import com.google.cloud.firestore.WriteBatch;
 import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.Conference;
 import com.zenika.thezaurus.model.ConferencePeriod;
+import com.zenika.thezaurus.model.DatePrecision;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -52,19 +53,38 @@ public class ConferenceRepository {
         ApiFuture<QuerySnapshot> query =
                 firestore.collection(getCollectionName()).get();
         QuerySnapshot querySnapshot = query.get();
-        return querySnapshot.getDocuments().stream()
-                .map(doc -> doc.toObject(Conference.class))
-                .collect(Collectors.toList());
+        List<Conference> conferences = new ArrayList<>();
+        for (QueryDocumentSnapshot doc : querySnapshot.getDocuments()) {
+            Conference conference = toConferenceOrNull(doc);
+            if (conference != null) {
+                conferences.add(conference);
+            }
+        }
+        return conferences;
     }
 
     public Conference findById(String id) throws ExecutionException, InterruptedException {
         DocumentReference docRef = firestore.collection(getCollectionName()).document(id);
         ApiFuture<DocumentSnapshot> future = docRef.get();
         DocumentSnapshot document = future.get();
-        if (document.exists()) {
-            return document.toObject(Conference.class);
+        if (!document.exists()) {
+            return null;
         }
-        return null;
+        return toConferenceOrNull(document);
+    }
+
+    /**
+     * {@code toObject} lève si {@code date} n'est pas au format {@link ConferencePeriod} attendu —
+     * document non migré (staging, export ancien, restauration) ou corrompu. Un seul document dans
+     * cet état ne doit pas faire échouer la liste entière pour tout le monde.
+     */
+    private Conference toConferenceOrNull(DocumentSnapshot doc) {
+        try {
+            return doc.toObject(Conference.class);
+        } catch (RuntimeException e) {
+            logger.errorv(e, "Conférence {0} illisible, document ignoré", doc.getId());
+            return null;
+        }
     }
 
     public Conference create(Conference conference) throws ExecutionException, InterruptedException {
@@ -94,8 +114,13 @@ public class ConferenceRepository {
     /**
      * Réécrit les conférences dont {@code date} est encore une chaîne surchargée vers le format
      * structuré {@link ConferencePeriod}. Idempotente : la détection porte sur le type du champ
-     * stocké, donc les documents déjà migrés ({@code Map}) sont ignorés ; les chaînes non reconnues
-     * sont laissées telles quelles et signalées.
+     * stocké, donc les documents déjà migrés ({@code Map}) sont ignorés.
+     *
+     * <p>Une chaîne non reconnue est réécrite en période vide plutôt que laissée telle quelle :
+     * {@code Conference.date} est typé {@link ConferencePeriod}, donc une {@code String} restante
+     * ferait échouer la désérialisation Firestore de ce document — et de tout appel qui liste la
+     * collection — à la première lecture. Une période vide reste un {@code Map} valide ; le
+     * document est signalé pour correction manuelle sans jamais faire planter une lecture.
      *
      * <p>Les écritures sont groupées par {@link WriteBatch} de {@link #BATCH_SIZE} plutôt
      * qu'envoyées une par une : au démarrage, un aller-retour Firestore par document risquerait
@@ -115,8 +140,9 @@ public class ConferenceRepository {
             ConferencePeriod period = ConferencePeriod.fromLegacyString(legacy);
             if (period == null) {
                 logger.warnv(
-                        "Conférence {0} : date « {1} » non reconnue, document laissé en l''état", doc.getId(), legacy);
-                continue;
+                        "Conférence {0} : date « {1} » non reconnue, réécrite en période vide — à corriger manuellement",
+                        doc.getId(), legacy);
+                period = new ConferencePeriod("", "", DatePrecision.DAY);
             }
             batch.update(
                     doc.getReference(),
