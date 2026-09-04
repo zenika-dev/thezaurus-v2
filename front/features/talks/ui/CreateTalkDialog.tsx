@@ -22,7 +22,13 @@ import dayjs, { type Dayjs } from "dayjs";
 import "dayjs/locale/fr";
 import { Bot } from "lucide-react";
 import type { TalkData, TalkStatus, TalkReviewResponse } from "@/entities/talk";
-import { agencyLabels, visibilityLabels, formatLabels, languageLabels } from "@/entities/talk";
+import {
+  agencyLabels,
+  visibilityLabels,
+  formatLabels,
+  languageLabels,
+  withEditedSpeakers,
+} from "@/entities/talk";
 import { talkFormSchema, type TalkFormData } from "@/entities/talk";
 import { reviewTalkAction } from "@/entities/talk";
 import { TalkAssistantDialog } from "@/features/talks/ui/TalkAssistantDialog";
@@ -58,15 +64,24 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
     resolver: zodResolver(talkFormSchema),
     defaultValues: {
       title: "", speaker: "", cospeaker: "", email: "",
-      agency: "", abstract: "", format: "", visibility: "",
-      language: "", conference: "", notes: "",
+      office: "", description: "", format: "", visibility: "PRIVATE",
+      language: "francais", conference: "", notes: "",
     },
   });
 
-  const buildTalkData = (data: TalkFormData, status: TalkStatus): TalkData => ({
+  /**
+   * Le formulaire est plat, le modèle ne l'est pas : les deux intervenants nommés deviennent la
+   * liste `speakers` du contrat, et la conférence saisie par son nom un objet `Conference`.
+   */
+  const buildTalkData = (
+    { speaker, cospeaker, email, conference, ...data }: TalkFormData,
+    status: TalkStatus,
+  ): TalkData => ({
     id: crypto.randomUUID(),
     ...data,
-    date: date ? date.format("DD-MM-YYYY") : "",
+    speakers: withEditedSpeakers([], speaker, cospeaker, email),
+    conference: conference.trim() ? { name: conference.trim() } : null,
+    date: date ? date.format("YYYY-MM-DD") : "",
     status,
     slides: "",
     replay: "",
@@ -82,7 +97,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
   const handleSaveDraft = async () => {
     const titleValid = await trigger("title");
     if (!titleValid) return;
-    onSubmit(buildTalkData(getValues(), "Draft"));
+    onSubmit(buildTalkData(getValues(), "DRAFT"));
     reset();
     setDate(null);
     setAssistantResult(null);
@@ -90,7 +105,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
   };
 
   const onCreateTalk = (data: TalkFormData) => {
-    onSubmit(buildTalkData(data, "Idea"));
+    onSubmit(buildTalkData(data, "PLANNED"));
     reset();
     setDate(null);
     setAssistantResult(null);
@@ -108,7 +123,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
     try {
       const res = await reviewTalkAction({
         title: values.title,
-        abstract: values.abstract
+        abstract: values.description
       });
       setAssistantResult(res);
     } catch (err : unknown){
@@ -118,9 +133,11 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
       setAssistantLoading(false);
     }
   };
-  const handleApplyAssistantSuggestions = (suggestedTitle: string, suggestedAbstract: string) => {
+  // `onApply` vient de TalkAssistantDialog, un widget générique qui ignore le modèle Talk et ne
+  // connaît que "titre" + "abstract" ; on relie ici son vocabulaire à `description`, le champ réel.
+  const handleApplyAssistantSuggestions = (suggestedTitle: string, suggestedDescription: string) => {
     setValue("title", suggestedTitle, { shouldValidate: true, shouldDirty: true });
-    setValue("abstract", suggestedAbstract, { shouldValidate: true, shouldDirty: true });
+    setValue("description", suggestedDescription, { shouldValidate: true, shouldDirty: true });
   };
 
   return (
@@ -210,10 +227,10 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
               />
 
               <Controller
-                name="agency"
+                name="office"
                 control={control}
                 render={({ field }) => (
-                  <FormControl fullWidth required error={!!errors.agency}>
+                  <FormControl fullWidth required error={!!errors.office}>
                     <InputLabel id="create-agency-label">Agence</InputLabel>
                     <Select
                       {...field}
@@ -225,8 +242,8 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
                         <MenuItem key={v} value={v}>{l}</MenuItem>
                       ))}
                     </Select>
-                    {errors.agency && (
-                      <FormHelperText>{errors.agency.message}</FormHelperText>
+                    {errors.office && (
+                      <FormHelperText>{errors.office.message}</FormHelperText>
                     )}
                   </FormControl>
                 )}
@@ -239,7 +256,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
               <span className="text-xs font-medium text-text-muted">Abstract & Description</span>
             </div>
             <TextField
-              {...register("abstract")}
+              {...register("description")}
               id="talk-abstract"
               label="Abstract / Description"
               multiline
@@ -247,8 +264,8 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
               fullWidth
               required
               placeholder="Décrivez le contenu de votre talk..."
-              error={!!errors.abstract}
-              helperText={errors.abstract?.message}
+              error={!!errors.description}
+              helperText={errors.description?.message}
             />
           </div>
 
@@ -355,7 +372,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
           loading={assistantLoading}
           error={error}
           title={getValues().title}
-          abstract={getValues().abstract}
+          abstract={getValues().description}
           assistantReviewResult={assistantResult}
           onClose={() => setAssistantDialogOpen(false)}
           onApply={handleApplyAssistantSuggestions}

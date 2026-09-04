@@ -10,7 +10,7 @@ import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { Eye, Funnel } from "lucide-react";
 import type { TalkData, TalkStatus } from "@/entities/talk";
-import { agencyLabels } from "@/entities/talk";
+import { agencyLabels, talkStatusConfig, TALK_STATUSES } from "@/entities/talk";
 import dynamic from "next/dynamic";
 import { useTalks } from "@/features/talks/model";
 import { StatusTag, VisibilityTag } from "./TalkTags";
@@ -72,10 +72,10 @@ export function TalkTable() {
           <div className="flex items-center gap-2 flex-wrap">
             <Funnel size={14} className="text-text-muted shrink-0" />
             <span className="text-xs text-text-muted mr-2">Statut :</span>
-            {(["All", "Idea", "Submitted", "Accepted", "Replayed", "Draft"] as const).map((status) => (
+            {(["All", ...TALK_STATUSES] as const).map((status) => (
               <FilterBadge
                 key={status}
-                label={status === "All" ? "Tous" : status}
+                label={status === "All" ? "Tous" : talkStatusConfig[status].label}
                 active={statusFilter === status}
                 onClick={() => setStatusFilter(status)}
               />
@@ -129,13 +129,13 @@ export function TalkTable() {
                       {talk.title}
                     </span>
                   </TableCell>
-                  <TableCell>{talk.speaker}</TableCell>
-                  <TableCell>{agencyLabels[talk.agency] || "—"}</TableCell>
-                  <TableCell>{talk.conference || "—"}</TableCell>
+                  <TableCell>{talk.speakers[0]?.name ?? "—"}</TableCell>
+                  <TableCell>{agencyLabels[talk.office] || "—"}</TableCell>
+                  <TableCell>{talk.conference?.name || "—"}</TableCell>
                   <TableCell><StatusTag status={talk.status} /></TableCell>
                   <TableCell align="center"><VisibilityTag visibility={talk.visibility} /></TableCell>
                   <TableCell align="center">
-                    {(talk.status === "Accepted" || talk.status === "Replayed") && (
+                    {(talk.status === "ACCEPTED" || talk.status === "DONE") && (
                       <button
                         onClick={() => setSelectedTalkId(talk.id)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs

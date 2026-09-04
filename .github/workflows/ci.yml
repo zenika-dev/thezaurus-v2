@@ -46,6 +46,14 @@ jobs:
       - name: Application du formatage
         run: ./mvnw -B -ntp spotless:apply
 
+      # [skip ci] : sans ça, ce push déclencherait un `pull_request: synchronize` qui relance
+      # ce workflow sur le même groupe de concurrence et annule (cancel-in-progress) le run
+      # courant avant que `api`/`front` ne s'exécutent.
+      #
+      # Si un push humain atterrit sur la branche pendant que ce job tourne, notre push (basé
+      # sur un checkout maintenant dépassé) serait rejeté en non-fast-forward — inoffensif (ce
+      # run est de toute façon obsolète, cancel-in-progress va le remplacer) mais ferait échouer
+      # le job pour la mauvaise raison. On rebase et on retente une fois avant d'abandonner.
       - name: Commit si le formatage a modifié des fichiers
         working-directory: .
         run: |
@@ -55,8 +63,8 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "style(api): applique le formatage spotless"
-          git push
+          git commit -am "style(api): applique le formatage spotless [skip ci]"
+          git push || (git fetch origin "${{ github.head_ref }}" && git rebase "origin/${{ github.head_ref }}" && git push)
 
   api:
     name: API (Quarkus)
@@ -67,6 +75,8 @@ jobs:
     # `needs` seul suffirait à sauter ce job quand `format` est sauté (push sur
     # main, PR de fork) : cette condition le fait tourner malgre tout.
     if: ${{ !cancelled() && (needs.format.result == 'success' || needs.format.result == 'skipped') }}
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: api
@@ -88,6 +98,34 @@ jobs:
       - name: Build & tests
         run: ./mvnw -B -ntp verify
 
+      # `verify` régénère target/openapi/openapi.json depuis les annotations JAX-RS. La copie
+      # versionnée doit être identique : c'est elle qui sert de source aux types TypeScript du
+      # front, et son diff rend toute évolution du contrat visible en revue.
+      - name: Copie du contrat OpenAPI généré
+        run: cp target/openapi/openapi.json openapi.json
+
+      # Corrige et pousse directement sur les PR du dépôt, en réutilisant le build ci-dessus
+      # plutôt que d'en refaire un dans un job dédié. Les forks retombent sur la vérification
+      # stricte qui suit (GITHUB_TOKEN en lecture seule, pas de commit possible).
+      - name: Commit si le contrat OpenAPI a changé
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          if git diff --quiet -- openapi.json; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add openapi.json
+          git commit -m "chore(contract): met à jour api/openapi.json [skip ci]"
+          git push || (git fetch origin "${{ github.head_ref }}" && git rebase "origin/${{ github.head_ref }}" && git push)
+
+      - name: Contrat OpenAPI à jour
+        run: |
+          git diff --exit-code openapi.json \
+            || { echo "::error::api/openapi.json est obsolète. Lancez './mvnw package -DskipTests' puis 'cp target/openapi/openapi.json openapi.json' et committez le résultat."; exit 1; }
+
       - name: Upload des rapports de tests en cas d'échec
         if: failure()
         uses: actions/upload-artifact@v7
@@ -99,6 +137,13 @@ jobs:
   front:
     name: Front (Next.js)
     runs-on: ubuntu-latest
+    # `api` peut pousser un contrat corrigé : sans attendre sa fin, ce job régénérerait ses
+    # types depuis un contrat pas encore corrigé, sans jamais s'en apercevoir (le push d'`api`
+    # porte [skip ci], donc rien ne redéclenche ce job une fois le retard pris).
+    needs: [api]
+    if: ${{ needs.api.result == 'success' }}
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: front
@@ -119,6 +164,29 @@ jobs:
       # c'est le premier filet de sécurité sur les PR Dependabot.
       - name: Install
         run: npm ci
+
+      - name: Régénération des types du contrat
+        run: npm run generate:api
+
+      - name: Commit si les types générés ont changé
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        working-directory: .
+        run: |
+          if git diff --quiet -- front/shared/api/schema.d.ts front/shared/api/enums.ts; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add front/shared/api/schema.d.ts front/shared/api/enums.ts
+          git commit -m "chore(contract): régénère les types TypeScript du contrat [skip ci]"
+          git push || (git fetch origin "${{ github.head_ref }}" && git rebase "origin/${{ github.head_ref }}" && git push)
+
+      - name: Types du contrat à jour
+        run: |
+          git diff --exit-code shared/api/schema.d.ts shared/api/enums.ts \
+            || { echo "::error::Les types générés sont obsolètes. Lancez 'npm run generate:api' et committez le résultat."; exit 1; }
 
       - name: Lint
         run: npm run lint

@@ -1,99 +1,34 @@
-import { apiFetch } from "@/shared/api";
+import { apiFetch, type BackendTalk } from "@/shared/api";
 import type { ApiErrorResponse, TalkData, TalkReviewRequest, TalkReviewResponse } from "./model";
 
-export interface BackendSpeaker {
-  name?: string;
-  email?: string;
-  /** Renseigné par la commande Slack. Le front ne l'affiche pas mais doit le préserver. */
-  slackUserId?: string;
-}
-
-interface BackendTalk {
-  id?: string;
-  title?: string;
-  speakers?: BackendSpeaker[];
-  office?: string;
-  description?: string;
-  conference?: { name?: string } | null;
-  status?: string;
-  visibility?: string;
-}
-
-interface BackendTalkPayload {
-  id: string;
-  title: string;
-  description: string;
-  speakers: BackendSpeaker[];
-  office: string;
-  conference: { name: string } | null;
-  status: string;
-  visibility: string;
-}
-
+/**
+ * Ne fait que totaliser le payload : le contrat déclare tous les champs optionnels, faute
+ * d'annotations `@Schema(required = true)` sur les modèles Java.
+ */
 export function mapBackendToFrontend(t: BackendTalk): TalkData {
-  const speakers = t.speakers || [];
   return {
-    id: t.id || "",
-    title: t.title || "",
-    speaker: speakers[0]?.name || "",
-    cospeaker: speakers[1]?.name || "",
-    email: speakers[0]?.email || "",
-    speakersSource: speakers,
-    agency: t.office || "",
-    abstract: t.description || "",
-    format: "public",
-    visibility: t.visibility === "PUBLIC" ? "external" : "internal",
-    language: "francais",
-    conference: t.conference?.name || "",
-    date: "",
-    notes: "",
-    status:
-      t.status === "DONE"
-        ? "Replayed"
-        : t.status === "ACCEPTED"
-          ? "Accepted"
-          : t.status === "SUBMITTED"
-            ? "Submitted"
-            : t.status === "DRAFT"
-              ? "Draft"
-              : "Idea",
-    slides: "",
-    replay: "",
+    id: t.id ?? "",
+    title: t.title ?? "",
+    description: t.description ?? "",
+    speakers: t.speakers ?? [],
+    office: t.office ?? "",
+    conference: t.conference ?? null,
+    status: t.status ?? "PLANNED",
+    visibility: t.visibility ?? "PRIVATE",
+    format: t.format ?? "",
+    date: t.date ?? "",
+    language: t.language ?? "",
+    notes: t.notes ?? "",
+    slides: t.slides ?? "",
+    replay: t.replay ?? "",
   };
 }
 
-export function mapFrontendToBackend(t: TalkData): BackendTalkPayload {
-  // Le formulaire ne connaît que deux noms et un email : on repart des speakers reçus du backend
-  // pour ne pas perdre les champs qu'il ne sait pas éditer (slackUserId, email du co-speaker).
-  // Au-delà des deux premiers, les speakers (ex. ajoutés via la commande Slack) ne sont pas
-  // éditables par ce formulaire mais doivent être réémis tels quels pour ne pas les perdre.
-  const source = t.speakersSource ?? [];
-  const speakers: BackendSpeaker[] = [];
-  if (t.speaker.trim()) {
-    speakers.push({ ...source[0], name: t.speaker.trim(), email: t.email.trim() || undefined });
-  }
-  if (t.cospeaker.trim()) {
-    speakers.push({ ...source[1], name: t.cospeaker.trim() });
-  }
-  speakers.push(...source.slice(2));
-
-  let backendStatus = "PLANNED";
-  if (t.status === "Draft") backendStatus = "DRAFT";
-  else if (t.status === "Submitted") backendStatus = "SUBMITTED";
-  else if (t.status === "Accepted") backendStatus = "ACCEPTED";
-  else if (t.status === "Replayed") backendStatus = "DONE";
-
-  return {
-    id: t.id,
-    title: t.title,
-    description: t.abstract,
-    speakers,
-    office: t.agency,
-    conference: t.conference ? { name: t.conference } : null,
-    status: backendStatus,
-    visibility: t.visibility === "external" ? "PUBLIC" : "PRIVATE",
-  };
-}
+/**
+ * Le modèle UI a exactement la forme du contrat. Le passage par `BackendTalk` n'existe que pour
+ * le vérifier au compilateur — si le back renomme un champ, ça casse ici.
+ */
+const toPayload = (t: TalkData): BackendTalk => ({ ...t, conference: t.conference ?? undefined });
 
 export const talkApi = {
   getTalks: async (): Promise<TalkData[]> => {
@@ -106,7 +41,7 @@ export const talkApi = {
     const res = await apiFetch("/talks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(mapFrontendToBackend(talk)),
+      body: JSON.stringify(toPayload(talk)),
     });
     if (!res.ok) throw new Error("Failed to create talk");
     return mapBackendToFrontend(await res.json());
@@ -115,7 +50,7 @@ export const talkApi = {
     const res = await apiFetch(`/talks/${talk.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(mapFrontendToBackend(talk)),
+      body: JSON.stringify(toPayload(talk)),
     });
     if (!res.ok) throw new Error("Failed to update talk");
     return talk;
@@ -131,11 +66,11 @@ export const talkApi = {
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
-        let errorMessage = "Une erreur est survenue lors de l'analyse du talk.";
-        const errorData: ApiErrorResponse = await response.json();
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        }
+      let errorMessage = "Une erreur est survenue lors de l'analyse du talk.";
+      const errorData: ApiErrorResponse = await response.json();
+      if (errorData.message) {
+        errorMessage = errorData.message;
+      }
       throw new Error(errorMessage);
     }
     return await response.json();

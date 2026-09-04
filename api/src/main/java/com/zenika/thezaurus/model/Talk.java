@@ -2,6 +2,14 @@ package com.zenika.thezaurus.model;
 
 import java.util.List;
 
+/**
+ * Les six derniers champs existaient cote formulaire sans contrepartie ici : saisissables mais
+ * jamais persistes, relus a vide au rafraichissement suivant.
+ *
+ * @param date date de presentation au format ISO {@code YYYY-MM-DD}
+ * @param slides lien vers les supports, saisi apres coup depuis la fiche du talk
+ * @param replay lien vers l'enregistrement, saisi apres coup depuis la fiche du talk
+ */
 public record Talk(
         String id,
         String title,
@@ -10,10 +18,16 @@ public record Talk(
         String office,
         Conference conference,
         TalkStatus status,
-        Visibility visibility) {
+        Visibility visibility,
+        String format,
+        String date,
+        String language,
+        String notes,
+        String slides,
+        String replay) {
 
     public Talk(String id, String title, String description) {
-        this(id, title, description, null, null, null, null, null);
+        this(id, title, description, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public Talk(
@@ -23,14 +37,42 @@ public record Talk(
             String office,
             TalkStatus status,
             Visibility visibility) {
-        this(null, title, description, speakers, office, null, status, visibility);
+        this(null, title, description, speakers, office, null, status, visibility, null, null, null, null, null, null);
     }
 
     public Talk withId(String id) {
-        return new Talk(id, title, description, speakers, office, conference, status, visibility);
+        return new Talk(
+                id,
+                title,
+                description,
+                speakers,
+                office,
+                conference,
+                status,
+                visibility,
+                format,
+                date,
+                language,
+                notes,
+                slides,
+                replay);
     }
 
     public Talk withConference(Conference conference) {
-        return new Talk(id, title, description, speakers, office, conference, status, visibility);
+        return new Talk(
+                id,
+                title,
+                description,
+                speakers,
+                office,
+                conference,
+                status,
+                visibility,
+                format,
+                date,
+                language,
+                notes,
+                slides,
+                replay);
     }
 }

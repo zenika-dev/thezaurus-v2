@@ -1,7 +1,6 @@
 package com.zenika.thezaurus.model;
 
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -19,14 +18,6 @@ public enum Role {
 
     public static boolean isValid(String role) {
         return role != null && Arrays.stream(values()).anyMatch(r -> r.name().equals(role));
-    }
-
-    /**
-     * Convertit l'ancien champ Firestore {@code role} mono-valué. Le rôle "membre" n'existe
-     * plus : il est lu comme CONSULTANT. Utilisé par la migration des documents legacy.
-     */
-    public static Role fromLegacy(String role) {
-        return "membre".equalsIgnoreCase(role) ? CONSULTANT : valueOf(role.toUpperCase(Locale.ROOT));
     }
 
     public static final class Names {

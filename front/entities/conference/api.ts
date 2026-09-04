@@ -1,77 +1,52 @@
-import { apiFetch } from "@/shared/api";
-import { ConferenceCFPStatus, ConferenceData, ConferenceDate, ConferenceReach, ConferenceType } from "./model";
+import { apiFetch, type BackendConference } from "@/shared/api";
+import {
+  CONFERENCE_CFP_STATUSES,
+  type ConferenceCFPStatus,
+  type ConferenceData,
+  type ConferencePeriod,
+} from "./model";
 
-
-interface BackendConference {
-    id: string;
-    name: string;
-    date: string;
-    cfpLink: string;
-    location: {
-        city?: string;
-        country?: string;
-        address?: string;
-        postalCode?: string;
-    };
-    cfpStatus: ConferenceCFPStatus;
-    submittedTalksAmount: number;
-    cfpClosingDate?: string;
-    type: ConferenceType;
-    reach: ConferenceReach;
+/**
+ * `cfpStatus` est un `String` libre côté back (pas une vraie enum Java) : le contrat ne peut pas
+ * en garantir les valeurs, on les valide donc à l'exécution.
+ */
+function toFrontendCfpStatus(s: string | undefined): ConferenceCFPStatus {
+  return CONFERENCE_CFP_STATUSES.includes(s as ConferenceCFPStatus)
+    ? (s as ConferenceCFPStatus)
+    : "None";
 }
 
-export function parseConferenceDate(raw: string): ConferenceDate {
-    if (!raw) return { type: "single", date: "" };
-    
-    if (raw.includes("/")) {
-        const [start, end] = raw.split("/");
-        return { type: "range", start, end };
-    }
-    
-    if (/^\d{4}-\d{2}$/.test(raw)) {
-        const [year, month] = raw.split("-");
-        return { type: "month", year: parseInt(year, 10), month: parseInt(month, 10) };
-    }
-    
-    return { type: "single", date: raw };
-}
+/**
+ * Repli pour une conférence dont le back n'a pas de période exploitable (document antérieur à la
+ * migration et non reconnu). Rend le modèle UI total sans inventer de date.
+ */
+const UNKNOWN_PERIOD: ConferencePeriod = { start: "", end: "", precision: "DAY" };
 
-export function serializeConferenceDate(d: ConferenceDate): string {
-    switch (d.type) {
-        case "single":
-            return d.date;
-        case "range":
-            return `${d.start}/${d.end}`;
-        case "month":
-            return `${d.year}-${String(d.month).padStart(2, "0")}`;
-    }
-}
-
+/**
+ * Ne fait que totaliser le payload : le contrat déclare tous les champs optionnels, faute
+ * d'annotations `@Schema(required = true)` sur les modèles Java.
+ */
 export const mapBackendToFrontend = (c: BackendConference): ConferenceData => ({
-    id: c.id,
-    title: c.name,
-    date: parseConferenceDate(c.date),
-    cfpLink: c.cfpLink,
-    location: c.location,
-    cfpStatus: c.cfpStatus,
-    submittedTalksAmount: c.submittedTalksAmount,
-    cfpClosingDate: c.cfpClosingDate,
-    type: c.type,
-    reach: c.reach,
+  id: c.id ?? "",
+  name: c.name ?? "",
+  date:
+    c.date?.start && c.date.end && c.date.precision
+      ? { start: c.date.start, end: c.date.end, precision: c.date.precision }
+      : UNKNOWN_PERIOD,
+  cfpLink: c.cfpLink,
+  location: c.location ?? {},
+  cfpStatus: toFrontendCfpStatus(c.cfpStatus),
+  submittedTalksAmount: c.submittedTalksAmount ?? 0,
+  cfpClosingDate: c.cfpClosingDate,
+  type: c.type ?? "Hors scope",
+  reach: c.reach ?? "Locale",
 });
 
-export const mapFrontendToBackend = (c: ConferenceData): BackendConference => ({
-    id: c.id,
-    name: c.title,
-    date: serializeConferenceDate(c.date),
-    cfpLink: c.cfpLink || "",
-    location: c.location,
-    cfpStatus: c.cfpStatus,
-    submittedTalksAmount: c.submittedTalksAmount,
-    cfpClosingDate: c.cfpClosingDate,
-    type: c.type,
-    reach: c.reach,
-});
+/**
+ * Le modèle UI a exactement la forme du contrat. Le passage par `BackendConference` n'existe que
+ * pour le vérifier au compilateur — si le back renomme un champ, ça casse ici.
+ */
+const toPayload = (c: ConferenceData): BackendConference => c;
 
 export const conferenceApi = {
   getConferences: async (): Promise<ConferenceData[]> => {
@@ -80,25 +55,25 @@ export const conferenceApi = {
     const data = await res.json();
     return data.map(mapBackendToFrontend);
   },
-  createConference:  async (conference: ConferenceData): Promise<ConferenceData> => {
-      const res = await apiFetch("/conferences", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(mapFrontendToBackend(conference)),
-      });
-      if (!res.ok) throw new Error("Failed to create conference");
-      return mapBackendToFrontend(await res.json());
-    },
-      updateConference: async (conference: ConferenceData): Promise<ConferenceData> => {
-        const res = await apiFetch(`/conferences/${conference.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(mapFrontendToBackend(conference)),
-        });
-        if (!res.ok) throw new Error("Failed to update conference");
-        return conference;
-      },
-    deleteConference: async (id: string): Promise<void> => {
+  createConference: async (conference: ConferenceData): Promise<ConferenceData> => {
+    const res = await apiFetch("/conferences", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(toPayload(conference)),
+    });
+    if (!res.ok) throw new Error("Failed to create conference");
+    return mapBackendToFrontend(await res.json());
+  },
+  updateConference: async (conference: ConferenceData): Promise<ConferenceData> => {
+    const res = await apiFetch(`/conferences/${conference.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(toPayload(conference)),
+    });
+    if (!res.ok) throw new Error("Failed to update conference");
+    return conference;
+  },
+  deleteConference: async (id: string): Promise<void> => {
     const res = await apiFetch(`/conferences/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete conference");
   },
