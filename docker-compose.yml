@@ -1,24 +1,4 @@
 services:
-  # Émulateur Firestore local (désactivé en mode prod par docker-compose.prod.yml)
-  # Firebase Emulator Suite (firebase-tools) plutôt que le nu `gcloud emulators` :
-  # expose en plus l'Emulator UI officielle (http://localhost:4000) pour parcourir les données.
-  firestore:
-    image: andreysenov/firebase-tools:latest
-    container_name: thezaurus-firestore-emulator
-    command: firebase emulators:start --project=local-dev
-    ports:
-      - "9000:9000"
-      - "4000:4000" # Emulator UI (http://localhost:4000)
-      - "4400:4400" # Emulator Hub — nécessaire pour l'auto-détection par des clients externes (ex. Firestudio)
-      - "9150:9150" # Websocket interne de l'Emulator UI (onglet "Requests")
-    volumes:
-      - ./firebase.json:/home/node/firebase.json:ro
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:9000', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   # API Backend (Quarkus)
   api:
     build:
@@ -28,20 +8,14 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - QUARKUS_PROFILE=dev
-      - FIRESTORE_HOST_OVERRIDE=firestore:9000
-      - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID:-thezaurus-494709}
-      - FIRESTORE_DATABASE_ID=${FIRESTORE_DATABASE_ID:-thezaurus-dev}
-      - FIRESTORE_COLLECTION_PREFIX=${FIRESTORE_COLLECTION_PREFIX:-dev}
+      - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
+      - FIRESTORE_DATABASE_ID=${FIRESTORE_DATABASE_ID}
+      - FIRESTORE_COLLECTION_PREFIX=${FIRESTORE_COLLECTION_PREFIX}
+      - QUARKUS_PROFILE=prod
       - QUARKUS_HTTP_PORT=8080
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET:-}
       - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-dummy-client-id}
-      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
-      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
-    depends_on:
-      firestore:
-        condition: service_healthy
-        required: false
     volumes:
       - ${GCLOUD_ADC:-${HOME}/.config/gcloud/application_default_credentials.json}:/tmp/credentials.json:ro
 
@@ -51,8 +25,6 @@ services:
       context: ./front
       target: dev
     container_name: thezaurus-front
-    ports:
-      - "3000:3000"
     environment:
       - API_URL=http://api:8080
       - VITE_MOCK_AUTH=false
@@ -62,15 +34,3 @@ services:
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
     depends_on:
       - api
-    develop:
-      watch:
-        - action: sync
-          path: ./front
-          target: /app
-          ignore:
-            - node_modules/
-            - .next/
-        - action: rebuild
-          path: ./front/package.json
-        - action: rebuild
-          path: ./front/package-lock.json

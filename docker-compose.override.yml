@@ -1,0 +1,58 @@
+services:
+  # Émulateur Firestore local (absent quand on lance docker-compose.yml seul, en mode prod)
+  # Firebase Emulator Suite (firebase-tools) plutôt que le nu `gcloud emulators` :
+  # expose en plus l'Emulator UI officielle (http://localhost:4000) pour parcourir les données.
+  firestore:
+    image: andreysenov/firebase-tools:latest
+    container_name: thezaurus-firestore-emulator
+    command: firebase emulators:start --project=local-dev
+    ports:
+      - "9000:9000"
+      - "4000:4000" # Emulator UI (http://localhost:4000)
+      - "4400:4400" # Emulator Hub — nécessaire pour l'auto-détection par des clients externes (ex. Firestudio)
+      - "9150:9150" # Websocket interne de l'Emulator UI (onglet "Requests")
+    volumes:
+      - ./firebase.json:/home/node/firebase.json:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:9000', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  api:
+    environment:
+      - QUARKUS_PROFILE=dev
+      - FIRESTORE_HOST_OVERRIDE=firestore:9000
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-dummy-client-id}
+    depends_on:
+      firestore:
+        condition: service_healthy
+        required: false
+
+  front:
+    build:
+      context: ./front
+      target: dev
+    container_name: thezaurus-front
+    ports:
+      - "3000:3000"
+    environment:
+      - API_URL=http://api:8080
+      - VITE_MOCK_AUTH=false
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-your-google-client-id.apps.googleusercontent.com}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+    depends_on:
+      - api
+    develop:
+      watch:
+        - action: sync
+          path: ./front
+          target: /app
+          ignore:
+            - node_modules/
+            - .next/
+        - action: rebuild
+          path: ./front/package.json
+        - action: rebuild
+          path: ./front/package-lock.json
