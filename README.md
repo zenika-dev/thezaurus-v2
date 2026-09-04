@@ -46,7 +46,7 @@ cp .env-template .env
 | Variable | Requise | Utilisée par | Description |
 |---|---|---|---|
 | **Mode de fonctionnement** | | | |
-| `COMPOSE_FILE` | — | Docker Compose | Absente (défaut) : mode **dev** avec émulateur Firestore local. Pour le mode **prod** (vrai GCP) : `docker-compose.yml:docker-compose.prod.yml`, accompagnée de `COMPOSE_PATH_SEPARATOR=:` (indispensable sous Windows, sans effet ailleurs). |
+| Mode de lancement | — | Docker Compose | `docker compose up` (défaut) : charge automatiquement `docker-compose.override.yml` → mode **dev** avec émulateur Firestore local. `docker compose -f docker-compose.yml up` (override exclu explicitement) : mode **prod**, connexion au vrai Firestore GCP. |
 | **Authentification (front)** | | | |
 | `GOOGLE_CLIENT_ID` | ✅ | front, api | Client OAuth Google — console GCP > *APIs & Services > Credentials > OAuth 2.0 Client IDs*. `http://localhost:3000/api/auth/callback/google` doit être dans les *Authorized redirect URIs*. Sert aussi d'audience JWT à l'API en dev. |
 | `GOOGLE_CLIENT_SECRET` | ✅ | front | Secret du client OAuth. Affiché uniquement à sa création (bouton *Add secret* si perdu). |
@@ -71,14 +71,13 @@ Rien à configurer : `docker compose up` démarre un émulateur Firestore local 
 
 ### Mode prod (vrai Firestore GCP)
 
-Décommentez dans votre `.env` :
+Lancez `docker-compose.yml` seul, en excluant explicitement l'override dev :
 
-```properties
-COMPOSE_PATH_SEPARATOR=:
-COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
+```bash
+docker compose -f docker-compose.yml up --build
 ```
 
-L'override [docker-compose.prod.yml](docker-compose.prod.yml) désactive l'émulateur et passe l'API en profil `prod` : elle se connecte au vrai Firestore. Il faut alors des *Application Default Credentials* : installez la [gcloud CLI](https://cloud.google.com/sdk/docs/install) puis :
+Sans `docker-compose.override.yml`, l'émulateur Firestore n'existe plus dans la stack et l'API tourne en profil `prod` : elle se connecte au vrai Firestore. Il faut alors des *Application Default Credentials* : installez la [gcloud CLI](https://cloud.google.com/sdk/docs/install) puis :
 
 ```bash
 gcloud auth application-default login
@@ -147,11 +146,10 @@ curl "http://localhost:9000/v1/projects/local-dev/databases/(default)/documents/
 (même principe pour `dev_blog_posts` et `dev_conferences` — le préfixe vient de `FIRESTORE_COLLECTION_PREFIX`)
 
 > **Pièges connus**
-> - Sous Windows, `COMPOSE_FILE` avec plusieurs fichiers exige `COMPOSE_PATH_SEPARATOR=:` (le séparateur par défaut y est `;`, pas `:`). Décommentez toujours les deux lignes ensemble.
 > - En mode `prod`, si l'API loggue `Error reading credential file ... /tmp/credentials.json: File does not exist` : le fichier ADC n'existait pas quand le conteneur a été créé, et Docker a monté un dossier vide à la place. Vérifiez que `gcloud auth application-default login` a bien créé le fichier (et supprimez un éventuel **dossier** `application_default_credentials.json` créé par Docker à cet emplacement), puis recréez le conteneur : `docker compose up -d --force-recreate api`.
 > - Si le front loggue `client_secret_basic client authentication method requires a client_secret` : `GOOGLE_CLIENT_SECRET` manque dans votre `.env`.
 
-> **Note** : le mode Quarkus Dev hors Docker (`./mvnw quarkus:dev` dans `api/`) utilise l'émulateur sur `localhost:9000`, voir `api/.env-template`.
+> **Note** : le mode Quarkus Dev hors Docker (`./mvnw quarkus:dev` dans `api/`) utilise l'émulateur sur `localhost:9000` par défaut (voir `%dev.quarkus.google.cloud.firestore.host-override` dans `api/src/main/resources/application.properties`).
 
 ## Deploiement
 

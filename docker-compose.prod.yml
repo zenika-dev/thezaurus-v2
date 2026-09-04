@@ -1,8 +1,0 @@
-# Override mode prod (vrai Firestore GCP) — activation : voir .env-template
-services:
-  firestore:
-    profiles: ["disabled"]
-
-  api:
-    environment:
-      - QUARKUS_PROFILE=prod
