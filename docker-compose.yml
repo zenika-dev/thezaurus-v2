@@ -25,6 +25,8 @@ services:
       context: ./front
       target: dev
     container_name: thezaurus-front
+    ports:
+      - "80:3000"
     environment:
       - API_URL=http://api:8080
       - VITE_MOCK_AUTH=false
