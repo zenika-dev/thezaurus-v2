@@ -3,7 +3,7 @@ services:
   # Firebase Emulator Suite (firebase-tools) plutôt que le nu `gcloud emulators` :
   # expose en plus l'Emulator UI officielle (http://localhost:4000) pour parcourir les données.
   firestore:
-    image: andreysenov/firebase-tools:latest
+    image: andreysenov/firebase-tools:15.29.0-node-20-slim
     container_name: thezaurus-firestore-emulator
     command: firebase emulators:start --project=local-dev
     ports:
