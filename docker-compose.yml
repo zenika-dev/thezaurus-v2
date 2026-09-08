@@ -23,7 +23,9 @@ services:
   front:
     build:
       context: ./front
-      target: dev
+      target: runner
+      args:
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     container_name: thezaurus-front
     ports:
       - "80:3000"
