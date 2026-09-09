@@ -1024,7 +1024,8 @@
             "type" : "string"
           },
           "title" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "writers" : {
             "type" : "array",
@@ -1053,7 +1054,8 @@
               "type" : "string"
             }
           }
-        }
+        },
+        "required" : [ "title", "status" ]
       },
       "BlogPostStatus" : {
         "type" : "string",
@@ -1061,9 +1063,11 @@
       },
       "CityCount" : {
         "type" : "object",
+        "required" : [ "city" ],
         "properties" : {
           "city" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "count" : {
             "type" : "integer",
@@ -1078,7 +1082,8 @@
             "type" : "string"
           },
           "name" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "date" : {
             "$ref" : "#/components/schemas/ConferencePeriod"
@@ -1105,16 +1110,20 @@
           "reach" : {
             "$ref" : "#/components/schemas/ConferenceReach"
           }
-        }
+        },
+        "required" : [ "name" ]
       },
       "ConferencePeriod" : {
         "type" : "object",
+        "required" : [ "start", "end", "precision" ],
         "properties" : {
           "start" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "end" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "precision" : {
             "$ref" : "#/components/schemas/DatePrecision"
@@ -1173,12 +1182,15 @@
       },
       "EventTypeSummary" : {
         "type" : "object",
+        "required" : [ "name", "visibility", "cities" ],
         "properties" : {
           "name" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "visibility" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "total" : {
             "type" : "integer",
@@ -1214,7 +1226,8 @@
               "$ref" : "#/components/schemas/EventTypeSummary"
             }
           }
-        }
+        },
+        "required" : [ "totals", "monthly", "eventTypes" ]
       },
       "EventsTotals" : {
         "type" : "object",
@@ -1252,6 +1265,7 @@
       },
       "MonthlyActivity" : {
         "type" : "object",
+        "required" : [ "month" ],
         "properties" : {
           "month" : {
             "$ref" : "#/components/schemas/MonthLabel"
@@ -1316,10 +1330,12 @@
             "type" : "string"
           },
           "title" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "description" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "speakers" : {
             "type" : "array",
@@ -1328,7 +1344,8 @@
             }
           },
           "office" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "conference" : {
             "$ref" : "#/components/schemas/Conference"
@@ -1340,7 +1357,8 @@
             "$ref" : "#/components/schemas/Visibility"
           },
           "format" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "date" : {
             "type" : "string"
@@ -1357,21 +1375,26 @@
           "replay" : {
             "type" : "string"
           }
-        }
+        },
+        "required" : [ "title", "description", "office", "status", "visibility", "format" ]
       },
       "TalkReviewRequest" : {
         "type" : "object",
+        "required" : [ "title", "abstract" ],
         "properties" : {
           "title" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "abstract" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           }
         }
       },
       "TalkReviewResponse" : {
         "type" : "object",
+        "required" : [ "suggestedTitles", "suggestedAbstracts", "feedback", "keyImprovements" ],
         "properties" : {
           "suggestedTitles" : {
             "type" : "array",
@@ -1405,9 +1428,11 @@
       },
       "User" : {
         "type" : "object",
+        "required" : [ "name" ],
         "properties" : {
           "name" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "email" : {
             "type" : "string"
