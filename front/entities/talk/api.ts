@@ -21,6 +21,7 @@ export function mapBackendToFrontend(t: BackendTalk): TalkData {
     notes: t.notes ?? "",
     slides: t.slides ?? "",
     replay: t.replay ?? "",
+    audience: t.audience ?? null,
   };
 }
 
@@ -28,7 +29,11 @@ export function mapBackendToFrontend(t: BackendTalk): TalkData {
  * Le modèle UI a exactement la forme du contrat. Le passage par `BackendTalk` n'existe que pour
  * le vérifier au compilateur — si le back renomme un champ, ça casse ici.
  */
-const toPayload = (t: TalkData): BackendTalk => ({ ...t, conference: t.conference ?? undefined });
+const toPayload = (t: TalkData): BackendTalk => ({
+  ...t,
+  conference: t.conference ?? undefined,
+  audience: t.audience ?? undefined,
+});
 
 export const talkApi = {
   getTalks: async (): Promise<TalkData[]> => {
