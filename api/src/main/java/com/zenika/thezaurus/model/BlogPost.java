@@ -69,10 +69,7 @@ public class BlogPost {
         this.link = link;
     }
 
-    /**
-     * Brouillon Google Doc, saisi dans le formulaire avant publication. Le champ existait cote
-     * front sans contrepartie ici : la valeur saisie etait perdue a chaque enregistrement.
-     */
+    /** Lien vers le brouillon Google Doc de l'article avant publication. */
     public String getGoogleDocDraftLink() {
         return googleDocDraftLink;
     }

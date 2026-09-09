@@ -12,12 +12,11 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
 
 /**
  * Administration des utilisateurs, réservée aux admins. Les rôles étant exclus de la
@@ -56,33 +55,29 @@ public class UserAdminResource {
 
     @PUT
     @Path("/{email}/roles")
-    public Response updateRoles(@PathParam("email") String email, RolesUpdateRequest request)
+    public RestResponse<UserAdminView> updateRoles(@PathParam("email") String email, RolesUpdateRequest request)
             throws ExecutionException, InterruptedException {
         // Les documents users sont keyés par l'email en minuscules (cf. IapSecurityAugmentor) :
         // on normalise le path param pour retrouver le document quelle que soit la casse saisie.
         email = email.toLowerCase(Locale.ROOT);
         if (request == null || request.roles == null || request.roles.isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "La liste des rôles est obligatoire"))
-                    .build();
+            return RestResponse.status(RestResponse.Status.BAD_REQUEST);
         }
 
         List<String> invalid =
                 request.roles.stream().filter(r -> !Role.isValid(r)).toList();
         if (!invalid.isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Rôles inconnus : " + invalid + ", rôles autorisés : " + Role.ALL))
-                    .build();
+            return RestResponse.status(RestResponse.Status.BAD_REQUEST);
         }
 
         User user = userRepository.findByEmail(email);
         if (user == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
 
         user = user.withRoles(
                 request.roles.stream().map(Role::valueOf).distinct().toList());
         userRepository.update(email, user);
-        return Response.ok(UserAdminView.of(user)).build();
+        return RestResponse.ok(UserAdminView.of(user));
     }
 }

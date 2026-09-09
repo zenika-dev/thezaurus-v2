@@ -6,11 +6,7 @@ import type {
   BackendLocation,
 } from "@/shared/api";
 
-/**
- * Types *et* valeurs viennent du contrat OpenAPI : `ConferenceType` et `ConferenceReach` sont de
- * vraies enums Java, que le contrat décrit exactement. Aucune valeur n'est recopiée ici — ajouter
- * une valeur côté Java et régénérer suffit à la faire apparaître dans les formulaires.
- */
+/** Types et énumérations issus du contrat OpenAPI. */
 export type ConferenceType = BackendConferenceType;
 
 export const CONFERENCE_TYPES = enumValues.ConferenceType;

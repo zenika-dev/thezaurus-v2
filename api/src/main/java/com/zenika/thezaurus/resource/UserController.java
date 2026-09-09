@@ -11,13 +11,12 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestResponse;
 
 @Path("/api")
 @Produces(MediaType.APPLICATION_JSON)
@@ -37,6 +36,8 @@ public class UserController {
     @ConfigProperty(name = "thezaurus.users.max-results", defaultValue = "500")
     int maxResults;
 
+    public record CurrentUserView(String email, Set<String> roles) {}
+
     /**
      * Appelé une fois par connexion (callback {@code jwt} de NextAuth) : seul point d'accroche
      * « au login », d'où le rattachement Slack ici plutôt que dans l'augmentor, qui tourne à
@@ -45,9 +46,9 @@ public class UserController {
     @GET
     @Path("/me")
     @RolesAllowed({Role.Names.ADMIN, Role.Names.DT, Role.Names.CONSULTANT})
-    public Response getCurrentUser() throws ExecutionException, InterruptedException {
+    public RestResponse<CurrentUserView> getCurrentUser() throws ExecutionException, InterruptedException {
         if (identity.isAnonymous()) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
+            return RestResponse.status(RestResponse.Status.UNAUTHORIZED);
         }
 
         String email = identity.getPrincipal().getName();
@@ -62,11 +63,7 @@ public class UserController {
             }
         }
 
-        Map<String, Object> userProfile = new HashMap<>();
-        userProfile.put("email", email);
-        userProfile.put("roles", identity.getRoles());
-
-        return Response.ok(userProfile).build();
+        return RestResponse.ok(new CurrentUserView(email, identity.getRoles()));
     }
 
     /**

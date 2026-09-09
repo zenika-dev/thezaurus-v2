@@ -16,10 +16,10 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.time.Year;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import org.jboss.resteasy.reactive.RestResponse;
 
 @Path("/events")
 @Produces(MediaType.APPLICATION_JSON)
@@ -48,38 +48,39 @@ public class EventResource {
 
     @GET
     @Path("/{id}")
-    public Response get(@PathParam("id") String id) throws ExecutionException, InterruptedException {
+    public RestResponse<Event> get(@PathParam("id") String id) throws ExecutionException, InterruptedException {
         Event event = service.findById(id);
         if (event == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
-        return Response.ok(event).build();
+        return RestResponse.ok(event);
     }
 
     @POST
-    public Response create(Event event) throws ExecutionException, InterruptedException {
+    public RestResponse<Event> create(Event event) throws ExecutionException, InterruptedException {
         Event created = service.create(event);
-        return Response.status(Response.Status.CREATED).entity(created).build();
+        return RestResponse.status(RestResponse.Status.CREATED, created);
     }
 
     @PUT
     @Path("/{id}")
-    public Response update(@PathParam("id") String id, Event event) throws ExecutionException, InterruptedException {
+    public RestResponse<Event> update(@PathParam("id") String id, Event event)
+            throws ExecutionException, InterruptedException {
         Event updated = service.update(id, event);
         if (updated == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
-        return Response.ok(updated).build();
+        return RestResponse.ok(updated);
     }
 
     @DELETE
     @Path("/{id}")
     @RolesAllowed(Role.Names.ADMIN)
-    public Response delete(@PathParam("id") String id) throws ExecutionException, InterruptedException {
+    public RestResponse<Void> delete(@PathParam("id") String id) throws ExecutionException, InterruptedException {
         boolean deleted = service.delete(id);
         if (!deleted) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
-        return Response.noContent().build();
+        return RestResponse.noContent();
     }
 }
