@@ -21,7 +21,19 @@ const OUT_CONTRACT = resolve(here, "../shared/api/contract.ts");
 
 const ALL_GENERATED = [OUT_SCHEMA, OUT_ENUMS, OUT_CONTRACT];
 
-// 0. Déverrouiller les fichiers existants s'ils étaient en lecture seule
+// 0. Si le fichier SPEC n'est pas accessible (ex. build Docker autonome où le contexte est restreint à front/),
+// conserver les fichiers générés existants s'ils sont déjà présents.
+if (!existsSync(SPEC)) {
+  if (ALL_GENERATED.every((file) => existsSync(file))) {
+    console.log(
+      `ℹ️ Spécification OpenAPI introuvable (${SPEC}), conservation des types générés existants.`
+    );
+    process.exit(0);
+  }
+  throw new Error(`Fichier de spécification OpenAPI introuvable : ${SPEC}`);
+}
+
+// Déverrouiller les fichiers existants s'ils étaient en lecture seule
 for (const file of ALL_GENERATED) {
   if (existsSync(file)) {
     try {
