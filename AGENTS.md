@@ -59,22 +59,24 @@ All commands run from `api/`:
 The communication contract between `api` and `front` is strictly derived from the backend OpenAPI definition. **Backend payload types and enum values are generated, never hand-written.**
 
 ```
-JAX-RS Resources ──(mvn package)──> api/openapi.json ──(npm run generate:api)──┬─> front/shared/api/schema.d.ts (types)
-                                                                               ├─> front/shared/api/enums.ts (runtime enums)
-                                                                               └─> front/shared/api/contract.ts (types aliases)
+JAX-RS Resources ──(mvn package)──> api/openapi.json (Git-tracked) ──(npm run generate:api)──┬─> front/shared/api/schema.d.ts (gitignored)
+                                                                                             ├─> front/shared/api/enums.ts (gitignored)
+                                                                                             └─> front/shared/api/contract.ts (gitignored)
 ```
 
 ### Lifecycle & Rules
 1. **Quarkus Generates Spec**: SmallRye OpenAPI exports the OpenAPI spec during build (`target/openapi/openapi.json`).
-2. **Versioned Spec**: `api/openapi.json` is committed in git.
-3. **Frontend Generation**: `front/package.json` runs `openapi-typescript` to output `front/shared/api/schema.d.ts` and `front/scripts/generate-api-contract.mjs` to output `front/shared/api/enums.ts` and `front/shared/api/contract.ts`.
-4. **Human-Readable Aliases**: `front/shared/api/contract.ts` is fully generated and defines clear aliases (e.g., `BackendTalk`, `BackendBlogPost`, `BackendConference`, `BackendRole`).
-5. **Runtime Enums**: Option lists and validation schemas use direct enum exports from `@/shared/api` (e.g. `TalkStatus`, `Role`, `BlogPostStatus`).
-6. **Never declare hand-written `interface BackendXxx` or manual enum arrays** in the frontend. If a backend model changes:
+2. **Versioned Contract**: `api/openapi.json` is the **only contract file committed in git**.
+3. **Frontend Generation (Git-ignored)**: TypeScript contract files (`front/shared/api/schema.d.ts`, `enums.ts`, `contract.ts`) are **ignored by git** and generated automatically at `npm install` (`postinstall`), `npm run dev` (`predev`), and `npm run build` (`prebuild`).
+4. **IDE & Generated File Markers**: Generated TS files are tagged with `@generated` / `@readonly`, locked with file-system read-only permissions (`0o444`), and declared in `.gitattributes` (`linguist-generated=true`) so that IDEs (IntelliJ, VSCode) display read-only locks and warnings against manual edits.
+5. **Human-Readable Aliases**: `front/shared/api/contract.ts` is fully generated and defines clear aliases (e.g., `BackendTalk`, `BackendBlogPost`, `BackendConference`, `BackendRole`).
+6. **Runtime Enums**: Option lists and validation schemas use direct enum exports from `@/shared/api` (e.g. `TalkStatus`, `Role`, `BlogPostStatus`).
+7. **Never declare hand-written `interface BackendXxx` or manual enum arrays** in the frontend. If a backend model changes:
    ```bash
    cd api && ./mvnw package -DskipTests && cp target/openapi/openapi.json openapi.json
    cd ../front && npm run generate:api
    ```
+   Commit `api/openapi.json` (the TS files are generated locally and in CI, and stay gitignored).
 
 ---
 
@@ -189,7 +191,7 @@ A change is complete when all of the following are true:
 - [ ] `./mvnw verify` passes in `api/` (all tests pass and Spotless check succeeds).
 - [ ] `npm run lint` passes in `front/` with zero errors.
 - [ ] `npm run build` passes in `front/` (TypeScript compiles and Next.js build succeeds).
-- [ ] If backend models or resources changed, `api/openapi.json`, `front/shared/api/schema.d.ts` and `front/shared/api/enums.ts` are regenerated and committed.
+- [ ] If backend models or resources changed, `api/openapi.json` is updated and committed.
 - [ ] FSD layer boundaries respected (no upward imports).
 - [ ] All user-visible text is in French.
 - [ ] Every new data section is wrapped in `<Suspense>` + `<DataErrorBoundary>`.

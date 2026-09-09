@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "npm run generate:api",
     "dev": "next dev",
+    "prebuild": "npm run generate:api",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "generate:api": "openapi-typescript ../api/openapi.json -o shared/api/schema.d.ts && node scripts/generate-api-contract.mjs"
+    "postinstall": "npm run generate:api",
+    "generate:api": "node scripts/generate-api-contract.mjs"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",

@@ -40,6 +40,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# generated api contract
+/shared/api/schema.d.ts
+/shared/api/enums.ts
+/shared/api/contract.ts
+
 # ia
 .claude
 .agents

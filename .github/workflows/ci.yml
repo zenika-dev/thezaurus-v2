@@ -90,11 +90,6 @@ jobs:
       - name: Régénération des types du contrat
         run: npm run generate:api
 
-      - name: Vérification de la synchronisation des types du contrat
-        run: |
-          git diff --exit-code shared/api/schema.d.ts shared/api/enums.ts shared/api/contract.ts \
-            || { echo "::error::Les types TypeScript générés sont obsolètes. Lancez 'npm run generate:api' et committez le résultat."; exit 1; }
-
       - name: Lint
         run: npm run lint
 
