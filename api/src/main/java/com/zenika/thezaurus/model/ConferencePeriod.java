@@ -11,8 +11,7 @@ import java.util.Map;
  *
  * <p>Les bornes sont des {@code String} et non des {@link LocalDate} : le mapper POJO Firestore ne
  * connaît pas {@code java.time}, et l'ordre lexicographique ISO coïncide avec l'ordre
- * chronologique, ce qui permet un {@code orderBy} Firestore direct sur {@code start} — impossible
- * avec l'ancien format « chaîne surchargée ».
+ * chronologique, ce qui permet un {@code orderBy} Firestore direct sur {@code start}.
  */
 public class ConferencePeriod {
 
@@ -46,12 +45,10 @@ public class ConferencePeriod {
     }
 
     /**
-     * Construit une période depuis l'ancien format « chaîne surchargée » utilisé avant ce type :
-     * {@code "YYYY-MM-DD"} pour une date unique, {@code "YYYY-MM-DD/YYYY-MM-DD"} pour un
-     * intervalle, {@code "YYYY-MM"} pour un mois.
+     * Construit une période depuis une chaîne de caractères ({@code "YYYY-MM-DD"} pour une date unique,
+     * {@code "YYYY-MM-DD/YYYY-MM-DD"} pour un intervalle, {@code "YYYY-MM"} pour un mois).
      *
-     * @return la période équivalente, ou {@code null} si la chaîne est vide ou non reconnue — la
-     *     donnée est alors laissée en l'état plutôt que réécrite en une valeur inventée
+     * @return la période équivalente, ou {@code null} si la chaîne est vide ou non reconnue
      */
     public static ConferencePeriod fromLegacyString(String raw) {
         if (raw == null || raw.isBlank()) {

@@ -14,6 +14,7 @@ export type BackendTalk = Schemas["Talk"];
 export type BackendTalkStatus = Schemas["TalkStatus"];
 export type BackendVisibility = Schemas["Visibility"];
 export type BackendTalkReviewRequest = Schemas["TalkReviewRequest"];
+export type BackendTalkReviewResponse = Schemas["TalkReviewResponse"];
 
 export type BackendConference = Schemas["Conference"];
 export type BackendConferenceType = Schemas["ConferenceType"];
@@ -27,5 +28,7 @@ export type BackendUserSummary = Schemas["UserSummary"];
 export type BackendUserAdminView = Schemas["UserAdminView"];
 export type BackendRole = Schemas["Role"];
 export type BackendNotificationPreferences = Schemas["NotificationPreferences"];
+export type BackendProfileView = Schemas["ProfileView"];
+export type BackendCurrentUserView = Schemas["CurrentUserView"];
 
 export type BackendEventsDashboard = Schemas["EventsDashboard"];

@@ -56,7 +56,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserAdminView"
+                }
               }
             }
           },
@@ -84,7 +86,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/CurrentUserView"
+                }
               }
             }
           },
@@ -109,7 +113,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProfileView"
+                }
               }
             }
           },
@@ -144,7 +150,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/NotificationPreferences"
+                }
               }
             }
           },
@@ -240,7 +248,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/BlogPost"
+                }
               }
             }
           },
@@ -286,7 +296,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/BlogPost"
+                }
               }
             }
           },
@@ -320,7 +332,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/BlogPost"
+                }
               }
             }
           },
@@ -347,13 +361,8 @@
           }
         } ],
         "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : { }
-              }
-            }
+          "204" : {
+            "description" : "No Content"
           },
           "401" : {
             "description" : "Not Authorized"
@@ -414,7 +423,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/Conference"
+                }
               }
             }
           },
@@ -460,7 +471,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/Conference"
+                }
               }
             }
           },
@@ -494,7 +507,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/Conference"
+                }
               }
             }
           },
@@ -521,13 +536,8 @@
           }
         } ],
         "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : { }
-              }
-            }
+          "204" : {
+            "description" : "No Content"
           },
           "401" : {
             "description" : "Not Authorized"
@@ -603,7 +613,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/Event"
+                }
               }
             }
           },
@@ -684,7 +696,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/Event"
+                }
               }
             }
           },
@@ -718,7 +732,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/Event"
+                }
               }
             }
           },
@@ -745,13 +761,8 @@
           }
         } ],
         "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : { }
-              }
-            }
+          "204" : {
+            "description" : "No Content"
           },
           "401" : {
             "description" : "Not Authorized"
@@ -833,7 +844,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/Talk"
+                }
               }
             }
           },
@@ -871,7 +884,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/TalkReviewResponse"
+                }
               }
             }
           },
@@ -917,7 +932,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/Talk"
+                }
               }
             }
           },
@@ -951,7 +968,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/Talk"
+                }
               }
             }
           },
@@ -978,13 +997,8 @@
           }
         } ],
         "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : { }
-              }
-            }
+          "204" : {
+            "description" : "No Content"
           },
           "401" : {
             "description" : "Not Authorized"
@@ -1114,6 +1128,21 @@
       "ConferenceType" : {
         "type" : "string",
         "enum" : [ "Marketing / business", "Technique stratégique", "Technique généraliste", "Technique", "Hors scope" ]
+      },
+      "CurrentUserView" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
       },
       "DatePrecision" : {
         "type" : "string",
@@ -1248,6 +1277,23 @@
           }
         }
       },
+      "ProfileView" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "notificationPreferences" : {
+            "$ref" : "#/components/schemas/NotificationPreferences"
+          },
+          "slackLinked" : {
+            "type" : "boolean"
+          }
+        }
+      },
       "Role" : {
         "type" : "string",
         "enum" : [ "ADMIN", "DT", "CONSULTANT" ]
@@ -1321,6 +1367,35 @@
           },
           "abstract" : {
             "type" : "string"
+          }
+        }
+      },
+      "TalkReviewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "suggestedTitles" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "suggestedAbstracts" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "feedback" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "keyImprovements" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           }
         }
       },

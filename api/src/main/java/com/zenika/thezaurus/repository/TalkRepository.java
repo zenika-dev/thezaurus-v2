@@ -67,10 +67,8 @@ public class TalkRepository {
     }
 
     /**
-     * {@code toObject} lève si la {@code Conference} imbriquée porte un {@code date} au format
-     * legacy (chaîne, avant {@code ConferencePeriod}) : cas des talks créés via la commande Slack
-     * avant cette migration, qui n'a aucune prise sur les conférences embarquées dans un talk. Un
-     * seul document dans cet état ne doit pas faire échouer la liste entière pour tout le monde.
+     * Tente de désérialiser le document en {@link Talk}. Si le document est corrompu ou
+     * comporte des données imbriquées invalides, il est ignoré pour éviter de bloquer la liste.
      */
     private Talk toTalkOrNull(DocumentSnapshot doc) {
         try {

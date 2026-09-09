@@ -17,8 +17,7 @@ function toFrontendCfpStatus(s: string | undefined): ConferenceCFPStatus {
 }
 
 /**
- * Repli pour une conférence dont le back n'a pas de période exploitable (document antérieur à la
- * migration et non reconnu). Rend le modèle UI total sans inventer de date.
+ * Valeur par défaut pour une conférence ne comportant pas de période valide.
  */
 const UNKNOWN_PERIOD: ConferencePeriod = { start: "", end: "", precision: "DAY" };
 

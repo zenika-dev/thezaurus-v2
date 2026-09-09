@@ -2,6 +2,7 @@ import { enumValues } from "@/shared/api";
 import type {
   BackendConference,
   BackendTalkReviewRequest,
+  BackendTalkReviewResponse,
   BackendTalkStatus,
   BackendUser,
   BackendVisibility,
@@ -66,17 +67,7 @@ export function withEditedSpeakers(
 }
 
 export type TalkReviewRequest = Required<BackendTalkReviewRequest>;
-
-/**
- * Pas dérivable du contrat : `TalkResource.review()` retourne un `Response` brut, donc SmallRye
- * n'en génère aucun schéma — même limitation que `UserProfile` (cf. entities/user/model.ts).
- */
-export interface TalkReviewResponse {
-  suggestedTitles: string[];
-  suggestedAbstracts: string[];
-  feedback: string[];
-  keyImprovements: string[];
-}
+export type TalkReviewResponse = BackendTalkReviewResponse;
 
 export interface ApiErrorResponse {
   timestamp: string;

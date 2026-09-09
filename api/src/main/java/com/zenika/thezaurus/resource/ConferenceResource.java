@@ -14,10 +14,9 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import org.jboss.resteasy.reactive.RestResponse;
 
 @Path("/conferences")
 @Produces(MediaType.APPLICATION_JSON)
@@ -35,56 +34,49 @@ public class ConferenceResource {
 
     @GET
     @Path("/{id}")
-    public Response get(@PathParam("id") String id) throws ExecutionException, InterruptedException {
+    public RestResponse<Conference> get(@PathParam("id") String id) throws ExecutionException, InterruptedException {
         Conference conference = service.findById(id);
         if (conference == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
-        return Response.ok(conference).build();
+        return RestResponse.ok(conference);
     }
 
     @POST
-    public Response create(Conference conference) throws ExecutionException, InterruptedException {
-        Response invalid = validateTypeAndReach(conference);
-        if (invalid != null) {
-            return invalid;
+    public RestResponse<Conference> create(Conference conference) throws ExecutionException, InterruptedException {
+        if (isTypeOrReachMissing(conference)) {
+            return RestResponse.status(RestResponse.Status.BAD_REQUEST);
         }
         Conference created = service.create(conference);
-        return Response.status(Response.Status.CREATED).entity(created).build();
+        return RestResponse.status(RestResponse.Status.CREATED, created);
     }
 
     @PUT
     @Path("/{id}")
-    public Response update(@PathParam("id") String id, Conference conference)
+    public RestResponse<Conference> update(@PathParam("id") String id, Conference conference)
             throws ExecutionException, InterruptedException {
-        Response invalid = validateTypeAndReach(conference);
-        if (invalid != null) {
-            return invalid;
+        if (isTypeOrReachMissing(conference)) {
+            return RestResponse.status(RestResponse.Status.BAD_REQUEST);
         }
         Conference updated = service.update(id, conference);
         if (updated == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
-        return Response.ok(updated).build();
+        return RestResponse.ok(updated);
     }
 
-    private Response validateTypeAndReach(Conference conference) {
-        if (conference.getType() == null || conference.getReach() == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "type et reach sont requis"))
-                    .build();
-        }
-        return null;
+    private boolean isTypeOrReachMissing(Conference conference) {
+        return conference.getType() == null || conference.getReach() == null;
     }
 
     @DELETE
     @Path("/{id}")
     @RolesAllowed(Role.Names.ADMIN)
-    public Response delete(@PathParam("id") String id) throws ExecutionException, InterruptedException {
+    public RestResponse<Void> delete(@PathParam("id") String id) throws ExecutionException, InterruptedException {
         boolean deleted = service.delete(id);
         if (!deleted) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
-        return Response.noContent().build();
+        return RestResponse.noContent();
     }
 }

@@ -40,11 +40,9 @@ public class TalkRepositoryTest {
         repository.collectionPrefix = Optional.empty();
     }
 
-    // --- Lecture defensive : un document illisible ne fait pas echouer les autres ---------------
-    //
-    // Cas reel : une Conference embarquee dans un talk (cree via la commande Slack avant
-    // l'introduction de ConferencePeriod) peut porter un `date` au format legacy (String), que
-    // migrateLegacyDates ne touche pas (elle ne migre que la collection conferences).
+    // --- Lecture défensive : un document illisible n'interrompt pas la liste --------------------
+    // Une conférence embarquée dans un talk peut comporter des données mal formées : la
+    // désérialisation du talk est ignorée sans faire échouer la lecture des autres éléments.
 
     @Test
     public void findAllSkipsADocumentThatFailsToDeserializeInsteadOfFailingTheWholeList() throws Exception {
