@@ -1,5 +1,7 @@
 package com.zenika.thezaurus.model;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 /**
@@ -11,14 +13,14 @@ import java.util.List;
  */
 public record Talk(
         String id,
-        String title,
-        String description,
+        @NotBlank String title,
+        @NotBlank String description,
         List<User> speakers,
-        String office,
+        @NotBlank String office,
         Conference conference,
-        TalkStatus status,
-        Visibility visibility,
-        String format,
+        @NotNull TalkStatus status,
+        @NotNull Visibility visibility,
+        @NotBlank String format,
         String date,
         String language,
         String notes,

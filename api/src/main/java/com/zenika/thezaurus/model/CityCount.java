@@ -1,3 +1,5 @@
 package com.zenika.thezaurus.model;
 
-public record CityCount(String city, int count) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record CityCount(@NotBlank String city, int count) {}

@@ -1,5 +1,7 @@
 package com.zenika.thezaurus.model;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
@@ -15,8 +17,13 @@ import java.util.Map;
  */
 public class ConferencePeriod {
 
+    @NotBlank
     private String start;
+
+    @NotBlank
     private String end;
+
+    @NotNull
     private DatePrecision precision;
 
     public ConferencePeriod() {}

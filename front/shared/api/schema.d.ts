@@ -1400,25 +1400,25 @@ export interface components {
     schemas: {
         BlogPost: {
             id?: string;
-            title?: string;
+            title: string;
             writers?: string[];
             creationDate?: string;
             publicationDate?: string;
             link?: string;
             googleDocDraftLink?: string;
-            status?: components["schemas"]["BlogPostStatus"];
+            status: components["schemas"]["BlogPostStatus"];
             tags?: string[];
         };
         /** @enum {string} */
         BlogPostStatus: "IDEA" | "DRAFT" | "REVIEW" | "PUBLISHED";
         CityCount: {
-            city?: string;
+            city: string;
             /** Format: int32 */
             count?: number;
         };
         Conference: {
             id?: string;
-            name?: string;
+            name: string;
             date?: components["schemas"]["ConferencePeriod"];
             cfpLink?: string;
             location?: components["schemas"]["Location"];
@@ -1430,9 +1430,9 @@ export interface components {
             reach?: components["schemas"]["ConferenceReach"];
         };
         ConferencePeriod: {
-            start?: string;
-            end?: string;
-            precision?: components["schemas"]["DatePrecision"];
+            start: string;
+            end: string;
+            precision: components["schemas"]["DatePrecision"];
         };
         /** @enum {string} */
         ConferenceReach: "Locale" | "Régionale" | "Nationale";
@@ -1453,18 +1453,18 @@ export interface components {
             location?: components["schemas"]["Location"];
         };
         EventTypeSummary: {
-            name?: string;
-            visibility?: string;
+            name: string;
+            visibility: string;
             /** Format: int32 */
             total?: number;
-            cities?: components["schemas"]["CityCount"][];
+            cities: components["schemas"]["CityCount"][];
         };
         EventsDashboard: {
             /** Format: int32 */
             year?: number;
-            totals?: components["schemas"]["EventsTotals"];
-            monthly?: components["schemas"]["MonthlyActivity"][];
-            eventTypes?: components["schemas"]["EventTypeSummary"][];
+            totals: components["schemas"]["EventsTotals"];
+            monthly: components["schemas"]["MonthlyActivity"][];
+            eventTypes: components["schemas"]["EventTypeSummary"][];
         };
         EventsTotals: {
             /** Format: int32 */
@@ -1481,7 +1481,7 @@ export interface components {
         /** @enum {string} */
         MonthLabel: "Jan" | "Fév" | "Mar" | "Avr" | "Mai" | "Juin" | "Juil" | "Août" | "Sep" | "Oct" | "Nov" | "Déc";
         MonthlyActivity: {
-            month?: components["schemas"]["MonthLabel"];
+            month: components["schemas"]["MonthLabel"];
             /** Format: int32 */
             internal?: number;
             /** Format: int32 */
@@ -1504,14 +1504,14 @@ export interface components {
         };
         Talk: {
             id?: string;
-            title?: string;
-            description?: string;
+            title: string;
+            description: string;
             speakers?: components["schemas"]["User"][];
-            office?: string;
+            office: string;
             conference?: components["schemas"]["Conference"];
-            status?: components["schemas"]["TalkStatus"];
-            visibility?: components["schemas"]["Visibility"];
-            format?: string;
+            status: components["schemas"]["TalkStatus"];
+            visibility: components["schemas"]["Visibility"];
+            format: string;
             date?: string;
             language?: string;
             notes?: string;
@@ -1519,19 +1519,19 @@ export interface components {
             replay?: string;
         };
         TalkReviewRequest: {
-            title?: string;
-            abstract?: string;
+            title: string;
+            abstract: string;
         };
         TalkReviewResponse: {
-            suggestedTitles?: string[];
-            suggestedAbstracts?: string[];
-            feedback?: string[];
-            keyImprovements?: string[];
+            suggestedTitles: string[];
+            suggestedAbstracts: string[];
+            feedback: string[];
+            keyImprovements: string[];
         };
         /** @enum {string} */
         TalkStatus: "DRAFT" | "PLANNED" | "SUBMITTED" | "ACCEPTED" | "REJECTED" | "DONE";
         User: {
-            name?: string;
+            name: string;
             email?: string;
             slackUserId?: string;
         };
