@@ -28,14 +28,13 @@ import "dayjs/locale/fr";
 import { isValidUrl } from "@/shared/lib";
 import {
   conferenceCFPStatusConfig,
-  ConferenceData,
-  CONFERENCE_TYPES,
-  CONFERENCE_REACHES,
+  type ConferenceData,
 } from "@/entities/conference";
 import {
-  ConferenceFormData,
+  type ConferenceFormData,
   conferenceFormSchema,
 } from "@/entities/conference/schema";
+import { ConferenceReach, ConferenceType } from "@/shared/api";
 import { parseLocation } from "@/entities/conference/location-utils";
 
 dayjs.locale("fr");
@@ -611,7 +610,7 @@ export function CreateConferenceDialog({
                       {/* <MenuItem value="">
                         <em>Sélectionner...</em>
                       </MenuItem> */}
-                      {CONFERENCE_TYPES.map((type) => (
+                      {ConferenceType.map((type) => (
                         <MenuItem key={type} value={type}>
                           {type}
                         </MenuItem>
@@ -639,7 +638,7 @@ export function CreateConferenceDialog({
                       {/* <MenuItem value="">
                         <em>Sélectionner...</em>
                       </MenuItem> */}
-                      {CONFERENCE_REACHES.map((reach) => (
+                      {ConferenceReach.map((reach) => (
                         <MenuItem key={reach} value={reach}>
                           {reach}
                         </MenuItem>

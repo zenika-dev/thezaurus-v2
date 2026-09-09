@@ -1,5 +1,5 @@
-import { apiFetch, type BackendTalk } from "@/shared/api";
-import type { ApiErrorResponse, TalkData, TalkReviewRequest, TalkReviewResponse } from "./model";
+import { apiFetch, type BackendTalk, type BackendTalkReviewResponse } from "@/shared/api";
+import type { ApiErrorResponse, TalkData, TalkReviewRequest } from "./model";
 
 /**
  * Ne fait que totaliser le payload : le contrat déclare tous les champs optionnels, faute
@@ -59,7 +59,7 @@ export const talkApi = {
     const res = await apiFetch(`/talks/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete talk");
   },
-  reviewTalk: async (payload: TalkReviewRequest): Promise<TalkReviewResponse> => {
+  reviewTalk: async (payload: TalkReviewRequest): Promise<BackendTalkReviewResponse> => {
     const response = await apiFetch("/talks/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

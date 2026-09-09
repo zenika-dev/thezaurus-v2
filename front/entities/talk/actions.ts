@@ -2,7 +2,8 @@
 
 import { talkApi } from "./api";
 import { revalidatePath } from "next/cache";
-import type { TalkData, TalkReviewRequest, TalkReviewResponse } from "./model";
+import type { BackendTalkReviewResponse } from "@/shared/api";
+import type { TalkData, TalkReviewRequest } from "./model";
 
 export async function createTalkAction(talk: TalkData): Promise<TalkData> {
   const created = await talkApi.createTalk(talk);
@@ -20,6 +21,6 @@ export async function deleteTalkAction(id: string): Promise<void> {
   revalidatePath("/talks");
 }
 
-export async function reviewTalkAction(payload: TalkReviewRequest): Promise<TalkReviewResponse> {
+export async function reviewTalkAction(payload: TalkReviewRequest): Promise<BackendTalkReviewResponse> {
     return await talkApi.reviewTalk(payload);
 }

@@ -1,11 +1,5 @@
 import type { EventVisibility } from "./schema";
 
-/** Libellés des mois pour l'axe du graphique d'activité mensuelle. */
-export const MONTH_LABELS = [
-  "Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
-  "Juil", "Août", "Sep", "Oct", "Nov", "Déc",
-] as const;
-
 export const visibilityLabels: Record<EventVisibility, string> = {
   internal: "Interne",
   external: "Externe",

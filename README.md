@@ -39,13 +39,14 @@ Les types TypeScript décrivant les payloads de l'API ne sont **pas écrits à l
 générés depuis le contrat OpenAPI que Quarkus dérive des annotations JAX-RS.
 
 ```
-Resources JAX-RS ──(build Maven)──> api/openapi.json ──(openapi-typescript)──> front/shared/api/schema.d.ts
-                                                     └─(script maison)───────> front/shared/api/enums.ts
+Resources JAX-RS ──(build Maven)──> api/openapi.json ──(openapi-typescript)───> front/shared/api/schema.d.ts
+                                                     ├─(script maison)────────> front/shared/api/enums.ts
+                                                     └─(script maison)────────> front/shared/api/contract.ts
 ```
 
-`schema.d.ts` ne contient que des types, effacés à la compilation. `enums.ts` en est le pendant
-runtime : les mêmes enums sous forme de tableaux, pour alimenter les listes déroulantes et les
-`z.enum` sans recopier une seule valeur du back.
+`schema.d.ts` ne contient que des types bruts. `enums.ts` et `contract.ts` en sont les compléments :
+`enums.ts` fournit les enums runtime sous forme de tableaux (listes déroulantes, `z.enum`), tandis que
+`contract.ts` expose des alias de types lisibles (`BackendBlogPost`, `BackendTalk`, …).
 
 Les fichiers intermédiaires sont **versionnés**, pour deux raisons : le job CI `front` reste
 indépendant du job `api` (pas de build Maven ni d'échange d'artefact), et toute évolution du

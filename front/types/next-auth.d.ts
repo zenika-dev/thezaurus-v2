@@ -1,5 +1,5 @@
 import { DefaultSession } from "next-auth";
-import { Role } from "@/features/auth";
+import type { Role } from "@/shared/api";
  
 declare module "next-auth" {
   interface Session {
