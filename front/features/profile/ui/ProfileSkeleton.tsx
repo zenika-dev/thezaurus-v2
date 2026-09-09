@@ -19,9 +19,12 @@ export function ProfileSectionsSkeleton() {
 export function ProfileSkeleton() {
   return (
     <div className="p-8">
-      <div className="mb-6 animate-pulse">
-        <div className="h-9 bg-gray-200 dark:bg-[#121212] rounded w-36 mb-2" />
-        <div className="h-4 bg-gray-200 dark:bg-[#121212] rounded w-64" />
+      <div className="flex justify-between items-center mb-6 animate-pulse">
+        <div className="flex flex-col gap-2">
+          <div className="h-9 bg-gray-200 dark:bg-[#121212] rounded w-36" />
+          <div className="h-4 bg-gray-200 dark:bg-[#121212] rounded w-64" />
+        </div>
+        <div className="h-9 bg-gray-200 dark:bg-[#121212] rounded w-36" />
       </div>
       <ProfileSectionsSkeleton />
     </div>
