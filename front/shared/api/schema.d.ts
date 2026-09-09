@@ -1974,6 +1974,7 @@ export interface components {
             cfpStatus?: string;
             /** Format: int32 */
             submittedTalksAmount?: number;
+            cfpOpeningDate?: string;
             cfpClosingDate?: string;
             type?: components["schemas"]["ConferenceType"];
             reach?: components["schemas"]["ConferenceReach"];
