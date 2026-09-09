@@ -73,9 +73,8 @@ public class ConferenceRepository {
     }
 
     /**
-     * {@code toObject} lève si {@code date} n'est pas au format {@link ConferencePeriod} attendu —
-     * document non migré (staging, export ancien, restauration) ou corrompu. Un seul document dans
-     * cet état ne doit pas faire échouer la liste entière pour tout le monde.
+     * Tente de désérialiser le document en {@link Conference}. Si le document est corrompu ou
+     * comporte un format de date inattendu, il est ignoré pour ne pas faire échouer la liste.
      */
     private Conference toConferenceOrNull(DocumentSnapshot doc) {
         try {
@@ -111,21 +110,17 @@ public class ConferenceRepository {
     }
 
     /**
-     * Réécrit les conférences dont {@code date} est encore une chaîne surchargée vers le format
-     * structuré {@link ConferencePeriod}. Idempotente : la détection porte sur le type du champ
-     * stocké, donc les documents déjà migrés ({@code Map}) sont ignorés.
+     * Normalise les dates stockées sous forme de chaîne de caractères vers le format structuré
+     * {@link ConferencePeriod}. Opération idempotente : les documents portant déjà une structure
+     * {@code Map} sont ignorés.
      *
-     * <p>Une chaîne non reconnue est réécrite en période vide plutôt que laissée telle quelle :
-     * {@code Conference.date} est typé {@link ConferencePeriod}, donc une {@code String} restante
-     * ferait échouer la désérialisation Firestore de ce document — et de tout appel qui liste la
-     * collection — à la première lecture. Une période vide reste un {@code Map} valide ; le
-     * document est signalé pour correction manuelle sans jamais faire planter une lecture.
+     * <p>Une chaîne non reconnue est convertie en période vide : {@code Conference.date} étant typé
+     * {@link ConferencePeriod}, une valeur textuelle non convertible ferait échouer la désérialisation
+     * du document lors des lectures.
      *
-     * <p>Les écritures sont groupées par {@link WriteBatch} de {@link #BATCH_SIZE} plutôt
-     * qu'envoyées une par une : au démarrage, un aller-retour Firestore par document risquerait
-     * de dépasser les délais des sondes de liveness/readiness sur une collection volumineuse.
+     * <p>Les écritures sont groupées par {@link WriteBatch} de {@link #BATCH_SIZE}.
      *
-     * @return le nombre de documents réécrits
+     * @return le nombre de documents mis à jour
      */
     public int migrateLegacyDates() throws ExecutionException, InterruptedException {
         QuerySnapshot snapshot = firestore.collection(getCollectionName()).get().get();

@@ -16,11 +16,13 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import org.jboss.resteasy.reactive.RestResponse;
 
 @Path("/talks")
 @Produces(MediaType.APPLICATION_JSON)
@@ -41,51 +43,52 @@ public class TalkResource {
 
     @GET
     @Path("/{id}")
-    public Response get(@PathParam("id") String id) throws ExecutionException, InterruptedException {
+    public RestResponse<Talk> get(@PathParam("id") String id) throws ExecutionException, InterruptedException {
         Talk talk = service.findById(id);
         if (talk == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
-        return Response.ok(talk).build();
+        return RestResponse.ok(talk);
     }
 
     @POST
-    public Response create(Talk talk) throws ExecutionException, InterruptedException {
+    public RestResponse<Talk> create(Talk talk) throws ExecutionException, InterruptedException {
         Talk created = service.create(talk);
-        return Response.status(Response.Status.CREATED).entity(created).build();
+        return RestResponse.status(RestResponse.Status.CREATED, created);
     }
 
     @PUT
     @Path("/{id}")
-    public Response update(@PathParam("id") String id, Talk talk) throws ExecutionException, InterruptedException {
+    public RestResponse<Talk> update(@PathParam("id") String id, Talk talk)
+            throws ExecutionException, InterruptedException {
         Talk updated = service.update(id, talk);
         if (updated == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
-        return Response.ok(updated).build();
+        return RestResponse.ok(updated);
     }
 
     @DELETE
     @Path("/{id}")
     @RolesAllowed(Role.Names.ADMIN)
-    public Response delete(@PathParam("id") String id) throws ExecutionException, InterruptedException {
+    public RestResponse<Void> delete(@PathParam("id") String id) throws ExecutionException, InterruptedException {
         boolean deleted = service.delete(id);
         if (!deleted) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
-        return Response.noContent().build();
+        return RestResponse.noContent();
     }
 
     @POST
     @Path("/review")
-    public Response review(TalkReviewRequest request) {
+    public RestResponse<TalkReviewResponse> review(TalkReviewRequest request) {
         if (request == null || request.title() == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "Le titre et l'abstract sont requis"))
-                    .build();
+                    .build());
         }
 
         TalkReviewResponse response = talkReviewService.reviewTalk(request);
-        return Response.ok(response).build();
+        return RestResponse.ok(response);
     }
 }

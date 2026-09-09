@@ -84,7 +84,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["UserAdminView"];
                     };
                 };
                 /** @description Bad Request */
@@ -140,7 +140,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["CurrentUserView"];
                     };
                 };
                 /** @description Not Authorized */
@@ -190,7 +190,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["ProfileView"];
                     };
                 };
                 /** @description Not Authorized */
@@ -245,7 +245,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["NotificationPreferences"];
                     };
                 };
                 /** @description Bad Request */
@@ -391,7 +391,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["BlogPost"];
                     };
                 };
                 /** @description Bad Request */
@@ -448,7 +448,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["BlogPost"];
                     };
                 };
                 /** @description Not Authorized */
@@ -489,7 +489,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["BlogPost"];
                     };
                 };
                 /** @description Bad Request */
@@ -528,14 +528,12 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
+                /** @description No Content */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": unknown;
-                    };
+                    content?: never;
                 };
                 /** @description Not Authorized */
                 401: {
@@ -621,7 +619,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["Conference"];
                     };
                 };
                 /** @description Bad Request */
@@ -678,7 +676,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["Conference"];
                     };
                 };
                 /** @description Not Authorized */
@@ -719,7 +717,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["Conference"];
                     };
                 };
                 /** @description Bad Request */
@@ -758,14 +756,12 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
+                /** @description No Content */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": unknown;
-                    };
+                    content?: never;
                 };
                 /** @description Not Authorized */
                 401: {
@@ -854,7 +850,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["Event"];
                     };
                 };
                 /** @description Bad Request */
@@ -963,7 +959,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["Event"];
                     };
                 };
                 /** @description Not Authorized */
@@ -1004,7 +1000,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["Event"];
                     };
                 };
                 /** @description Bad Request */
@@ -1043,14 +1039,12 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
+                /** @description No Content */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": unknown;
-                    };
+                    content?: never;
                 };
                 /** @description Not Authorized */
                 401: {
@@ -1174,7 +1168,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["Talk"];
                     };
                 };
                 /** @description Bad Request */
@@ -1235,7 +1229,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["TalkReviewResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -1292,7 +1286,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["Talk"];
                     };
                 };
                 /** @description Not Authorized */
@@ -1333,7 +1327,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": unknown;
+                        "application/json": components["schemas"]["Talk"];
                     };
                 };
                 /** @description Bad Request */
@@ -1372,14 +1366,12 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
+                /** @description No Content */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": unknown;
-                    };
+                    content?: never;
                 };
                 /** @description Not Authorized */
                 401: {
@@ -1446,6 +1438,10 @@ export interface components {
         ConferenceReach: "Locale" | "Régionale" | "Nationale";
         /** @enum {string} */
         ConferenceType: "Marketing / business" | "Technique stratégique" | "Technique généraliste" | "Technique" | "Hors scope";
+        CurrentUserView: {
+            email?: string;
+            roles?: string[];
+        };
         /** @enum {string} */
         DatePrecision: "DAY" | "MONTH";
         Event: {
@@ -1495,6 +1491,12 @@ export interface components {
             email?: boolean;
             slack?: boolean;
         };
+        ProfileView: {
+            name?: string;
+            email?: string;
+            notificationPreferences?: components["schemas"]["NotificationPreferences"];
+            slackLinked?: boolean;
+        };
         /** @enum {string} */
         Role: "ADMIN" | "DT" | "CONSULTANT";
         RolesUpdateRequest: {
@@ -1519,6 +1521,12 @@ export interface components {
         TalkReviewRequest: {
             title?: string;
             abstract?: string;
+        };
+        TalkReviewResponse: {
+            suggestedTitles?: string[];
+            suggestedAbstracts?: string[];
+            feedback?: string[];
+            keyImprovements?: string[];
         };
         /** @enum {string} */
         TalkStatus: "DRAFT" | "PLANNED" | "SUBMITTED" | "ACCEPTED" | "REJECTED" | "DONE";

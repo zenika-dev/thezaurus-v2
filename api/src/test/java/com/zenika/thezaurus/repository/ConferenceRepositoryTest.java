@@ -55,8 +55,7 @@ public class ConferenceRepositoryTest {
 
     @Test
     public void findAllSkipsADocumentThatFailsToDeserializeInsteadOfFailingTheWholeList() throws Exception {
-        // Simule le cas reel : Conference.date est type ConferencePeriod, un document dont le
-        // champ n'a pas ce format (non migre, corrompu) fait lever toObject().
+        // Cas d'un document portant un format de date inattendu ou corrompu faisant lever toObject().
         QueryDocumentSnapshot broken = Mockito.mock(QueryDocumentSnapshot.class);
         Mockito.when(broken.getId()).thenReturn("broken-id");
         Mockito.when(broken.toObject(Conference.class)).thenThrow(new RuntimeException("format inattendu"));
