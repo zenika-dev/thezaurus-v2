@@ -21,7 +21,8 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs, { type Dayjs } from "dayjs";
 import "dayjs/locale/fr";
 import { Bot } from "lucide-react";
-import type { TalkData, TalkStatus, TalkReviewResponse } from "@/entities/talk";
+import type { BackendTalkReviewResponse, TalkStatus } from "@/shared/api";
+import type { TalkData } from "@/entities/talk";
 import {
   agencyLabels,
   visibilityLabels,
@@ -48,7 +49,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
 
   const [assistantDialogOpen, setAssistantDialogOpen] = useState(false);
   const [assistantLoading, setAssistantLoading] = useState(false);
-  const [assistantResult, setAssistantResult] = useState<TalkReviewResponse | null>(null);
+  const [assistantResult, setAssistantResult] = useState<BackendTalkReviewResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const {

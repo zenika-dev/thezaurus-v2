@@ -19,8 +19,10 @@ import {
   Lock, Globe, X, User, MapPin, Mic, Calendar, Bot,
   Link as LinkIcon, Play as PlayIcon, ExternalLink as ExternalLinkIcon,
 } from "lucide-react";
-import type { TalkData, TalkStatus, TalkReviewResponse } from "@/entities/talk";
-import { agencyLabels, reviewTalkAction, talkStatusConfig, TALK_STATUSES } from "@/entities/talk";
+import { TalkStatus } from "@/shared/api";
+import type { BackendTalkReviewResponse } from "@/shared/api";
+import type { TalkData } from "@/entities/talk";
+import { agencyLabels, reviewTalkAction, talkStatusConfig } from "@/entities/talk";
 import { isValidUrl } from "@/shared/lib";
 import { StatusTag } from "./TalkTags";
 import { TalkAssistantDialog } from "./TalkAssistantDialog";
@@ -38,7 +40,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
   const [replay, setReplay] = useState(talk?.replay ?? "");
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiResult, setAiResult] = useState<TalkReviewResponse | null>(null);
+  const [aiResult, setAiResult] = useState<BackendTalkReviewResponse | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -165,7 +167,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
               <p className="text-sm text-text-muted mb-2">Changer le statut</p>
               <FormControl fullWidth>
                 <Select value={talk.status} onChange={handleStatusChange} size="small">
-                  {TALK_STATUSES.map((s) => (
+                  {TalkStatus.map((s) => (
                     <MenuItem key={s} value={s}>{talkStatusConfig[s].label}</MenuItem>
                   ))}
                 </Select>

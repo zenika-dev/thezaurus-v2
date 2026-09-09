@@ -5,6 +5,7 @@ import "./globals.css";
 import Providers from "@/widgets/Providers";
 import SideMenu from "@/widgets/SideMenu";
 import { ProtectedRoute } from "@/features/auth";
+import { Role } from "@/shared/api";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -33,7 +34,7 @@ export default function RootLayout({
       <body className="min-h-full flex w-full">
         <AppRouterCacheProvider>
           <Providers>
-            <ProtectedRoute allowedRoles={["ADMIN", "DT", "CONSULTANT"]}>
+            <ProtectedRoute allowedRoles={[...Role]}>
               <SideMenu />
               <main className="flex-1 flex flex-col min-w-0 overflow-auto bg-surface">
                 {children}

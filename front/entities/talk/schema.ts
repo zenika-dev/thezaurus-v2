@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { TALK_VISIBILITIES } from "./model";
+import { Visibility } from "@/shared/api";
 
 /**
  * Formulaire plat (deux intervenants nommés, une conférence par son nom) reconstruit vers le
@@ -13,7 +13,7 @@ export const talkFormSchema = z.object({
   office:     z.string().min(1, "L'agence est requise"),
   description: z.string().min(1, "L'abstract est requis"),
   format:     z.string().min(1, "Le format est requis"),
-  visibility: z.enum(TALK_VISIBILITIES),
+  visibility: z.enum(Visibility),
   language:   z.string(),
   conference: z.string(),
   notes:      z.string(),

@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { Role } from "./config";
+import type { Role } from "@/shared/api";
 import { LandingPage } from "./landing-page";
 
 function ProtectedRouteContent({

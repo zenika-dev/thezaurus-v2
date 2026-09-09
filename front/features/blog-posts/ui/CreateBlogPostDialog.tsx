@@ -24,8 +24,9 @@ import { ExternalLinkIcon, FileText, Library } from "lucide-react";
 import dayjs, { type Dayjs } from "dayjs";
 import "dayjs/locale/fr";
 import type { BlogPostData } from "@/entities/post";
-import { blogPostTags, blogPostStatusConfig, BLOG_POST_STATUSES } from "@/entities/post";
+import { blogPostTags, blogPostStatusConfig } from "@/entities/post";
 import { blogPostFormSchema, type BlogPostFormData } from "@/entities/post";
+import { BlogPostStatus } from "@/shared/api";
 import { isValidUrl } from "@/shared/lib";
 
 dayjs.locale("fr");
@@ -134,7 +135,7 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
                 style={{ fontWeight: "bold", color: appliedStatusColor }}
                 inputProps={{ "aria-label": "Statut de l'article" }}
               >
-                {BLOG_POST_STATUSES.map((s) => (
+                {BlogPostStatus.map((s) => (
                   <MenuItem key={s} value={s}>
                     {blogPostStatusConfig[s].label}
                   </MenuItem>

@@ -1,4 +1,4 @@
-import type { BlogPostStatus } from "@/entities/post";
+import type { BlogPostStatus } from "@/shared/api";
 import { blogPostStatusConfig } from "@/entities/post";
 import { Badge } from "@/shared/ui";
 

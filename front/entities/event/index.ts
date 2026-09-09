@@ -13,7 +13,6 @@ export {
   eventsDashboardSchema,
 } from "./schema";
 export {
-  MONTH_LABELS,
   visibilityLabels,
   visibilityColors,
 } from "./model";
