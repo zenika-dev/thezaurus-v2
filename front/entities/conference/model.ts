@@ -1,19 +1,9 @@
-import { enumValues } from "@/shared/api";
 import type {
-  BackendConferenceReach,
-  BackendConferenceType,
-  BackendDatePrecision,
   BackendLocation,
+  ConferenceReach,
+  ConferenceType,
+  DatePrecision,
 } from "@/shared/api";
-
-/** Types et énumérations issus du contrat OpenAPI. */
-export type ConferenceType = BackendConferenceType;
-
-export const CONFERENCE_TYPES = enumValues.ConferenceType;
-
-export type ConferenceReach = BackendConferenceReach;
-
-export const CONFERENCE_REACHES = enumValues.ConferenceReach;
 
 /**
  * `cfpStatus` est un `String` libre côté back : le contrat ne peut pas le contraindre. Cette union
@@ -22,10 +12,6 @@ export const CONFERENCE_REACHES = enumValues.ConferenceReach;
 export const CONFERENCE_CFP_STATUSES = ["Open", "Closed", "None"] as const;
 
 export type ConferenceCFPStatus = (typeof CONFERENCE_CFP_STATUSES)[number];
-
-export type ConferenceLocation = BackendLocation;
-
-export type DatePrecision = BackendDatePrecision;
 
 /**
  * Version totale du type généré (tous les champs y sont optionnels). Pas de champ discriminant :
@@ -40,7 +26,7 @@ export interface ConferencePeriod {
 export interface ConferenceData {
   id: string;
   name: string;
-  location: ConferenceLocation;
+  location: BackendLocation;
   date: ConferencePeriod;
   cfpLink?: string;
   cfpClosingDate?: string;

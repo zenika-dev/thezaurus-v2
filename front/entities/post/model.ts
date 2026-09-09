@@ -1,10 +1,4 @@
-import { enumValues } from "@/shared/api";
-import type { BackendBlogPostStatus } from "@/shared/api";
-
-/** Le statut garde la casse du back ; le libellé affiché est porté par `blogPostStatusConfig`. */
-export type BlogPostStatus = BackendBlogPostStatus;
-
-export const BLOG_POST_STATUSES = enumValues.BlogPostStatus;
+import type { BlogPostStatus } from "@/shared/api";
 
 /**
  * Forme du contrat, à deux nuances : les champs sont totaux (le contrat les déclare optionnels),

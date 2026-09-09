@@ -1,4 +1,4 @@
-import { ConferenceLocation } from "./model";
+import type { BackendLocation } from "@/shared/api";
 
 export interface OpenStreetMapLocation {
   display_name?: string;
@@ -12,7 +12,7 @@ export interface OpenStreetMapLocation {
   };
 }
 
-export function formatLocation(location: ConferenceLocation | string | undefined | null): string {
+export function formatLocation(location: BackendLocation | string | undefined | null): string {
   if (!location) return "";
 
   const removePostalCode = (str: string) =>
@@ -36,7 +36,7 @@ export function formatLocation(location: ConferenceLocation | string | undefined
   return "";
 }
 
-export function parseLocation(locationData: OpenStreetMapLocation | string): ConferenceLocation {
+export function parseLocation(locationData: OpenStreetMapLocation | string): BackendLocation {
   if (!locationData) return { address: "" };
 
   if (typeof locationData === "string") {

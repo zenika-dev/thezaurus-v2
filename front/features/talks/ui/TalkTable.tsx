@@ -9,8 +9,9 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { Eye, Funnel } from "lucide-react";
-import type { TalkData, TalkStatus } from "@/entities/talk";
-import { agencyLabels, talkStatusConfig, TALK_STATUSES } from "@/entities/talk";
+import { TalkStatus } from "@/shared/api";
+import type { TalkData } from "@/entities/talk";
+import { agencyLabels, talkStatusConfig } from "@/entities/talk";
 import dynamic from "next/dynamic";
 import { useTalks } from "@/features/talks/model";
 import { StatusTag, VisibilityTag } from "./TalkTags";
@@ -72,7 +73,7 @@ export function TalkTable() {
           <div className="flex items-center gap-2 flex-wrap">
             <Funnel size={14} className="text-text-muted shrink-0" />
             <span className="text-xs text-text-muted mr-2">Statut :</span>
-            {(["All", ...TALK_STATUSES] as const).map((status) => (
+            {(["All", ...TalkStatus] as const).map((status) => (
               <FilterBadge
                 key={status}
                 label={status === "All" ? "Tous" : talkStatusConfig[status].label}

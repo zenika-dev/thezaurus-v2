@@ -1,5 +1,5 @@
 import { Lock, Globe } from "lucide-react";
-import type { TalkStatus, TalkVisibility } from "@/entities/talk";
+import type { TalkStatus, Visibility } from "@/shared/api";
 import { talkStatusConfig, visibilityLabels } from "@/entities/talk";
 import { Badge } from "@/shared/ui";
 
@@ -14,7 +14,7 @@ export function StatusTag({ status }: { status: TalkStatus }) {
   );
 }
 
-export function VisibilityTag({ visibility }: { visibility: TalkVisibility }) {
+export function VisibilityTag({ visibility }: { visibility: Visibility }) {
   const isExternal = visibility === "PUBLIC";
   const label = visibilityLabels[visibility];
   const config = isExternal

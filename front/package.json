@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "generate:api": "openapi-typescript ../api/openapi.json -o shared/api/schema.d.ts && node scripts/generate-api-enums.mjs"
+    "generate:api": "openapi-typescript ../api/openapi.json -o shared/api/schema.d.ts && node scripts/generate-api-contract.mjs"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",

@@ -1,40 +1,19 @@
-import { enumValues } from "@/shared/api";
+import { TalkStatus, Visibility } from "@/shared/api";
 import type {
   BackendConference,
   BackendTalkReviewRequest,
-  BackendTalkReviewResponse,
-  BackendTalkStatus,
   BackendUser,
-  BackendVisibility,
 } from "@/shared/api";
-
-/**
- * Un speaker est un `User` côté back. `slackUserId` est renseigné par la commande Slack : le
- * formulaire ne l'expose pas mais doit le préserver.
- */
-export type TalkSpeaker = BackendUser;
-
-/**
- * Statut et visibilité gardent la casse du back : une traduction vers un nom réduit (`Draft` /
- * `Idea` / `external`) risquerait de faire collapser deux valeurs distinctes sur le même libellé.
- */
-export type TalkStatus = BackendTalkStatus;
-
-export const TALK_STATUSES = enumValues.TalkStatus;
-
-export type TalkVisibility = BackendVisibility;
-
-export const TALK_VISIBILITIES = enumValues.Visibility;
 
 export interface TalkData {
   id: string;
   title: string;
   description: string;
-  speakers: TalkSpeaker[];
+  speakers: BackendUser[];
   office: string;
   conference: BackendConference | null;
   status: TalkStatus;
-  visibility: TalkVisibility;
+  visibility: Visibility;
   format: string;
   /** Date de présentation au format ISO `YYYY-MM-DD`, telle que stockée par le back. */
   date?: string;
@@ -50,12 +29,12 @@ export interface TalkData {
  * email du co-speaker) ainsi que les suivants, ajoutés via la commande Slack.
  */
 export function withEditedSpeakers(
-  current: TalkSpeaker[],
+  current: BackendUser[],
   speaker: string,
   cospeaker: string,
   email: string,
-): TalkSpeaker[] {
-  const speakers: TalkSpeaker[] = [];
+): BackendUser[] {
+  const speakers: BackendUser[] = [];
   if (speaker.trim()) {
     speakers.push({ ...current[0], name: speaker.trim(), email: email.trim() || undefined });
   }
@@ -67,7 +46,6 @@ export function withEditedSpeakers(
 }
 
 export type TalkReviewRequest = Required<BackendTalkReviewRequest>;
-export type TalkReviewResponse = BackendTalkReviewResponse;
 
 export interface ApiErrorResponse {
   timestamp: string;
@@ -89,7 +67,7 @@ export const agencyLabels: Record<string, string> = {
   montreal:  "Montréal",
 };
 
-export const visibilityLabels: Record<TalkVisibility, string> = {
+export const visibilityLabels: Record<Visibility, string> = {
   PRIVATE: "Interne",
   PUBLIC:  "Externe",
 };

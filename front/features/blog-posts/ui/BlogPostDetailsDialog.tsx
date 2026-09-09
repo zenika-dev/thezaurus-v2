@@ -20,8 +20,9 @@ import Alert from "@mui/material/Alert";
 import { DatePicker } from "@mui/x-date-pickers";
 import { ExternalLinkIcon, FileText, Library, Trash2 } from "lucide-react";
 import dayjs, { type Dayjs } from "dayjs";
-import type { BlogPostData, BlogPostStatus } from "@/entities/post";
-import { blogPostTags, blogPostStatusConfig, withPrimaryWriter, BLOG_POST_STATUSES } from "@/entities/post";
+import { BlogPostStatus } from "@/shared/api";
+import type { BlogPostData } from "@/entities/post";
+import { blogPostTags, blogPostStatusConfig, withPrimaryWriter } from "@/entities/post";
 import { isValidUrl } from "@/shared/lib";
 
 interface BlogPostDetailsDialogProps {
@@ -143,7 +144,7 @@ export function BlogPostDetailsDialog({
               style={{ fontWeight: "bold", color: appliedStatusColor }}
               slotProps={{ input: { style: { borderColor: appliedStatusBg } } }}
             >
-              {BLOG_POST_STATUSES.map((s) => (
+              {BlogPostStatus.map((s) => (
                 <MenuItem key={s} value={s}>
                   {blogPostStatusConfig[s].label}
                 </MenuItem>
