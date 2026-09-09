@@ -1,0 +1,6 @@
+# Mark generated files for GitHub diffs and IDEs
+api/openapi.json linguist-generated=true
+front/shared/api/schema.d.ts linguist-generated=true
+front/shared/api/enums.ts linguist-generated=true
+front/shared/api/contract.ts linguist-generated=true
+
