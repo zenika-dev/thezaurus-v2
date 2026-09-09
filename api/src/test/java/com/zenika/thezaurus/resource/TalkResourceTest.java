@@ -11,7 +11,9 @@ import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.Talk;
 import com.zenika.thezaurus.model.TalkReviewRequest;
 import com.zenika.thezaurus.model.TalkReviewResponse;
+import com.zenika.thezaurus.model.TalkStatus;
 import com.zenika.thezaurus.model.User;
+import com.zenika.thezaurus.model.Visibility;
 import com.zenika.thezaurus.service.TalkReviewService;
 import com.zenika.thezaurus.service.TalkService;
 import io.quarkus.test.InjectMock;
@@ -119,6 +121,47 @@ public class TalkResourceTest {
         assertNull(
                 captor.getValue().speakers().get(0).roles(),
                 "Les rôles ne doivent pas pouvoir être injectés depuis un payload client");
+    }
+
+    @Test
+    @DisplayName("POST /talks - création avec replay et audience - retourne HTTP 201")
+    public void testCreateWithReplayAndAudience() throws Exception {
+        Talk created = new Talk(
+                "new-id",
+                "Talk avec replay",
+                "Desc",
+                List.of(User.builder().name("Jane").build()),
+                "Paris",
+                null,
+                TalkStatus.DONE,
+                Visibility.PUBLIC,
+                "public",
+                "2026-05-10",
+                "francais",
+                "Notes",
+                "https://slides.com/demo",
+                "https://youtube.com/watch?v=123",
+                150);
+        Mockito.when(service.create(Mockito.any(Talk.class))).thenReturn(created);
+
+        String payload = "{\"title\":\"Talk avec replay\",\"description\":\"Desc\",\"office\":\"Paris\","
+                + "\"status\":\"DONE\",\"visibility\":\"PUBLIC\",\"format\":\"public\","
+                + "\"replay\":\"https://youtube.com/watch?v=123\",\"audience\":150}";
+
+        given().contentType(ContentType.JSON)
+                .body(payload)
+                .when()
+                .post("/talks")
+                .then()
+                .statusCode(201)
+                .body("id", is("new-id"))
+                .body("replay", is("https://youtube.com/watch?v=123"))
+                .body("audience", is(150));
+
+        ArgumentCaptor<Talk> captor = ArgumentCaptor.forClass(Talk.class);
+        Mockito.verify(service).create(captor.capture());
+        assertEquals("https://youtube.com/watch?v=123", captor.getValue().replay());
+        assertEquals(150, captor.getValue().audience());
     }
 
     @Test

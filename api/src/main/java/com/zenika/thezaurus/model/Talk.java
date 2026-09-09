@@ -1,5 +1,6 @@
 package com.zenika.thezaurus.model;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.List;
  * @param date date de presentation au format ISO {@code YYYY-MM-DD}
  * @param slides lien vers les supports, saisi depuis la fiche du talk
  * @param replay lien vers l'enregistrement, saisi depuis la fiche du talk
+ * @param audience nombre constaté ou estimé de participants ayant assisté au talk
  */
 public record Talk(
         String id,
@@ -25,10 +27,11 @@ public record Talk(
         String language,
         String notes,
         String slides,
-        String replay) {
+        String replay,
+        @Min(0) Integer audience) {
 
     public Talk(String id, String title, String description) {
-        this(id, title, description, null, null, null, null, null, null, null, null, null, null, null);
+        this(id, title, description, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public Talk(
@@ -38,7 +41,22 @@ public record Talk(
             String office,
             TalkStatus status,
             Visibility visibility) {
-        this(null, title, description, speakers, office, null, status, visibility, null, null, null, null, null, null);
+        this(
+                null,
+                title,
+                description,
+                speakers,
+                office,
+                null,
+                status,
+                visibility,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
     }
 
     public Talk withId(String id) {
@@ -56,7 +74,8 @@ public record Talk(
                 language,
                 notes,
                 slides,
-                replay);
+                replay,
+                audience);
     }
 
     public Talk withConference(Conference conference) {
@@ -74,6 +93,7 @@ public record Talk(
                 language,
                 notes,
                 slides,
-                replay);
+                replay,
+                audience);
     }
 }

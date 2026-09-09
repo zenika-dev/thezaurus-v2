@@ -21,6 +21,7 @@ export interface TalkData {
   notes: string;
   slides?: string;
   replay?: string;
+  audience?: number | null;
 }
 
 /**
