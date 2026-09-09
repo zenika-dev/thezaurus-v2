@@ -64,6 +64,8 @@ export function CreateConferenceDialog({
   const [dateMonth, setDateMonth] = useState<Dayjs | null>(null);
   const [dateError, setDateError] = useState<string | null>(null);
   const [cfpDateError, setCfpDateError] = useState<string | null>(null);
+  const [cfpOpeningDateError, setCfpOpeningDateError] = useState<string | null>(null);
+  const [cfpOpeningDate, setCfpOpeningDate] = useState<Dayjs | null>(null);
   const [cfpClosingDate, setCfpClosingDate] = useState<Dayjs | null>(null);
 
   const [openLocation, setOpenLocation] = useState(false);
@@ -157,6 +159,8 @@ export function CreateConferenceDialog({
     setDateEnd(null);
     setDateError(null);
     setCfpDateError(null);
+    setCfpOpeningDateError(null);
+    setCfpOpeningDate(null);
     setCfpClosingDate(null);
     onClose();
   };
@@ -209,6 +213,21 @@ export function CreateConferenceDialog({
       setCfpDateError(null);
     }
 
+    if (
+      cfpOpeningDate &&
+      cfpOpeningDate.isValid() &&
+      cfpClosingDate &&
+      cfpClosingDate.isValid() &&
+      !cfpOpeningDate.isBefore(cfpClosingDate, "day")
+    ) {
+      setCfpOpeningDateError(
+        "Le début du CFP doit être avant la fin du CFP",
+      );
+      isValid = false;
+    } else {
+      setCfpOpeningDateError(null);
+    }
+
     return isValid;
   };
 
@@ -255,10 +274,14 @@ export function CreateConferenceDialog({
       cfpStatus: finalCfpStatus,
       date: buildConferenceDate(),
       location: parsedLocation,
+      ...(cfpOpeningDate &&
+        cfpOpeningDate.isValid() && {
+        cfpOpeningDate: cfpOpeningDate.format("YYYY-MM-DD"),
+      }),
       ...(cfpClosingDate &&
         cfpClosingDate.isValid() && {
-          cfpClosingDate: cfpClosingDate.format("YYYY-MM-DD"),
-        }),
+        cfpClosingDate: cfpClosingDate.format("YYYY-MM-DD"),
+      }),
     });
     handleClose();
   };
@@ -562,24 +585,48 @@ export function CreateConferenceDialog({
                 }}
               />
 
-              <DatePicker
-                label="Date de fin du CFP"
-                value={cfpClosingDate}
-                onChange={(val) => {
-                  setCfpClosingDate(val);
-                  setCfpDateError(null);
-                }}
-                views={["year", "month", "day"]}
-                format="DD/MM/YYYY"
-                slotProps={{
-                  textField: {
-                    fullWidth: true,
-                    id: "conference-cfp-closing-date",
-                    error: !!cfpDateError,
-                    helperText: cfpDateError ?? undefined,
-                  },
-                }}
-              />
+              <div className="col-span-2 flex gap-4">
+                <DatePicker
+                  label="Date de début du CFP"
+                  value={cfpOpeningDate}
+                  onChange={(val) => {
+                    setCfpOpeningDate(val);
+                    setCfpOpeningDateError(null);
+                  }}
+                  views={["year", "month", "day"]}
+                  format="DD/MM/YYYY"
+                  sx={{ flex: 1 }}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      id: "conference-cfp-opening-date",
+                      error: !!cfpOpeningDateError,
+                      helperText: cfpOpeningDateError ?? undefined,
+                    },
+                  }}
+                />
+
+                <DatePicker
+                  label="Date de fin du CFP"
+                  value={cfpClosingDate}
+                  onChange={(val) => {
+                    setCfpClosingDate(val);
+                    setCfpDateError(null);
+                    setCfpOpeningDateError(null);
+                  }}
+                  views={["year", "month", "day"]}
+                  format="DD/MM/YYYY"
+                  sx={{ flex: 1 }}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      id: "conference-cfp-closing-date",
+                      error: !!cfpDateError,
+                      helperText: cfpDateError ?? undefined,
+                    },
+                  }}
+                />
+              </div>
 
               <Controller
                 name="type"

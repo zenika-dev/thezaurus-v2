@@ -8,6 +8,7 @@ public class Conference {
     private Location location;
     private String cfpStatus;
     private int submittedTalksAmount;
+    private String cfpOpeningDate;
     private String cfpClosingDate;
     private ConferenceType type;
     private ConferenceReach reach;
@@ -74,6 +75,14 @@ public class Conference {
 
     public void setSubmittedTalksAmount(int submittedTalksAmount) {
         this.submittedTalksAmount = submittedTalksAmount;
+    }
+
+    public String getCfpOpeningDate() {
+        return cfpOpeningDate;
+    }
+
+    public void setCfpOpeningDate(String cfpOpeningDate) {
+        this.cfpOpeningDate = cfpOpeningDate;
     }
 
     public String getCfpClosingDate() {

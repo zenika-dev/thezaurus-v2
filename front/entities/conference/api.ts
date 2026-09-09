@@ -15,6 +15,7 @@ interface BackendConference {
     };
     cfpStatus: ConferenceCFPStatus;
     submittedTalksAmount: number;
+    cfpOpeningDate?: string;
     cfpClosingDate?: string;
     type: ConferenceType;
     reach: ConferenceReach;
@@ -55,6 +56,7 @@ export const mapBackendToFrontend = (c: BackendConference): ConferenceData => ({
     location: c.location,
     cfpStatus: c.cfpStatus,
     submittedTalksAmount: c.submittedTalksAmount,
+    cfpOpeningDate: c.cfpOpeningDate,
     cfpClosingDate: c.cfpClosingDate,
     type: c.type,
     reach: c.reach,
@@ -68,6 +70,7 @@ export const mapFrontendToBackend = (c: ConferenceData): BackendConference => ({
     location: c.location,
     cfpStatus: c.cfpStatus,
     submittedTalksAmount: c.submittedTalksAmount,
+    cfpOpeningDate: c.cfpOpeningDate,
     cfpClosingDate: c.cfpClosingDate,
     type: c.type,
     reach: c.reach,
