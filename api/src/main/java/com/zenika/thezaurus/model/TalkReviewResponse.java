@@ -1,9 +1,10 @@
 package com.zenika.thezaurus.model;
 
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record TalkReviewResponse(
-        List<String> suggestedTitles,
-        List<String> suggestedAbstracts,
-        List<String> feedback,
-        List<String> keyImprovements) {}
+        @NotNull List<String> suggestedTitles,
+        @NotNull List<String> suggestedAbstracts,
+        @NotNull List<String> feedback,
+        @NotNull List<String> keyImprovements) {}

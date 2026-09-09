@@ -161,7 +161,7 @@ const CreateBlogPostDialog = dynamic(
 
 - **Resource Layer**: JAX-RS endpoints returning typed `RestResponse<T>` so SmallRye OpenAPI correctly documents responses and schemas.
 - **Repository Layer**: Firestore collections accessed through `Firestore` client.
-- **Model Layer**: Java records or POJOs with Jackson serialization.
+- **Model Layer**: Java records or POJOs with Jackson serialization and Jakarta Bean Validation annotations (`@NotBlank`, `@NotNull`, `@NotEmpty`) to enforce data constraints and auto-generate OpenAPI required fields.
 - **Formatting**: Imposed by Palantir Java format via Spotless (`./mvnw spotless:apply`).
 
 ---

@@ -1,9 +1,15 @@
 package com.zenika.thezaurus.model;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class Conference {
     private String id;
+
+    @NotBlank
     private String name;
+
     private ConferencePeriod date;
+
     private String cfpLink;
     private Location location;
     private String cfpStatus;
