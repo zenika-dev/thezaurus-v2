@@ -11,7 +11,16 @@ services:
       - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
       - FIRESTORE_DATABASE_ID=${FIRESTORE_DATABASE_ID}
       - FIRESTORE_COLLECTION_PREFIX=${FIRESTORE_COLLECTION_PREFIX}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - QUARKUS_PROFILE=prod
+      # Auth token (Google Sign-In) par défaut, ici et en dev. Sur Cloud Run, exportez ces 4
+      # variables (voir README) avant `gcloud run compose up` pour basculer sur IAP : la
+      # syntaxe sans "=" ne les transmet au conteneur que si elles existent réellement dans
+      # l'environnement de déploiement, sinon application.properties garde ses défauts OAuth.
+      - MP_JWT_VERIFY_PUBLICKEY_LOCATION
+      - MP_JWT_VERIFY_ISSUER
+      - MP_JWT_VERIFY_AUDIENCES
+      - MP_JWT_TOKEN_HEADER
       - QUARKUS_HTTP_PORT=8080
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
       - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET:-}
@@ -28,13 +37,15 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     container_name: thezaurus-front
     ports:
-      - "80:3000"
+      - "3000:3000"
     environment:
       - API_URL=http://api:8080
       - VITE_MOCK_AUTH=false
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-your-google-client-id.apps.googleusercontent.com}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_URL=${NEXTAUTH_PUBLIC_URL:-http://localhost:3000}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
     depends_on:
       - api
+    x-google-cloudrun:
+      ingress-container: true
