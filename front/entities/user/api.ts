@@ -1,4 +1,8 @@
-import { apiFetch, type BackendProfileView } from "@/shared/api";
+import {
+  apiFetch,
+  type BackendProfileView,
+  type BackendUserSummary,
+} from "@/shared/api";
 import type { NotificationPreferences, UserProfile } from "./model";
 
 function mapBackendToFrontend(profile: BackendProfileView): UserProfile {
@@ -31,5 +35,17 @@ export const profileApi = {
     });
     if (!res.ok) throw new Error("Failed to update notification preferences");
     return preferences;
+  },
+};
+
+export const userApi = {
+  getUsers: async (query?: string): Promise<BackendUserSummary[]> => {
+    const url =
+      query && query.trim().length > 0
+        ? `/api/users?query=${encodeURIComponent(query.trim())}`
+        : "/api/users";
+    const res = await apiFetch(url);
+    if (!res.ok) throw new Error("Failed to fetch users");
+    return await res.json();
   },
 };

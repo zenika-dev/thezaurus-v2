@@ -16,13 +16,14 @@ import InputAdornment from "@mui/material/InputAdornment";
 import IconButton from "@mui/material/IconButton";
 import CircularProgress from "@mui/material/CircularProgress";
 import {
-  Lock, Globe, X, User, Users, MapPin, Mic, Calendar, Bot,
+  Lock, Globe, X, Users, MapPin, Mic, Calendar, Bot,
   Link as LinkIcon, Play as PlayIcon, ExternalLink as ExternalLinkIcon,
 } from "lucide-react";
 import { TalkStatus } from "@/shared/api";
 import type { BackendTalkReviewResponse } from "@/shared/api";
 import type { TalkData } from "@/entities/talk";
-import { agencyLabels, reviewTalkAction, talkStatusConfig } from "@/entities/talk";
+import { agencyLabels, reviewTalkAction, talkStatusConfig, SpeakerAutocomplete } from "@/entities/talk";
+import { SpeakerChip } from "@/entities/user";
 import { isValidUrl } from "@/shared/lib";
 import { StatusTag } from "./TalkTags";
 import { TalkAssistantDialog } from "./TalkAssistantDialog";
@@ -43,22 +44,24 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<BackendTalkReviewResponse | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [isEditingSpeakers, setIsEditingSpeakers] = useState(false);
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
     setSlides(talk?.slides ?? "");
     setReplay(talk?.replay ?? "");
     setAudience(talk?.audience != null ? String(talk.audience) : "");
+    setIsEditingSpeakers(false);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [talk?.id, talk?.slides, talk?.replay, talk?.audience]);
 
   if (!talk) return null;
 
-  const handleStatusChange = (e: SelectChangeEvent) =>
-    onUpdate({ ...talk, status: e.target.value as TalkStatus });
+  const handleStatusChange = (event: SelectChangeEvent) =>
+    onUpdate({ ...talk, status: event.target.value as TalkStatus });
 
-  const handleVisibilityToggle = (e: React.ChangeEvent<HTMLInputElement>) =>
-    onUpdate({ ...talk, visibility: e.target.checked ? "PUBLIC" : "PRIVATE" });
+  const handleVisibilityToggle = (event: React.ChangeEvent<HTMLInputElement>) =>
+    onUpdate({ ...talk, visibility: event.target.checked ? "PUBLIC" : "PRIVATE" });
 
   const handleDelete = () => {
     if (confirm("Êtes-vous sûr de vouloir supprimer ce talk ?")) {
@@ -84,8 +87,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
     }
   };
 
-  // `onApply` vient de TalkAssistantDialog, un widget générique qui ignore le modèle Talk et ne
-  // connaît que "titre" + "abstract" ; on relie ici son vocabulaire à `description`, le champ réel.
+  // TalkAssistantDialog utilise "abstract" pour renseigner le champ "description"
   const handleApplyAiSuggestions = (suggestedTitle: string, suggestedDescription: string) => {
     onUpdate({
       ...talk,
@@ -94,17 +96,22 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
     });
   };
 
-  const handleSaveAudience = () => {
-    const trimmed = audience.trim();
-    if (trimmed === "") {
-      if (talk.audience !== null && talk.audience !== undefined) {
-        onUpdate({ ...talk, audience: null });
-      }
-      return;
-    }
-    const parsed = parseInt(trimmed, 10);
-    if (!isNaN(parsed) && parsed >= 0 && parsed !== talk.audience) {
-      onUpdate({ ...talk, audience: parsed });
+  const handleSaveDetails = () => {
+    const trimmedAudience = audience.trim();
+    const parsedAudience = trimmedAudience === "" ? null : parseInt(trimmedAudience, 10);
+    const validAudience = parsedAudience !== null && !isNaN(parsedAudience) && parsedAudience >= 0 ? parsedAudience : null;
+
+    if (
+      slides !== (talk.slides ?? "") ||
+      replay !== (talk.replay ?? "") ||
+      validAudience !== (talk.audience ?? null)
+    ) {
+      onUpdate({
+        ...talk,
+        slides,
+        replay,
+        audience: validAudience,
+      });
     }
   };
 
@@ -141,7 +148,6 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
           </div>
 
           <div className="flex flex-col gap-4 mt-1">
-            {/* Abstract overview if present */}
             {talk.description && (
               <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
                 <p className="text-xs font-semibold text-text-muted mb-1">Abstract actuel :</p>
@@ -149,16 +155,59 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
               </div>
             )}
 
-            {/* Info grid */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-2">
-                  <User size={14} className="text-text-muted shrink-0" />
-                  <span className="text-sm">
-                    {talk.speakers[0]?.name ?? "—"}
-                    {talk.speakers[1]?.name ? ` & ${talk.speakers[1].name}` : ""}
-                  </span>
+              <div className="flex flex-col gap-4 col-span-2">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users size={14} className="text-text-muted shrink-0" />
+                      <span className="text-xs font-semibold text-text-muted">Intervenants :</span>
+                    </div>
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() => setIsEditingSpeakers((prev) => !prev)}
+                      className="text-xs! py-0! px-1.5! min-w-0! normal-case! text-primary!"
+                    >
+                      {isEditingSpeakers ? "Fermer" : "Modifier"}
+                    </Button>
+                  </div>
+                  {isEditingSpeakers ? (
+                    <div className="mt-1">
+                      <SpeakerAutocomplete
+                        size="small"
+                        value={talk.speakers?.map((speaker) => ({ name: speaker.name, email: speaker.email ?? "" })) ?? []}
+                        onChange={(newSpeakers) => {
+                          onUpdate({
+                            ...talk,
+                            speakers: newSpeakers.map((speaker) => ({
+                              name: speaker.name,
+                              email: speaker.email?.trim() || undefined,
+                            })),
+                          });
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5 pl-5">
+                      {talk.speakers && talk.speakers.length > 0 ? (
+                        talk.speakers.map((speaker, index) => (
+                          <SpeakerChip
+                            key={index}
+                            name={speaker.name}
+                            email={speaker.email}
+                            size="small"
+                          />
+                        ))
+                      ) : (
+                        <span className="text-sm text-text-muted">—</span>
+                      )}
+                    </div>
+                  )}
                 </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-2">
                   <Mic size={14} className="text-text-muted shrink-0" />
                   <span className="text-sm">{talk.conference?.name || "—"}</span>
@@ -178,7 +227,6 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
 
             <Divider />
 
-            {/* Status */}
             <div>
               <p className="text-sm text-text-muted mb-2">Changer le statut</p>
               <FormControl fullWidth>
@@ -192,7 +240,6 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
 
             <Divider />
 
-            {/* Visibility toggle */}
             <div className="flex justify-between items-center">
               <div>
                 <div className="flex gap-1.5 items-center">
@@ -208,7 +255,6 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
               <Switch checked={talk.visibility === "PUBLIC"} onChange={handleVisibilityToggle} />
             </div>
 
-            {/* Slides, Replay & Audience */}
             {(talk.status === "ACCEPTED" || talk.status === "DONE") && (
               <>
                 <Divider />
@@ -219,8 +265,8 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
                       <TextField
                         label="Slides" placeholder="https://..." value={slides} fullWidth size="small"
                         onChange={(e) => setSlides(e.target.value)}
-                        onBlur={() => { if (slides !== (talk.slides ?? "")) onUpdate({ ...talk, slides }); }}
-                        onKeyDown={(e) => { if (e.key === "Enter") { onUpdate({ ...talk, slides }); (e.target as HTMLInputElement).blur(); } }}
+                        onBlur={handleSaveDetails}
+                        onKeyDown={(e) => { if (e.key === "Enter") { handleSaveDetails(); (e.target as HTMLInputElement).blur(); } }}
                         slotProps={{
                           input: {
                             startAdornment: <InputAdornment position="start"><LinkIcon size={16} /></InputAdornment>,
@@ -237,8 +283,8 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
                       <TextField
                         label="Replay" placeholder="https://..." value={replay} fullWidth size="small"
                         onChange={(e) => setReplay(e.target.value)}
-                        onBlur={() => { if (replay !== (talk.replay ?? "")) onUpdate({ ...talk, replay }); }}
-                        onKeyDown={(e) => { if (e.key === "Enter") { onUpdate({ ...talk, replay }); (e.target as HTMLInputElement).blur(); } }}
+                        onBlur={handleSaveDetails}
+                        onKeyDown={(e) => { if (e.key === "Enter") { handleSaveDetails(); (e.target as HTMLInputElement).blur(); } }}
                         slotProps={{
                           input: {
                             startAdornment: <InputAdornment position="start"><PlayIcon size={16} /></InputAdornment>,
@@ -262,10 +308,10 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
                         fullWidth
                         size="small"
                         onChange={(e) => setAudience(e.target.value)}
-                        onBlur={handleSaveAudience}
+                        onBlur={handleSaveDetails}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
-                            handleSaveAudience();
+                            handleSaveDetails();
                             (e.target as HTMLInputElement).blur();
                           }
                         }}

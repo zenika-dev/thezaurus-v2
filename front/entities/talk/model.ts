@@ -24,28 +24,6 @@ export interface TalkData {
   audience?: number | null;
 }
 
-/**
- * Le formulaire n'expose que deux noms et un email, alors que le back porte une liste complète.
- * Réécrit les deux premiers speakers en préservant leurs champs non éditables (`slackUserId`,
- * email du co-speaker) ainsi que les suivants, ajoutés via la commande Slack.
- */
-export function withEditedSpeakers(
-  current: BackendUser[],
-  speaker: string,
-  cospeaker: string,
-  email: string,
-): BackendUser[] {
-  const speakers: BackendUser[] = [];
-  if (speaker.trim()) {
-    speakers.push({ ...current[0], name: speaker.trim(), email: email.trim() || undefined });
-  }
-  if (cospeaker.trim()) {
-    speakers.push({ ...current[1], name: cospeaker.trim() });
-  }
-  speakers.push(...current.slice(2));
-  return speakers;
-}
-
 export type TalkReviewRequest = Required<BackendTalkReviewRequest>;
 
 export interface ApiErrorResponse {
