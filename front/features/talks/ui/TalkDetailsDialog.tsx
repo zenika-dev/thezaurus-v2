@@ -16,7 +16,7 @@ import InputAdornment from "@mui/material/InputAdornment";
 import IconButton from "@mui/material/IconButton";
 import CircularProgress from "@mui/material/CircularProgress";
 import {
-  Lock, Globe, X, User, MapPin, Mic, Calendar, Bot,
+  Lock, Globe, X, User, Users, MapPin, Mic, Calendar, Bot,
   Link as LinkIcon, Play as PlayIcon, ExternalLink as ExternalLinkIcon,
 } from "lucide-react";
 import { TalkStatus } from "@/shared/api";
@@ -38,6 +38,7 @@ interface TalkDetailsDialogProps {
 export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: TalkDetailsDialogProps) {
   const [slides, setSlides] = useState(talk?.slides ?? "");
   const [replay, setReplay] = useState(talk?.replay ?? "");
+  const [audience, setAudience] = useState(talk?.audience != null ? String(talk.audience) : "");
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<BackendTalkReviewResponse | null>(null);
@@ -47,8 +48,9 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
     /* eslint-disable react-hooks/set-state-in-effect */
     setSlides(talk?.slides ?? "");
     setReplay(talk?.replay ?? "");
+    setAudience(talk?.audience != null ? String(talk.audience) : "");
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [talk?.id, talk?.slides, talk?.replay]);
+  }, [talk?.id, talk?.slides, talk?.replay, talk?.audience]);
 
   if (!talk) return null;
 
@@ -90,6 +92,20 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
       title: suggestedTitle,
       description: suggestedDescription,
     });
+  };
+
+  const handleSaveAudience = () => {
+    const trimmed = audience.trim();
+    if (trimmed === "") {
+      if (talk.audience !== null && talk.audience !== undefined) {
+        onUpdate({ ...talk, audience: null });
+      }
+      return;
+    }
+    const parsed = parseInt(trimmed, 10);
+    if (!isNaN(parsed) && parsed >= 0 && parsed !== talk.audience) {
+      onUpdate({ ...talk, audience: parsed });
+    }
   };
 
   return (
@@ -192,49 +208,79 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
               <Switch checked={talk.visibility === "PUBLIC"} onChange={handleVisibilityToggle} />
             </div>
 
-            {/* Slides & Replay */}
+            {/* Slides, Replay & Audience */}
             {(talk.status === "ACCEPTED" || talk.status === "DONE") && (
               <>
                 <Divider />
                 <div>
-                  <p className="text-sm text-text-muted mb-4">Liens du talk</p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <TextField
-                      label="Slides" placeholder="https://..." value={slides} fullWidth size="small"
-                      onChange={(e) => setSlides(e.target.value)}
-                      onBlur={() => { if (slides !== (talk.slides ?? "")) onUpdate({ ...talk, slides }); }}
-                      onKeyDown={(e) => { if (e.key === "Enter") { onUpdate({ ...talk, slides }); (e.target as HTMLInputElement).blur(); } }}
-                      slotProps={{
-                        input: {
-                          startAdornment: <InputAdornment position="start"><LinkIcon size={16} /></InputAdornment>,
-                          endAdornment: slides && isValidUrl(slides) ? (
-                            <InputAdornment position="end">
-                              <IconButton size="small" component="a" href={slides} target="_blank" rel="noopener noreferrer" className="text-primary! p-0.5!">
-                                <ExternalLinkIcon size={14} />
-                              </IconButton>
-                            </InputAdornment>
-                          ) : null,
-                        },
-                      }}
-                    />
-                    <TextField
-                      label="Replay" placeholder="https://..." value={replay} fullWidth size="small"
-                      onChange={(e) => setReplay(e.target.value)}
-                      onBlur={() => { if (replay !== (talk.replay ?? "")) onUpdate({ ...talk, replay }); }}
-                      onKeyDown={(e) => { if (e.key === "Enter") { onUpdate({ ...talk, replay }); (e.target as HTMLInputElement).blur(); } }}
-                      slotProps={{
-                        input: {
-                          startAdornment: <InputAdornment position="start"><PlayIcon size={16} /></InputAdornment>,
-                          endAdornment: replay && isValidUrl(replay) ? (
-                            <InputAdornment position="end">
-                              <IconButton size="small" component="a" href={replay} target="_blank" rel="noopener noreferrer" className="text-primary! p-0.5!">
-                                <ExternalLinkIcon size={14} />
-                              </IconButton>
-                            </InputAdornment>
-                          ) : null,
-                        },
-                      }}
-                    />
+                  <p className="text-sm text-text-muted mb-4">Liens et restitution</p>
+                  <div className="flex flex-col gap-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <TextField
+                        label="Slides" placeholder="https://..." value={slides} fullWidth size="small"
+                        onChange={(e) => setSlides(e.target.value)}
+                        onBlur={() => { if (slides !== (talk.slides ?? "")) onUpdate({ ...talk, slides }); }}
+                        onKeyDown={(e) => { if (e.key === "Enter") { onUpdate({ ...talk, slides }); (e.target as HTMLInputElement).blur(); } }}
+                        slotProps={{
+                          input: {
+                            startAdornment: <InputAdornment position="start"><LinkIcon size={16} /></InputAdornment>,
+                            endAdornment: slides && isValidUrl(slides) ? (
+                              <InputAdornment position="end">
+                                <IconButton size="small" component="a" href={slides} target="_blank" rel="noopener noreferrer" className="text-primary! p-0.5!">
+                                  <ExternalLinkIcon size={14} />
+                                </IconButton>
+                              </InputAdornment>
+                            ) : null,
+                          },
+                        }}
+                      />
+                      <TextField
+                        label="Replay" placeholder="https://..." value={replay} fullWidth size="small"
+                        onChange={(e) => setReplay(e.target.value)}
+                        onBlur={() => { if (replay !== (talk.replay ?? "")) onUpdate({ ...talk, replay }); }}
+                        onKeyDown={(e) => { if (e.key === "Enter") { onUpdate({ ...talk, replay }); (e.target as HTMLInputElement).blur(); } }}
+                        slotProps={{
+                          input: {
+                            startAdornment: <InputAdornment position="start"><PlayIcon size={16} /></InputAdornment>,
+                            endAdornment: replay && isValidUrl(replay) ? (
+                              <InputAdornment position="end">
+                                <IconButton size="small" component="a" href={replay} target="_blank" rel="noopener noreferrer" className="text-primary! p-0.5!">
+                                  <ExternalLinkIcon size={14} />
+                                </IconButton>
+                              </InputAdornment>
+                            ) : null,
+                          },
+                        }}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <TextField
+                        label="Audience"
+                        placeholder="Ex : 150"
+                        type="number"
+                        value={audience}
+                        fullWidth
+                        size="small"
+                        onChange={(e) => setAudience(e.target.value)}
+                        onBlur={handleSaveAudience}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleSaveAudience();
+                            (e.target as HTMLInputElement).blur();
+                          }
+                        }}
+                        slotProps={{
+                          htmlInput: { min: 0, step: 1 },
+                          input: {
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Users size={16} />
+                              </InputAdornment>
+                            ),
+                          },
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               </>

@@ -1376,6 +1376,11 @@
           },
           "replay" : {
             "type" : "string"
+          },
+          "audience" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
           }
         },
         "required" : [ "title", "description", "office", "status", "visibility", "format" ]
