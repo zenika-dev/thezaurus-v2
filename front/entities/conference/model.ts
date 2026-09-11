@@ -32,6 +32,7 @@ export interface ConferenceData {
     location: ConferenceLocation;
     date: ConferenceDate;
     cfpLink?: string;
+    cfpOpeningDate?: string;
     cfpClosingDate?: string;
     cfpStatus: ConferenceCFPStatus;
     submittedTalksAmount: number;

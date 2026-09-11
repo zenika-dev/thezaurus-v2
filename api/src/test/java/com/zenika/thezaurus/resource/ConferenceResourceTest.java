@@ -127,4 +127,30 @@ public class ConferenceResourceTest {
         assertEquals(ConferenceType.MARKETING_BUSINESS, captor.getValue().getType());
         assertEquals(ConferenceReach.REGIONALE, captor.getValue().getReach());
     }
+
+    @Test
+    public void testCreateWithCfpOpeningDate() throws Exception {
+        String body = """
+            {"name":"New Conf","type":"Technique","reach":"Nationale","cfpOpeningDate":"2026-01-10","cfpClosingDate":"2026-02-10"}
+            """;
+
+        ArgumentCaptor<Conference> captor = ArgumentCaptor.forClass(Conference.class);
+        Mockito.when(service.create(captor.capture())).thenAnswer(invocation -> {
+            Conference c = invocation.getArgument(0);
+            c.setId("new-id");
+            return c;
+        });
+
+        given().contentType(ContentType.JSON)
+                .body(body)
+                .when()
+                .post("/conferences")
+                .then()
+                .statusCode(201)
+                .body("id", is("new-id"))
+                .body("cfpOpeningDate", is("2026-01-10"))
+                .body("cfpClosingDate", is("2026-02-10"));
+
+        assertEquals("2026-01-10", captor.getValue().getCfpOpeningDate());
+    }
 }
