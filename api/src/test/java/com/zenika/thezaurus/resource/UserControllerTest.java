@@ -48,7 +48,7 @@ public class UserControllerTest {
                 .email("jane@zenika.com")
                 .roles(List.of(Role.CONSULTANT))
                 .build();
-        Mockito.when(userRepository.findAll(Mockito.anyInt())).thenReturn(List.of(jane));
+        Mockito.when(userRepository.search(null, 20)).thenReturn(List.of(jane));
 
         given().when()
                 .get("/api/users")
@@ -64,13 +64,53 @@ public class UserControllerTest {
     @TestSecurity(
             user = "jane@zenika.com",
             roles = {Role.Names.CONSULTANT})
-    public void testListUsersIsBounded() throws Exception {
-        Mockito.when(userRepository.findAll(Mockito.anyInt())).thenReturn(List.of());
+    public void testListUsersWithQueryFiltering() throws Exception {
+        User alice = User.builder()
+                .name("Alice Martin")
+                .email("alice@zenika.com")
+                .roles(List.of(Role.CONSULTANT))
+                .build();
+        Mockito.when(userRepository.search("alice", 20)).thenReturn(List.of(alice));
+        Mockito.when(userRepository.search("inexistant", 20)).thenReturn(List.of());
+
+        given().queryParam("query", "alice")
+                .when()
+                .get("/api/users")
+                .then()
+                .statusCode(200)
+                .body("size()", is(1))
+                .body("[0].name", is("Alice Martin"));
+
+        given().queryParam("query", "inexistant")
+                .when()
+                .get("/api/users")
+                .then()
+                .statusCode(200)
+                .body("size()", is(0));
+    }
+
+    @Test
+    @TestSecurity(
+            user = "jane@zenika.com",
+            roles = {Role.Names.CONSULTANT})
+    public void testListUsersBoundedQuery() throws Exception {
+        Mockito.when(userRepository.search(null, 20)).thenReturn(List.of());
 
         given().when().get("/api/users").then().statusCode(200);
 
-        // La liste doit toujours être bornée : pas de scan complet de la collection.
-        Mockito.verify(userRepository).findAll(500);
+        Mockito.verify(userRepository).search(null, 20);
+    }
+
+    @Test
+    @TestSecurity(
+            user = "jane@zenika.com",
+            roles = {Role.Names.CONSULTANT})
+    public void testListUsersRejectsOversizedQuery() {
+        given().queryParam("query", "a".repeat(101))
+                .when()
+                .get("/api/users")
+                .then()
+                .statusCode(400);
     }
 
     @Test

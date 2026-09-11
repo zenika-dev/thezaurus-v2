@@ -175,6 +175,13 @@
     },
     "/api/users" : {
       "get" : {
+        "parameters" : [ {
+          "name" : "query",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK",

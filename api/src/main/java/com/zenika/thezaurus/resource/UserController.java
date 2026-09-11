@@ -7,14 +7,15 @@ import com.zenika.thezaurus.slack.SlackUserResolver;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
 
@@ -32,9 +33,6 @@ public class UserController {
 
     @Inject
     SlackUserResolver slackUserResolver;
-
-    @ConfigProperty(name = "thezaurus.users.max-results", defaultValue = "500")
-    int maxResults;
 
     public record CurrentUserView(String email, Set<String> roles) {}
 
@@ -57,9 +55,9 @@ public class UserController {
         if (user != null && (user.slackUserId() == null || user.slackUserId().isBlank())) {
             try {
                 slackUserResolver.resolveAndPersistAsync(email);
-            } catch (Exception e) {
+            } catch (Exception exception) {
                 // Enrichissement, jamais un prérequis : la connexion doit aboutir quoi qu'il arrive.
-                logger.warnf(e, "Rattachement Slack non déclenché pour %s", email);
+                logger.warnf(exception, "Rattachement Slack non déclenché pour %s", email);
             }
         }
 
@@ -74,10 +72,13 @@ public class UserController {
     @GET
     @Path("/users")
     @RolesAllowed({Role.Names.ADMIN, Role.Names.DT, Role.Names.CONSULTANT})
-    public List<UserSummary> listUsers() throws ExecutionException, InterruptedException {
-        return userRepository.findAll(maxResults).stream()
-                .map(u -> new UserSummary(u.name(), u.email()))
+    public RestResponse<List<UserSummary>> listUsers(@QueryParam("query") @Size(max = 100) String query)
+            throws ExecutionException, InterruptedException {
+        List<User> users = userRepository.search(query, 20);
+        List<UserSummary> result = users.stream()
+                .map(currentUser -> new UserSummary(currentUser.name(), currentUser.email()))
                 .toList();
+        return RestResponse.ok(result);
     }
 
     public record UserSummary(String name, String email) {}
