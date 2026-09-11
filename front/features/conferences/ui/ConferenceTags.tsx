@@ -14,7 +14,8 @@ export function StatusTag({ status }: { status: ConferenceCFPStatus }) {
   );
 }
 
-import { ConferenceType, conferenceTypeConfig } from "@/entities/conference";
+import type { ConferenceType } from "@/shared/api";
+import { conferenceTypeConfig } from "@/entities/conference";
 
 export function TypeTag({
   type,

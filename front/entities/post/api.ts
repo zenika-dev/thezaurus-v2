@@ -1,31 +1,11 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { apiFetch } from "@/shared/api";
-import type { BlogPostData, BlogPostStatus } from "./model";
+import { apiFetch, type BackendBlogPost } from "@/shared/api";
+import type { BlogPostData } from "./model";
 
 dayjs.extend(customParseFormat);
 
-
-function toFrontendStatus(s: string): BlogPostStatus {
-  switch (s) {
-    case "DRAFT":     return "Draft";
-    case "PUBLISHED": return "Published";
-    case "IDEA":      return "Idea";
-    case "REVIEW":    return "Review";
-    default:          return "Idea";
-  }
-}
-
-function toBackendStatus(s: BlogPostStatus): string {
-  switch (s) {
-    case "Draft":     return "DRAFT";
-    case "Published": return "PUBLISHED";
-    case "Idea":      return "IDEA";
-    case "Review":    return "REVIEW";
-    default:          return "IDEA";
-  }
-}
-
+/** Le back stocke des dates ISO (`YYYY-MM-DDT00:00:00`), l'interface affiche du `DD-MM-YYYY`. */
 function toFrontendDate(dateStr: string | undefined | null): string {
   if (!dateStr) return "";
   if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) return dateStr;
@@ -42,52 +22,38 @@ function toLocalDateTime(dateStr: string | undefined): string | null {
   return dateStr;
 }
 
-interface BackendPost {
-  id?: string;
-  title?: string;
-  writers?: string[];
-  tags?: string[];
-  creationDate?: string | null;
-  publicationDate?: string | null;
-  status?: string;
-  link?: string;
-}
-
-interface BackendPostPayload {
-  id: string;
-  title: string;
-  writers: string[];
-  status: string;
-  tags: string[];
+/**
+ * Le back accepte `null` pour les dates absentes, ce que le schéma généré ne décrit pas : les
+ * champs Java n'ont pas d'annotation `@Schema` et ressortent simplement optionnels.
+ */
+type BackendBlogPostPayload = Omit<BackendBlogPost, "creationDate" | "publicationDate"> & {
   creationDate: string | null;
   publicationDate: string | null;
-  link: string;
-}
+};
 
-export function mapBackendToFrontend(p: BackendPost): BlogPostData {
+/**
+ * Ne fait que totaliser le payload et convertir les dates : le contrat déclare tous les champs
+ * optionnels, faute d'annotations `@Schema(required = true)` sur les modèles Java.
+ */
+export function mapBackendToFrontend(p: BackendBlogPost): BlogPostData {
   return {
-    id: p.id || "",
-    title: p.title || "",
-    author: p.writers?.[0] || "",
-    tags: p.tags || [],
+    id: p.id ?? "",
+    title: p.title ?? "",
+    writers: p.writers ?? [],
+    tags: p.tags ?? [],
     creationDate: toFrontendDate(p.creationDate),
-    expectedPublicationDate: toFrontendDate(p.publicationDate),
-    status: toFrontendStatus(p.status ?? ""),
-    zenikaBlogLink: p.link || "",
-    googleDocDraftLink: "",
+    publicationDate: toFrontendDate(p.publicationDate),
+    status: p.status ?? "IDEA",
+    link: p.link ?? "",
+    googleDocDraftLink: p.googleDocDraftLink ?? "",
   };
 }
 
-export function mapFrontendToBackend(p: BlogPostData): BackendPostPayload {
+export function mapFrontendToBackend(p: BlogPostData): BackendBlogPostPayload {
   return {
-    id: p.id,
-    title: p.title,
-    writers: [p.author],
-    status: toBackendStatus(p.status),
-    tags: p.tags,
+    ...p,
     creationDate: toLocalDateTime(p.creationDate),
-    publicationDate: toLocalDateTime(p.expectedPublicationDate) || null,
-    link: p.zenikaBlogLink || "",
+    publicationDate: toLocalDateTime(p.publicationDate),
   };
 }
 

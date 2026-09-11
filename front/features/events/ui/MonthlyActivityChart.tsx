@@ -2,10 +2,10 @@
 
 import { BarChart } from "@mui/x-charts/BarChart";
 import {
-  MONTH_LABELS,
   visibilityColors,
   type MonthlyActivity,
 } from "@/entities/event";
+import { MonthLabel } from "@/shared/api";
 import type { EventFilter } from "@/features/events/model";
 
 interface MonthlyActivityChartProps {
@@ -40,7 +40,7 @@ export function MonthlyActivityChart({ monthly, filter }: MonthlyActivityChartPr
           skipAnimation
           height={340}
           series={series}
-          xAxis={[{ scaleType: "band", data: [...MONTH_LABELS] }]}
+          xAxis={[{ scaleType: "band", data: [...MonthLabel] }]}
           grid={{ horizontal: true }}
           margin={{ top: 16, bottom: 24, left: 8, right: 8 }}
           borderRadius={8}

@@ -1,10 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-
-// Vocabulaire backend repris verbatim (enum Role côté API) : toute couche de traduction
-// front serait un piège de plus. Cf. Role.java côté Quarkus.
-export const ROLES = ["ADMIN", "DT", "CONSULTANT"] as const;
-export type Role = (typeof ROLES)[number];
+import type { Role } from "@/shared/api";
 
 export const authOptions: NextAuthOptions = {
   providers: [

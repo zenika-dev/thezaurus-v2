@@ -19,10 +19,12 @@ import {
   Lock, Globe, X, User, MapPin, Mic, Calendar, Bot,
   Link as LinkIcon, Play as PlayIcon, ExternalLink as ExternalLinkIcon,
 } from "lucide-react";
-import type { TalkData, TalkStatus, TalkReviewResponse } from "@/entities/talk";
-import { agencyLabels, reviewTalkAction } from "@/entities/talk";
+import { TalkStatus } from "@/shared/api";
+import type { BackendTalkReviewResponse } from "@/shared/api";
+import type { TalkData } from "@/entities/talk";
+import { agencyLabels, reviewTalkAction, talkStatusConfig } from "@/entities/talk";
 import { isValidUrl } from "@/shared/lib";
-import { StatusTag, statusConfig } from "./TalkTags";
+import { StatusTag } from "./TalkTags";
 import { TalkAssistantDialog } from "./TalkAssistantDialog";
 
 interface TalkDetailsDialogProps {
@@ -38,7 +40,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
   const [replay, setReplay] = useState(talk?.replay ?? "");
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiResult, setAiResult] = useState<TalkReviewResponse | null>(null);
+  const [aiResult, setAiResult] = useState<BackendTalkReviewResponse | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
     onUpdate({ ...talk, status: e.target.value as TalkStatus });
 
   const handleVisibilityToggle = (e: React.ChangeEvent<HTMLInputElement>) =>
-    onUpdate({ ...talk, visibility: e.target.checked ? "external" : "internal" });
+    onUpdate({ ...talk, visibility: e.target.checked ? "PUBLIC" : "PRIVATE" });
 
   const handleDelete = () => {
     if (confirm("Êtes-vous sûr de vouloir supprimer ce talk ?")) {
@@ -70,7 +72,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
     try {
       const res = await reviewTalkAction({
         title: talk.title,
-        abstract: talk.abstract,
+        abstract: talk.description,
       });
       setAiResult(res);
     } catch (err: unknown) {
@@ -80,11 +82,13 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
     }
   };
 
-  const handleApplyAiSuggestions = (suggestedTitle: string, suggestedAbstract: string) => {
+  // `onApply` vient de TalkAssistantDialog, un widget générique qui ignore le modèle Talk et ne
+  // connaît que "titre" + "abstract" ; on relie ici son vocabulaire à `description`, le champ réel.
+  const handleApplyAiSuggestions = (suggestedTitle: string, suggestedDescription: string) => {
     onUpdate({
       ...talk,
       title: suggestedTitle,
-      abstract: suggestedAbstract,
+      description: suggestedDescription,
     });
   };
 
@@ -122,10 +126,10 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
 
           <div className="flex flex-col gap-4 mt-1">
             {/* Abstract overview if present */}
-            {talk.abstract && (
+            {talk.description && (
               <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
                 <p className="text-xs font-semibold text-text-muted mb-1">Abstract actuel :</p>
-                <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap">{talk.abstract}</p>
+                <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap">{talk.description}</p>
               </div>
             )}
 
@@ -134,17 +138,20 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-2">
                   <User size={14} className="text-text-muted shrink-0" />
-                  <span className="text-sm">{talk.speaker}{talk.cospeaker ? ` & ${talk.cospeaker}` : ""}</span>
+                  <span className="text-sm">
+                    {talk.speakers[0]?.name ?? "—"}
+                    {talk.speakers[1]?.name ? ` & ${talk.speakers[1].name}` : ""}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mic size={14} className="text-text-muted shrink-0" />
-                  <span className="text-sm">{talk.conference || "—"}</span>
+                  <span className="text-sm">{talk.conference?.name || "—"}</span>
                 </div>
               </div>
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-2">
                   <MapPin size={14} className="text-text-muted shrink-0" />
-                  <span className="text-sm">{agencyLabels[talk.agency] || talk.agency}</span>
+                  <span className="text-sm">{agencyLabels[talk.office] || talk.office}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar size={14} className="text-text-muted shrink-0" />
@@ -160,8 +167,8 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
               <p className="text-sm text-text-muted mb-2">Changer le statut</p>
               <FormControl fullWidth>
                 <Select value={talk.status} onChange={handleStatusChange} size="small">
-                  {Object.keys(statusConfig).map((s) => (
-                    <MenuItem key={s} value={s}>{s}</MenuItem>
+                  {TalkStatus.map((s) => (
+                    <MenuItem key={s} value={s}>{talkStatusConfig[s].label}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -173,20 +180,20 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
             <div className="flex justify-between items-center">
               <div>
                 <div className="flex gap-1.5 items-center">
-                  {talk.visibility === "external" ? <Globe size={16} /> : <Lock size={16} />}
+                  {talk.visibility === "PUBLIC" ? <Globe size={16} /> : <Lock size={16} />}
                   <span className="text-sm font-medium text-text">
-                    {talk.visibility === "external" ? "Visibilité externe" : "Visibilité interne"}
+                    {talk.visibility === "PUBLIC" ? "Visibilité externe" : "Visibilité interne"}
                   </span>
                 </div>
                 <span className="text-xs text-text-muted block mt-0.5">
-                  {talk.visibility === "external" ? "Visible publiquement." : "Réservé en interne."}
+                  {talk.visibility === "PUBLIC" ? "Visible publiquement." : "Réservé en interne."}
                 </span>
               </div>
-              <Switch checked={talk.visibility === "external"} onChange={handleVisibilityToggle} />
+              <Switch checked={talk.visibility === "PUBLIC"} onChange={handleVisibilityToggle} />
             </div>
 
             {/* Slides & Replay */}
-            {(talk.status === "Accepted" || talk.status === "Replayed") && (
+            {(talk.status === "ACCEPTED" || talk.status === "DONE") && (
               <>
                 <Divider />
                 <div>
@@ -246,7 +253,7 @@ export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: T
         loading={aiLoading}
         error={aiError}
         title={talk.title}
-        abstract={talk.abstract}
+        abstract={talk.description}
         assistantReviewResult={aiResult}
         onClose={() => setAiDialogOpen(false)}
         onApply={handleApplyAiSuggestions}

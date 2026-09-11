@@ -5,6 +5,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.zenika.thezaurus.model.Conference;
+import com.zenika.thezaurus.model.ConferencePeriod;
 import com.zenika.thezaurus.model.ConferenceReach;
 import com.zenika.thezaurus.model.ConferenceType;
 import com.zenika.thezaurus.model.Role;
@@ -30,7 +31,8 @@ public class ConferenceResourceTest {
     @Test
     public void testList() throws Exception {
         Mockito.when(service.findAll())
-                .thenReturn(Collections.singletonList(new Conference("1", "Titre", "Description")));
+                .thenReturn(Collections.singletonList(
+                        new Conference("1", "Titre", ConferencePeriod.singleDay("2026-03-12"))));
 
         given().when()
                 .get("/conferences")
@@ -50,10 +52,10 @@ public class ConferenceResourceTest {
 
     @Test
     public void testCreate() throws Exception {
-        Conference input = new Conference(null, "New Conf", "Desc");
+        Conference input = new Conference(null, "New Conf", ConferencePeriod.singleDay("2026-03-12"));
         input.setType(ConferenceType.TECHNIQUE);
         input.setReach(ConferenceReach.NATIONALE);
-        Conference created = new Conference("new-id", "New Conf", "Desc");
+        Conference created = new Conference("new-id", "New Conf", ConferencePeriod.singleDay("2026-03-12"));
         created.setType(ConferenceType.TECHNIQUE);
         created.setReach(ConferenceReach.NATIONALE);
 

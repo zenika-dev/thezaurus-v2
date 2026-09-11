@@ -20,8 +20,9 @@ import Alert from "@mui/material/Alert";
 import { DatePicker } from "@mui/x-date-pickers";
 import { ExternalLinkIcon, FileText, Library, Trash2 } from "lucide-react";
 import dayjs, { type Dayjs } from "dayjs";
-import type { BlogPostData, BlogPostStatus } from "@/entities/post";
-import { blogPostTags, blogPostStatusConfig } from "@/entities/post";
+import { BlogPostStatus } from "@/shared/api";
+import type { BlogPostData } from "@/entities/post";
+import { blogPostTags, blogPostStatusConfig, withPrimaryWriter } from "@/entities/post";
 import { isValidUrl } from "@/shared/lib";
 
 interface BlogPostDetailsDialogProps {
@@ -45,8 +46,8 @@ export function BlogPostDetailsDialog({
   const [expectedPublicationDate, setExpectedPublicationDate] =
     useState<Dayjs | null>(null);
   const [tags, setTags] = useState<string[]>([]);
-  const [status, setStatus] = useState<BlogPostStatus>("Idea");
-  const [zenikaBlogLink, setZenikaBlogLink] = useState("");
+  const [status, setStatus] = useState<BlogPostStatus>("IDEA");
+  const [link, setLink] = useState("");
   const [googleDocDraftLink, setGoogleDocDraftLink] = useState("");
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
@@ -55,18 +56,18 @@ export function BlogPostDetailsDialog({
     if (post && open) {
       /* eslint-disable react-hooks/set-state-in-effect */
       setTitle(post.title ?? "");
-      setAuthor(post.author ?? "");
+      setAuthor(post.writers?.[0] ?? "");
       setCreationDate(
         post.creationDate ? dayjs(post.creationDate, "DD-MM-YYYY") : null,
       );
       setExpectedPublicationDate(
-        post.expectedPublicationDate
-          ? dayjs(post.expectedPublicationDate, "DD-MM-YYYY")
+        post.publicationDate
+          ? dayjs(post.publicationDate, "DD-MM-YYYY")
           : null,
       );
       setTags(post.tags ?? []);
-      setStatus(post.status ?? "Idea");
-      setZenikaBlogLink(post.zenikaBlogLink ?? "");
+      setStatus(post.status ?? "IDEA");
+      setLink(post.link ?? "");
       setGoogleDocDraftLink(post.googleDocDraftLink ?? "");
       /* eslint-enable react-hooks/set-state-in-effect */
     }
@@ -94,13 +95,13 @@ export function BlogPostDetailsDialog({
       onUpdate({
         ...post,
         title: title.trim(),
-        author: author.trim(),
+        writers: withPrimaryWriter(post.writers, author.trim()),
         creationDate: creationDate.format("DD-MM-YYYY"),
-        expectedPublicationDate:
+        publicationDate:
           expectedPublicationDate?.format("DD-MM-YYYY") ?? "",
         tags,
         status,
-        zenikaBlogLink,
+        link,
         googleDocDraftLink,
       });
       onClose();
@@ -143,10 +144,11 @@ export function BlogPostDetailsDialog({
               style={{ fontWeight: "bold", color: appliedStatusColor }}
               slotProps={{ input: { style: { borderColor: appliedStatusBg } } }}
             >
-              <MenuItem value="Idea">Idea</MenuItem>
-              <MenuItem value="Draft">Draft</MenuItem>
-              <MenuItem value="Review">Review</MenuItem>
-              <MenuItem value="Published">Published</MenuItem>
+              {BlogPostStatus.map((s) => (
+                <MenuItem key={s} value={s}>
+                  {blogPostStatusConfig[s].label}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </DialogTitle>
@@ -220,8 +222,8 @@ export function BlogPostDetailsDialog({
               <TextField
                 label="Lien blog Zenika"
                 placeholder="https://..."
-                value={zenikaBlogLink}
-                onChange={(e) => setZenikaBlogLink(e.target.value)}
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
                 fullWidth
                 slotProps={{
                   input: {
@@ -231,12 +233,12 @@ export function BlogPostDetailsDialog({
                       </InputAdornment>
                     ),
                     endAdornment:
-                      zenikaBlogLink && isValidUrl(zenikaBlogLink) ? (
+                      link && isValidUrl(link) ? (
                         <InputAdornment position="end">
                           <IconButton
                             size="small"
                             component="a"
-                            href={zenikaBlogLink}
+                            href={link}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary! p-0.5!"

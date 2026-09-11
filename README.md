@@ -33,6 +33,41 @@ Une API Quarkus est disponible dans le dossier `api` pour gérer les entités su
 - **Status** (`/status`) : `GET` (Statut simple de l'application)
 - **Health Checks** (`/q/health`) : Points de terminaison standards Quarkus (Liveness/Readiness)
 
+### Contrat OpenAPI et types partagés
+
+Les types TypeScript décrivant les payloads de l'API ne sont **pas écrits à la main** : ils sont
+générés depuis le contrat OpenAPI que Quarkus dérive des annotations JAX-RS.
+
+```
+Resources JAX-RS ──(build Maven)──> api/openapi.json ──(openapi-typescript)───> front/shared/api/schema.d.ts
+                                                     ├─(script maison)────────> front/shared/api/enums.ts
+                                                     └─(script maison)────────> front/shared/api/contract.ts
+```
+
+`schema.d.ts` ne contient que des types bruts. `enums.ts` et `contract.ts` en sont les compléments :
+`enums.ts` fournit les enums runtime sous forme de tableaux (listes déroulantes, `z.enum`), tandis que
+`contract.ts` expose des alias de types lisibles (`BackendBlogPost`, `BackendTalk`, …).
+
+Les fichiers intermédiaires sont **versionnés**, pour deux raisons : le job CI `front` reste
+indépendant du job `api` (pas de build Maven ni d'échange d'artefact), et toute évolution du
+contrat apparaît noir sur blanc dans le diff de la PR.
+
+Après toute modification d'une ressource REST ou d'un modèle côté `api`, régénérer :
+
+```bash
+cd api && ./mvnw package -DskipTests && cp target/openapi/openapi.json openapi.json
+```
+
+```bash
+cd front && npm run generate:api
+```
+
+La CI échoue si l'un de ces fichiers est obsolète. Côté front, les types se consomment via les
+alias lisibles exportés par `shared/api` (`BackendBlogPost`, `BackendTalk`, `BackendConference`, …)
+plutôt que par `components["schemas"][…]`.
+
+La spec reste également servie à chaud sur `/q/openapi` (et l'UI Swagger sur `/q/swagger-ui` en dev).
+
 ## Configuration
 
 Toute la configuration passe par un fichier `.env` **à la racine du projet**, lu automatiquement par Docker Compose (et jamais versionné) :

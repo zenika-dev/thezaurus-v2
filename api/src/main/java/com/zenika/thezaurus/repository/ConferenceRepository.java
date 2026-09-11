@@ -4,17 +4,22 @@ import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
+import com.google.cloud.firestore.WriteBatch;
 import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.Conference;
+import com.zenika.thezaurus.model.ConferencePeriod;
+import com.zenika.thezaurus.model.DatePrecision;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ConferenceRepository {
@@ -23,10 +28,16 @@ public class ConferenceRepository {
     Firestore firestore;
 
     @Inject
+    Logger logger;
+
+    @Inject
     @ConfigProperty(name = "thezaurus.firestore.collection.prefix")
     Optional<String> collectionPrefix;
 
     private static final String BASE_COLLECTION_NAME = "conferences";
+
+    /** Limite Firestore : un WriteBatch accepte au plus 500 opérations. */
+    private static final int BATCH_SIZE = 500;
 
     private String getCollectionName() {
         if (collectionPrefix == null
@@ -41,19 +52,37 @@ public class ConferenceRepository {
         ApiFuture<QuerySnapshot> query =
                 firestore.collection(getCollectionName()).get();
         QuerySnapshot querySnapshot = query.get();
-        return querySnapshot.getDocuments().stream()
-                .map(doc -> doc.toObject(Conference.class))
-                .collect(Collectors.toList());
+        List<Conference> conferences = new ArrayList<>();
+        for (QueryDocumentSnapshot doc : querySnapshot.getDocuments()) {
+            Conference conference = toConferenceOrNull(doc);
+            if (conference != null) {
+                conferences.add(conference);
+            }
+        }
+        return conferences;
     }
 
     public Conference findById(String id) throws ExecutionException, InterruptedException {
         DocumentReference docRef = firestore.collection(getCollectionName()).document(id);
         ApiFuture<DocumentSnapshot> future = docRef.get();
         DocumentSnapshot document = future.get();
-        if (document.exists()) {
-            return document.toObject(Conference.class);
+        if (!document.exists()) {
+            return null;
         }
-        return null;
+        return toConferenceOrNull(document);
+    }
+
+    /**
+     * Tente de désérialiser le document en {@link Conference}. Si le document est corrompu ou
+     * comporte un format de date inattendu, il est ignoré pour ne pas faire échouer la liste.
+     */
+    private Conference toConferenceOrNull(DocumentSnapshot doc) {
+        try {
+            return doc.toObject(Conference.class);
+        } catch (RuntimeException e) {
+            logger.errorv(e, "Conférence {0} illisible, document ignoré", doc.getId());
+            return null;
+        }
     }
 
     public Conference create(Conference conference) throws ExecutionException, InterruptedException {
@@ -78,5 +107,48 @@ public class ConferenceRepository {
         ApiFuture<WriteResult> writeResult =
                 firestore.collection(getCollectionName()).document(id).delete();
         writeResult.get();
+    }
+
+    /**
+     * Normalise les dates stockées sous forme de chaîne de caractères vers le format structuré
+     * {@link ConferencePeriod}. Opération idempotente : les documents portant déjà une structure
+     * {@code Map} sont ignorés.
+     *
+     * <p>Une chaîne non reconnue est convertie en période vide : {@code Conference.date} étant typé
+     * {@link ConferencePeriod}, une valeur textuelle non convertible ferait échouer la désérialisation
+     * du document lors des lectures.
+     *
+     * <p>Les écritures sont groupées par {@link WriteBatch} de {@link #BATCH_SIZE}.
+     *
+     * @return le nombre de documents mis à jour
+     */
+    public int migrateLegacyDates() throws ExecutionException, InterruptedException {
+        QuerySnapshot snapshot = firestore.collection(getCollectionName()).get().get();
+        int migrated = 0;
+        WriteBatch batch = firestore.batch();
+        int pending = 0;
+        for (QueryDocumentSnapshot doc : snapshot.getDocuments()) {
+            if (!(doc.get("date") instanceof String legacy)) {
+                continue;
+            }
+            ConferencePeriod period = ConferencePeriod.fromLegacyString(legacy);
+            if (period == null) {
+                logger.warnv(
+                        "Conférence {0} : date « {1} » non reconnue, réécrite en période vide — à corriger manuellement",
+                        doc.getId(), legacy);
+                period = new ConferencePeriod("", "", DatePrecision.DAY);
+            }
+            batch.update(doc.getReference(), "date", period.toFirestoreMap());
+            migrated++;
+            if (++pending == BATCH_SIZE) {
+                batch.commit().get();
+                batch = firestore.batch();
+                pending = 0;
+            }
+        }
+        if (pending > 0) {
+            batch.commit().get();
+        }
+        return migrated;
     }
 }

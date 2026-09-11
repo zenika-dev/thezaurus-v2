@@ -1,7 +1,6 @@
 package com.zenika.thezaurus.migration;
 
-import com.zenika.thezaurus.repository.TalkRepository;
-import com.zenika.thezaurus.repository.UserRepository;
+import com.zenika.thezaurus.repository.ConferenceRepository;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -24,10 +23,7 @@ public class LegacyDataMigration {
     Logger logger;
 
     @Inject
-    TalkRepository talkRepository;
-
-    @Inject
-    UserRepository userRepository;
+    ConferenceRepository conferenceRepository;
 
     /**
      * Désactivé en profil test : les tests n'ont pas de Firestore (tout est mocké) et
@@ -40,19 +36,11 @@ public class LegacyDataMigration {
         if (!enabled) {
             return;
         }
-        int migratedTalks = talkRepository.migrateLegacySpeakers();
-        if (migratedTalks > 0) {
-            logger.infov("Migration speakers legacy : {0} talk(s) réécrit(s) au format User", migratedTalks);
-        }
-        int migratedUsers = userRepository.migrateLegacyRoles();
-        if (migratedUsers > 0) {
-            logger.infov("Migration rôles legacy : {0} utilisateur(s) réécrit(s) au format roles[]", migratedUsers);
-        }
-        int migratedEmails = userRepository.migrateLegacyEmailCasing();
-        if (migratedEmails > 0) {
+        int migratedConferenceDates = conferenceRepository.migrateLegacyDates();
+        if (migratedConferenceDates > 0) {
             logger.infov(
-                    "Migration casse des emails : {0} document(s) utilisateur re-keyé(s) en minuscules",
-                    migratedEmails);
+                    "Migration dates de conférences : {0} conférence(s) réécrite(s) au format ConferencePeriod",
+                    migratedConferenceDates);
         }
     }
 }

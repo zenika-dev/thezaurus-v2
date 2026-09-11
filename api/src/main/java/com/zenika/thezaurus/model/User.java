@@ -1,6 +1,7 @@
 package com.zenika.thezaurus.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import lombok.Builder;
 
@@ -24,7 +25,7 @@ import lombok.Builder;
  */
 @Builder
 public record User(
-        String name,
+        @NotBlank String name,
         String email,
         String slackUserId,
         @JsonIgnore List<Role> roles,

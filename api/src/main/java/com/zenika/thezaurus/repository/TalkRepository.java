@@ -10,19 +10,22 @@ import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.Talk;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class TalkRepository {
 
     @Inject
     Firestore firestore;
+
+    @Inject
+    Logger logger;
 
     @Inject
     @ConfigProperty(name = "thezaurus.firestore.collection.prefix")
@@ -43,19 +46,37 @@ public class TalkRepository {
         ApiFuture<QuerySnapshot> query =
                 firestore.collection(getCollectionName()).get();
         QuerySnapshot querySnapshot = query.get();
-        return querySnapshot.getDocuments().stream()
-                .map(doc -> doc.toObject(Talk.class))
-                .collect(Collectors.toList());
+        List<Talk> talks = new ArrayList<>();
+        for (QueryDocumentSnapshot doc : querySnapshot.getDocuments()) {
+            Talk talk = toTalkOrNull(doc);
+            if (talk != null) {
+                talks.add(talk);
+            }
+        }
+        return talks;
     }
 
     public Talk findById(String id) throws ExecutionException, InterruptedException {
         DocumentReference docRef = firestore.collection(getCollectionName()).document(id);
         ApiFuture<DocumentSnapshot> future = docRef.get();
         DocumentSnapshot document = future.get();
-        if (document.exists()) {
-            return document.toObject(Talk.class);
+        if (!document.exists()) {
+            return null;
         }
-        return null;
+        return toTalkOrNull(document);
+    }
+
+    /**
+     * Tente de désérialiser le document en {@link Talk}. Si le document est corrompu ou
+     * comporte des données imbriquées invalides, il est ignoré pour éviter de bloquer la liste.
+     */
+    private Talk toTalkOrNull(DocumentSnapshot doc) {
+        try {
+            return doc.toObject(Talk.class);
+        } catch (RuntimeException e) {
+            logger.errorv(e, "Talk {0} illisible, document ignoré", doc.getId());
+            return null;
+        }
     }
 
     public Talk create(Talk talk) throws ExecutionException, InterruptedException {
@@ -74,33 +95,6 @@ public class TalkRepository {
         ApiFuture<WriteResult> result = docRef.set(talk);
         result.get();
         return talk;
-    }
-
-    /**
-     * Réécrit au format courant les talks dont les speakers sont encore des chaînes (format
-     * antérieur à la structuration en User). Travaille exclusivement sur les données brutes du
-     * document — sans passer par le mapping {@link Talk}, qui ne sait plus lire l'ancien format —
-     * et ne touche qu'au champ {@code speakers}. Idempotent : un document déjà migré n'est ni
-     * réécrit ni compté, une seconde exécution retourne donc 0.
-     */
-    public int migrateLegacySpeakers() throws ExecutionException, InterruptedException {
-        QuerySnapshot snapshot = firestore.collection(getCollectionName()).get().get();
-        int migrated = 0;
-        for (QueryDocumentSnapshot doc : snapshot.getDocuments()) {
-            Object rawSpeakers = doc.get("speakers");
-            boolean legacy =
-                    rawSpeakers instanceof List<?> elements && elements.stream().anyMatch(e -> e instanceof String);
-            if (!legacy) {
-                continue;
-            }
-            List<Object> converted = ((List<?>) rawSpeakers)
-                    .stream()
-                            .map(e -> e instanceof String name ? Map.of("name", name) : e)
-                            .collect(Collectors.toList());
-            doc.getReference().update("speakers", converted).get();
-            migrated++;
-        }
-        return migrated;
     }
 
     public void delete(String id) throws ExecutionException, InterruptedException {

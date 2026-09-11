@@ -1,15 +1,28 @@
 package com.zenika.thezaurus.model;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public class BlogPost {
     private String id;
+
+    @NotBlank
     private String title;
+
+    @NotEmpty
     private List<String> writers;
+
     private String creationDate;
     private String publicationDate;
     private String link;
+    private String googleDocDraftLink;
+
+    @NotNull
     private BlogPostStatus status;
+
+    @NotEmpty
     private List<String> tags;
 
     public BlogPost() {}
@@ -66,6 +79,15 @@ public class BlogPost {
 
     public void setLink(String link) {
         this.link = link;
+    }
+
+    /** Lien vers le brouillon Google Doc de l'article avant publication. */
+    public String getGoogleDocDraftLink() {
+        return googleDocDraftLink;
+    }
+
+    public void setGoogleDocDraftLink(String googleDocDraftLink) {
+        this.googleDocDraftLink = googleDocDraftLink;
     }
 
     public BlogPostStatus getStatus() {

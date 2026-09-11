@@ -1,3 +1,5 @@
 package com.zenika.thezaurus.model;
 
-public record MonthlyActivity(MonthLabel month, int internal, int external) {}
+import jakarta.validation.constraints.NotNull;
+
+public record MonthlyActivity(@NotNull MonthLabel month, int internal, int external) {}

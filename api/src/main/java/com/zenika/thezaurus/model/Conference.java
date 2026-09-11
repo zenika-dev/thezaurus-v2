@@ -1,9 +1,15 @@
 package com.zenika.thezaurus.model;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class Conference {
     private String id;
+
+    @NotBlank
     private String name;
-    private String date;
+
+    private ConferencePeriod date;
+
     private String cfpLink;
     private Location location;
     private String cfpStatus;
@@ -14,7 +20,7 @@ public class Conference {
 
     public Conference() {}
 
-    public Conference(String id, String name, String date) {
+    public Conference(String id, String name, ConferencePeriod date) {
         this.id = id;
         this.name = name;
         this.date = date;
@@ -36,11 +42,11 @@ public class Conference {
         this.name = name;
     }
 
-    public String getDate() {
+    public ConferencePeriod getDate() {
         return date;
     }
 
-    public void setDate(String date) {
+    public void setDate(ConferencePeriod date) {
         this.date = date;
     }
 
