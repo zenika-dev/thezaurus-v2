@@ -1031,7 +1031,8 @@
             "type" : "array",
             "items" : {
               "type" : "string"
-            }
+            },
+            "minItems" : 1
           },
           "creationDate" : {
             "type" : "string"
@@ -1052,10 +1053,11 @@
             "type" : "array",
             "items" : {
               "type" : "string"
-            }
+            },
+            "minItems" : 1
           }
         },
-        "required" : [ "title", "status" ]
+        "required" : [ "title", "writers", "status", "tags" ]
       },
       "BlogPostStatus" : {
         "type" : "string",
