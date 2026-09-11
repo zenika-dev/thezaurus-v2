@@ -12,6 +12,7 @@ import { Eye, Funnel } from "lucide-react";
 import { TalkStatus } from "@/shared/api";
 import type { TalkData } from "@/entities/talk";
 import { agencyLabels, talkStatusConfig } from "@/entities/talk";
+import { SpeakerChip } from "@/entities/user";
 import dynamic from "next/dynamic";
 import { useTalks } from "@/features/talks/model";
 import { StatusTag, VisibilityTag } from "./TalkTags";
@@ -26,7 +27,7 @@ export function TalkTable() {
   const [statusFilter, setStatusFilter] = useState<"All" | TalkStatus>("All");
   const { talks, updateTalk, deleteTalk } = useTalks();
 
-  const selectedTalk = talks.find((t) => t.id === selectedTalkId) ?? null;
+  const selectedTalk = talks.find((talkItem) => talkItem.id === selectedTalkId) ?? null;
 
   const handleUpdate = async (updated: TalkData) => {
     try { await updateTalk(updated); }
@@ -130,7 +131,23 @@ export function TalkTable() {
                       {talk.title}
                     </span>
                   </TableCell>
-                  <TableCell>{talk.speakers[0]?.name ?? "—"}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {talk.speakers && talk.speakers.length > 0 ? (
+                        talk.speakers.map((speaker, index) => (
+                          <SpeakerChip
+                            key={index}
+                            name={speaker.name}
+                            email={speaker.email}
+                            size="small"
+                            className="text-xs h-6"
+                          />
+                        ))
+                      ) : (
+                        <span className="text-text-muted">—</span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{agencyLabels[talk.office] || "—"}</TableCell>
                   <TableCell>{talk.conference?.name || "—"}</TableCell>
                   <TableCell><StatusTag status={talk.status} /></TableCell>

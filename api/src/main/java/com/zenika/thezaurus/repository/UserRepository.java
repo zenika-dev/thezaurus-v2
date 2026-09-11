@@ -7,6 +7,7 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.User;
+import com.zenika.thezaurus.util.SearchSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.HashMap;
@@ -28,6 +29,37 @@ public class UserRepository {
         return future.get().getDocuments().stream()
                 .map(document -> document.toObject(User.class))
                 .toList();
+    }
+
+    public List<User> search(String query, int limit) throws ExecutionException, InterruptedException {
+        int boundedLimit = Math.clamp(limit, 1, 100);
+        String normalizedQuery = SearchSanitizer.normalizeForSearch(query);
+        if (normalizedQuery.isBlank()) {
+            ApiFuture<QuerySnapshot> future =
+                    firestore.collection(COLLECTION_NAME).limit(boundedLimit).get();
+            return future.get().getDocuments().stream()
+                    .map(document -> document.toObject(User.class))
+                    .toList();
+        }
+
+        ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME).get();
+        return future.get().getDocuments().stream()
+                .map(document -> document.toObject(User.class))
+                .filter(user -> matchesSearch(user, normalizedQuery))
+                .limit(boundedLimit)
+                .toList();
+    }
+
+    static boolean matchesSearch(User user, String normalizedQuery) {
+        if (user == null) {
+            return false;
+        }
+        return SearchSanitizer.containsNormalized(user.name(), normalizedQuery)
+                || SearchSanitizer.containsNormalized(user.email(), normalizedQuery);
+    }
+
+    public List<User> search(String query) throws ExecutionException, InterruptedException {
+        return search(query, 20);
     }
 
     public User findByEmail(String email) throws ExecutionException, InterruptedException {
