@@ -26,7 +26,12 @@ services:
     depends_on:
       firestore:
         condition: service_healthy
-        required: false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/q/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   front:
     build:
@@ -35,6 +40,8 @@ services:
     container_name: thezaurus-front
     ports:
       - "3000:3000"
+    volumes:
+      - ./api/openapi.json:/api/openapi.json:ro
     environment:
       - API_URL=http://api:8080
       - VITE_MOCK_AUTH=false
@@ -43,7 +50,8 @@ services:
       - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     x-google-cloudrun: null
     develop:
       watch:
