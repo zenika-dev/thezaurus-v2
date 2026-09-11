@@ -1,6 +1,7 @@
 package com.zenika.thezaurus.model;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
@@ -10,7 +11,9 @@ public class BlogPost {
     @NotBlank
     private String title;
 
+    @NotEmpty
     private List<String> writers;
+
     private String creationDate;
     private String publicationDate;
     private String link;
@@ -19,6 +22,7 @@ public class BlogPost {
     @NotNull
     private BlogPostStatus status;
 
+    @NotEmpty
     private List<String> tags;
 
     public BlogPost() {}
