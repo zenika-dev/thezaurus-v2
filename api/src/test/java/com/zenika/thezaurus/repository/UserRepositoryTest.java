@@ -37,6 +37,13 @@ public class UserRepositoryTest {
 
         Mockito.when(firestore.collection("users")).thenReturn(collection);
         Mockito.when(collection.limit(Mockito.anyInt())).thenReturn(query);
+        Mockito.when(collection.whereGreaterThanOrEqualTo(Mockito.anyString(), Mockito.any()))
+                .thenReturn(query);
+        Mockito.when(query.whereGreaterThanOrEqualTo(Mockito.anyString(), Mockito.any()))
+                .thenReturn(query);
+        Mockito.when(query.whereLessThanOrEqualTo(Mockito.anyString(), Mockito.any()))
+                .thenReturn(query);
+        Mockito.when(query.limit(Mockito.anyInt())).thenReturn(query);
         Mockito.when(query.get()).thenReturn(ApiFutures.immediateFuture(snapshot));
         Mockito.when(collection.get()).thenReturn(ApiFutures.immediateFuture(snapshot));
 
@@ -90,6 +97,94 @@ public class UserRepositoryTest {
         Mockito.when(snapshot.getDocuments()).thenReturn(List.of());
 
         assertTrue(repository.findAll(500).isEmpty());
+    }
+
+    @Test
+    public void testSearchCaseInsensitiveAndSubstringInName() throws Exception {
+        User amine = User.builder()
+                .name("Mohamed Amine")
+                .email("mohamed.amine@zenika.com")
+                .roles(List.of(Role.CONSULTANT))
+                .build();
+        User john = User.builder()
+                .name("John Doe")
+                .email("john@zenika.com")
+                .roles(List.of(Role.CONSULTANT))
+                .build();
+
+        QueryDocumentSnapshot amineDoc = documentOf(amine);
+        QueryDocumentSnapshot johnDoc = documentOf(john);
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(amineDoc, johnDoc));
+
+        List<User> results = repository.search("amine", 20);
+        assertEquals(1, results.size());
+        assertEquals("Mohamed Amine", results.get(0).name());
+
+        List<User> upperResults = repository.search("AMINE", 20);
+        assertEquals(1, upperResults.size());
+        assertEquals("Mohamed Amine", upperResults.get(0).name());
+    }
+
+    @Test
+    public void testSearchSubstringInEmail() throws Exception {
+        User amine = User.builder()
+                .name("Mohamed Bouzid")
+                .email("mohamed.amine.bouzid@zenika.com")
+                .roles(List.of(Role.CONSULTANT))
+                .build();
+
+        QueryDocumentSnapshot amineDoc = documentOf(amine);
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(amineDoc));
+
+        List<User> results = repository.search("amine.bouzid", 20);
+        assertEquals(1, results.size());
+        assertEquals("mohamed.amine.bouzid@zenika.com", results.get(0).email());
+    }
+
+    @Test
+    public void testSearchAccentInsensitive() throws Exception {
+        User elodie = User.builder()
+                .name("Élodie François")
+                .email("elodie.francois@zenika.com")
+                .roles(List.of(Role.CONSULTANT))
+                .build();
+
+        QueryDocumentSnapshot elodieDoc = documentOf(elodie);
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(elodieDoc));
+
+        List<User> results = repository.search("elodie", 20);
+        assertEquals(1, results.size());
+        assertEquals("Élodie François", results.get(0).name());
+
+        List<User> francoisResults = repository.search("francois", 20);
+        assertEquals(1, francoisResults.size());
+        assertEquals("Élodie François", francoisResults.get(0).name());
+    }
+
+    @Test
+    public void testSearchWithoutQueryAppliesLimitOnly() throws Exception {
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of());
+
+        repository.search(null, 20);
+
+        Mockito.verify(collection).limit(20);
+    }
+
+    @Test
+    public void testSearchSanitizesControlCharactersAndTruncatesLongInput() throws Exception {
+        User alice = User.builder()
+                .name("Alice Martin")
+                .email("alice.martin@zenika.com")
+                .roles(List.of(Role.CONSULTANT))
+                .build();
+        QueryDocumentSnapshot aliceDoc = documentOf(alice);
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(aliceDoc));
+
+        String malicious = "Alice\u0000\r\n\t";
+        List<User> results = repository.search(malicious, 20);
+
+        assertEquals(1, results.size());
+        assertEquals("Alice Martin", results.get(0).name());
     }
 
     // --- Écritures ciblées ---------------------------------------------------------------------

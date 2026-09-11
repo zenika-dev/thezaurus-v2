@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { DatePickerProvider } from "@/shared/ui";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,10 +29,12 @@ import {
   visibilityLabels,
   formatLabels,
   languageLabels,
-  withEditedSpeakers,
+  SpeakerAutocomplete,
+  talkFormSchema,
+  type TalkFormData,
+  type SpeakerFormData,
+  reviewTalkAction,
 } from "@/entities/talk";
-import { talkFormSchema, type TalkFormData } from "@/entities/talk";
-import { reviewTalkAction } from "@/entities/talk";
 import { TalkAssistantDialog } from "@/features/talks/ui/TalkAssistantDialog";
 
 dayjs.locale("fr");
@@ -45,12 +48,17 @@ interface CreateTalkDialogProps {
 }
 
 export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogProps) {
+  const { data: session } = useSession();
   const [date, setDate] = useState<Dayjs | null>(null);
 
   const [assistantDialogOpen, setAssistantDialogOpen] = useState(false);
   const [assistantLoading, setAssistantLoading] = useState(false);
   const [assistantResult, setAssistantResult] = useState<BackendTalkReviewResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const defaultSpeakers: SpeakerFormData[] = session?.user?.name
+    ? [{ name: session.user.name, email: session.user.email ?? "" }]
+    : [];
 
   const {
     register,
@@ -64,23 +72,37 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
   } = useForm<TalkFormData>({
     resolver: zodResolver(talkFormSchema),
     defaultValues: {
-      title: "", speaker: "", cospeaker: "", email: "",
-      office: "", description: "", format: "", visibility: "PRIVATE",
-      language: "francais", conference: "", notes: "",
+      title: "",
+      speakers: defaultSpeakers,
+      office: "",
+      description: "",
+      format: "",
+      visibility: "PRIVATE",
+      language: "francais",
+      conference: "",
+      notes: "",
     },
   });
 
-  /**
-   * Le formulaire est plat, le modèle ne l'est pas : les deux intervenants nommés deviennent la
-   * liste `speakers` du contrat, et la conférence saisie par son nom un objet `Conference`.
-   */
+  useEffect(() => {
+    if (open && session?.user?.name) {
+      const current = getValues("speakers");
+      if (!current || current.length === 0) {
+        setValue("speakers", [{ name: session.user.name, email: session.user.email ?? "" }]);
+      }
+    }
+  }, [open, session?.user?.name, session?.user?.email, setValue, getValues]);
+
   const buildTalkData = (
-    { speaker, cospeaker, email, conference, ...data }: TalkFormData,
+    { speakers, conference, ...data }: TalkFormData,
     status: TalkStatus,
   ): TalkData => ({
     id: crypto.randomUUID(),
     ...data,
-    speakers: withEditedSpeakers([], speaker, cospeaker, email),
+    speakers: speakers.map((speaker) => ({
+      name: speaker.name,
+      email: speaker.email?.trim() || undefined,
+    })),
     conference: conference.trim() ? { name: conference.trim() } : null,
     date: date ? date.format("YYYY-MM-DD") : "",
     status,
@@ -88,10 +110,27 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
     replay: "",
   });
 
-  const handleCancel = () => {
-    reset();
+  const resetFormState = () => {
+    reset({
+      title: "",
+      speakers: session?.user?.name
+        ? [{ name: session.user.name, email: session.user.email ?? "" }]
+        : [],
+      office: "",
+      description: "",
+      format: "",
+      visibility: "PRIVATE",
+      language: "francais",
+      conference: "",
+      notes: "",
+    });
     setDate(null);
     setAssistantResult(null);
+    setError(null);
+  };
+
+  const handleCancel = () => {
+    resetFormState();
     onClose();
   };
 
@@ -99,24 +138,20 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
     const titleValid = await trigger("title");
     if (!titleValid) return;
     onSubmit(buildTalkData(getValues(), "DRAFT"));
-    reset();
-    setDate(null);
-    setAssistantResult(null);
+    resetFormState();
     onClose();
   };
 
   const onCreateTalk = (data: TalkFormData) => {
     onSubmit(buildTalkData(data, "PLANNED"));
-    reset();
-    setDate(null);
-    setAssistantResult(null);
+    resetFormState();
     onClose();
   };
 
   const handleTriggerAssistantReview = async () => {
     const values = getValues();
     setAssistantDialogOpen(true);
-    if(!values.title.trim()){
+    if (!values.title.trim()) {
       setError("Veuillez saisir un titre avant de demander une relecture.");
       return;
     }
@@ -124,19 +159,22 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
     try {
       const res = await reviewTalkAction({
         title: values.title,
-        abstract: values.description
+        abstract: values.description,
       });
       setAssistantResult(res);
-    } catch (err : unknown){
-      const message = err instanceof Error ? err.message : "Erreur de communication avec l'assistant IA.";
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Erreur de communication avec l'assistant IA.";
       setError(message);
     } finally {
       setAssistantLoading(false);
     }
   };
-  // `onApply` vient de TalkAssistantDialog, un widget générique qui ignore le modèle Talk et ne
-  // connaît que "titre" + "abstract" ; on relie ici son vocabulaire à `description`, le champ réel.
-  const handleApplyAssistantSuggestions = (suggestedTitle: string, suggestedDescription: string) => {
+
+  const handleApplyAssistantSuggestions = (
+    suggestedTitle: string,
+    suggestedDescription: string,
+  ) => {
     setValue("title", suggestedTitle, { shouldValidate: true, shouldDirty: true });
     setValue("description", suggestedDescription, { shouldValidate: true, shouldDirty: true });
   };
@@ -196,35 +234,24 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
             helperText={errors.title?.message}
           />
 
-          <Box component="fieldset" sx={{ border: "none", p: 0, m: 0 }}>
-            <Box component="legend" sx={{ display: "none" }}>Intervenant</Box>
             <div className="grid grid-cols-2 gap-4">
-              <TextField
-                {...register("speaker")}
-                id="talk-speaker"
-                label="Speaker"
-                required
-                fullWidth
-                placeholder="Prénom Nom"
-                error={!!errors.speaker}
-                helperText={errors.speaker?.message}
-              />
-              <TextField
-                {...register("cospeaker")}
-                id="talk-cospeaker"
-                label="Co-speaker"
-                fullWidth
-                placeholder="Prénom Nom"
-              />
-              <TextField
-                {...register("email")}
-                id="talk-email"
-                label="Email"
-                fullWidth
-                placeholder="speaker@zenika.com"
-                type="email"
-                error={!!errors.email}
-                helperText={errors.email?.message}
+              <Controller
+                name="speakers"
+                control={control}
+                render={({ field }) => (
+                  <SpeakerAutocomplete
+                    id="talk-speakers"
+                    label="Speaker"
+                    required
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={!!errors.speakers}
+                    helperText={
+                      errors.speakers?.message ||
+                      (errors.speakers as { root?: { message?: string } })?.root?.message
+                    }
+                  />
+                )}
               />
 
               <Controller
@@ -239,8 +266,10 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
                       id="talk-agency"
                       label="Agence"
                     >
-                      {Object.entries(agencyLabels).map(([v, l]) => (
-                        <MenuItem key={v} value={v}>{l}</MenuItem>
+                      {Object.entries(agencyLabels).map(([agencyKey, agencyLabel]) => (
+                        <MenuItem key={agencyKey} value={agencyKey}>
+                          {agencyLabel}
+                        </MenuItem>
                       ))}
                     </Select>
                     {errors.office && (
@@ -250,25 +279,19 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
                 )}
               />
             </div>
-          </Box>
 
-          <div className="flex flex-col gap-1">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-medium text-text-muted">Abstract & Description</span>
-            </div>
-            <TextField
-              {...register("description")}
-              id="talk-abstract"
-              label="Abstract / Description"
-              multiline
-              rows={4}
-              fullWidth
-              required
-              placeholder="Décrivez le contenu de votre talk..."
-              error={!!errors.description}
-              helperText={errors.description?.message}
-            />
-          </div>
+          <TextField
+            {...register("description")}
+            id="talk-abstract"
+            label="Abstract / Description"
+            multiline
+            rows={4}
+            fullWidth
+            required
+            placeholder="Décrivez le contenu de votre talk..."
+            error={!!errors.description}
+            helperText={errors.description?.message}
+          />
 
           <Box component="fieldset" sx={{ border: "none", p: 0, m: 0 }}>
             <Box component="legend" sx={{ display: "none" }}>Paramètres du talk</Box>
@@ -280,8 +303,8 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
                   <FormControl fullWidth required error={!!errors.format}>
                     <InputLabel id="create-format-label">Format</InputLabel>
                     <Select {...field} labelId="create-format-label" id="talk-format" label="Format">
-                      {Object.entries(formatLabels).map(([v, l]) => (
-                        <MenuItem key={v} value={v}>{l}</MenuItem>
+                      {Object.entries(formatLabels).map(([formatKey, formatLabel]) => (
+                        <MenuItem key={formatKey} value={formatKey}>{formatLabel}</MenuItem>
                       ))}
                     </Select>
                     {errors.format && (
@@ -297,8 +320,8 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
                   <FormControl fullWidth required error={!!errors.visibility}>
                     <InputLabel id="create-visibility-label">Visibilité</InputLabel>
                     <Select {...field} labelId="create-visibility-label" id="talk-visibility" label="Visibilité">
-                      {Object.entries(visibilityLabels).map(([v, l]) => (
-                        <MenuItem key={v} value={v}>{l}</MenuItem>
+                      {Object.entries(visibilityLabels).map(([visibilityKey, visibilityLabel]) => (
+                        <MenuItem key={visibilityKey} value={visibilityKey}>{visibilityLabel}</MenuItem>
                       ))}
                     </Select>
                     {errors.visibility && (
@@ -314,8 +337,8 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
                   <FormControl fullWidth>
                     <InputLabel id="create-lang-label">Langue</InputLabel>
                     <Select {...field} labelId="create-lang-label" id="talk-language" label="Langue">
-                      {Object.entries(languageLabels).map(([v, l]) => (
-                        <MenuItem key={v} value={v}>{l}</MenuItem>
+                      {Object.entries(languageLabels).map(([languageKey, languageLabel]) => (
+                        <MenuItem key={languageKey} value={languageKey}>{languageLabel}</MenuItem>
                       ))}
                     </Select>
                   </FormControl>

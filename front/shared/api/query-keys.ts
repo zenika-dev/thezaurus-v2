@@ -19,4 +19,9 @@ export const queryKeys = {
     all: ["profile"] as const,
     me: () => ["profile", "me"] as const,
   },
+  users: {
+    all: ["users"] as const,
+    lists: () => ["users", "list"] as const,
+    search: (query: string) => ["users", "search", query] as const,
+  },
 } as const;
