@@ -39,12 +39,9 @@ jobs:
 
       # `verify` régénère target/openapi/openapi.json depuis les annotations JAX-RS.
       # La copie versionnée (api/openapi.json) doit être strictement identique.
-      - name: Copie du contrat OpenAPI généré
-        run: cp target/openapi/openapi.json openapi.json
-
       - name: Vérification de la synchronisation du contrat OpenAPI
         run: |
-          git diff --exit-code openapi.json \
+          cmp -s target/openapi/openapi.json openapi.json \
             || { echo "::error::api/openapi.json est obsolète. Lancez './mvnw package -DskipTests && cp target/openapi/openapi.json openapi.json' et committez le résultat."; exit 1; }
 
       - name: Upload des rapports de tests en cas d'échec
