@@ -1166,10 +1166,12 @@
             "type" : "string"
           },
           "name" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "type" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "date" : {
             "type" : "string"
@@ -1180,7 +1182,8 @@
           "location" : {
             "$ref" : "#/components/schemas/Location"
           }
-        }
+        },
+        "required" : [ "name", "type" ]
       },
       "EventTypeSummary" : {
         "type" : "object",
@@ -1295,12 +1298,15 @@
       },
       "ProfileView" : {
         "type" : "object",
+        "required" : [ "name", "email", "notificationPreferences" ],
         "properties" : {
           "name" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "email" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "notificationPreferences" : {
             "$ref" : "#/components/schemas/NotificationPreferences"
@@ -1316,6 +1322,7 @@
       },
       "RolesUpdateRequest" : {
         "type" : "object",
+        "required" : [ "roles" ],
         "properties" : {
           "roles" : {
             "type" : "array",
@@ -1343,7 +1350,8 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/User"
-            }
+            },
+            "minItems" : 1
           },
           "office" : {
             "type" : "string",
@@ -1378,7 +1386,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "title", "description", "office", "status", "visibility", "format" ]
+        "required" : [ "title", "description", "speakers", "office", "status", "visibility", "format" ]
       },
       "TalkReviewRequest" : {
         "type" : "object",
@@ -1446,12 +1454,15 @@
       },
       "UserAdminView" : {
         "type" : "object",
+        "required" : [ "name", "email", "roles" ],
         "properties" : {
           "name" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "email" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "\\S"
           },
           "roles" : {
             "type" : "array",
