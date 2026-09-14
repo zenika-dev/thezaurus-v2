@@ -5,6 +5,8 @@ import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.repository.UserRepository;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
@@ -36,7 +38,10 @@ public class UserAdminResource {
     @ConfigProperty(name = "thezaurus.users.max-results", defaultValue = "500")
     int maxResults;
 
-    public record UserAdminView(String name, String email, List<Role> roles) {
+    public record UserAdminView(
+            @NotBlank String name,
+            @NotBlank String email,
+            @NotNull List<Role> roles) {
         static UserAdminView of(User user) {
             return new UserAdminView(user.name(), user.email(), user.roles() == null ? List.of() : user.roles());
         }
@@ -50,6 +55,7 @@ public class UserAdminResource {
     }
 
     public static class RolesUpdateRequest {
+        @NotNull
         public List<String> roles;
     }
 
