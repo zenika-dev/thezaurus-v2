@@ -4,14 +4,13 @@ import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.Talk;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -46,14 +45,10 @@ public class TalkRepository {
         ApiFuture<QuerySnapshot> query =
                 firestore.collection(getCollectionName()).get();
         QuerySnapshot querySnapshot = query.get();
-        List<Talk> talks = new ArrayList<>();
-        for (QueryDocumentSnapshot doc : querySnapshot.getDocuments()) {
-            Talk talk = toTalkOrNull(doc);
-            if (talk != null) {
-                talks.add(talk);
-            }
-        }
-        return talks;
+        return querySnapshot.getDocuments().stream()
+                .map(this::toTalkOrNull)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     public Talk findById(String id) throws ExecutionException, InterruptedException {
