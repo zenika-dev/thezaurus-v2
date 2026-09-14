@@ -6,6 +6,8 @@ import com.zenika.thezaurus.repository.UserRepository;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
@@ -69,7 +71,10 @@ public class ProfileResource {
 
     /** {@code slackLinked} et non le {@code slackUserId} : la page n'a besoin que de la joignabilité. */
     public record ProfileView(
-            String name, String email, NotificationPreferences notificationPreferences, boolean slackLinked) {}
+            @NotBlank String name,
+            @NotBlank String email,
+            @NotNull NotificationPreferences notificationPreferences,
+            boolean slackLinked) {}
 
     public record NotificationPreferences(boolean email, boolean slack) {}
 }

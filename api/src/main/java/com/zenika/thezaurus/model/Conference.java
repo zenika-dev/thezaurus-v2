@@ -9,7 +9,6 @@ public class Conference {
     private String name;
 
     private ConferencePeriod date;
-
     private String cfpLink;
     private Location location;
     private String cfpStatus;

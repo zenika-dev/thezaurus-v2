@@ -1,6 +1,14 @@
 package com.zenika.thezaurus.model;
 
-public record Event(String id, String name, String type, String date, Visibility visibility, Location location) {
+import jakarta.validation.constraints.NotBlank;
+
+public record Event(
+        String id,
+        @NotBlank String name,
+        @NotBlank String type,
+        String date,
+        Visibility visibility,
+        Location location) {
 
     public Event(String id, String name, String type) {
         this(id, name, type, null, null, null);
