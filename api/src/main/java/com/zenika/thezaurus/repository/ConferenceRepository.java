@@ -13,8 +13,8 @@ import com.zenika.thezaurus.model.ConferencePeriod;
 import com.zenika.thezaurus.model.DatePrecision;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -52,14 +52,10 @@ public class ConferenceRepository {
         ApiFuture<QuerySnapshot> query =
                 firestore.collection(getCollectionName()).get();
         QuerySnapshot querySnapshot = query.get();
-        List<Conference> conferences = new ArrayList<>();
-        for (QueryDocumentSnapshot doc : querySnapshot.getDocuments()) {
-            Conference conference = toConferenceOrNull(doc);
-            if (conference != null) {
-                conferences.add(conference);
-            }
-        }
-        return conferences;
+        return querySnapshot.getDocuments().stream()
+                .map(this::toConferenceOrNull)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     public Conference findById(String id) throws ExecutionException, InterruptedException {

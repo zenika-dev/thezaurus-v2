@@ -70,14 +70,14 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
         try {
             User user = userRepository.findByEmail(email);
             if (user == null) {
-                // Création auto avec rôle par défaut 'consultant', nom récupéré depuis le SSO
+                List<Role> initialRoles = mockAuth ? List.of(Role.ADMIN, Role.CONSULTANT) : List.of(Role.CONSULTANT);
                 user = User.builder()
                         .email(email)
                         .name(name)
-                        .roles(List.of(Role.CONSULTANT))
+                        .roles(initialRoles)
                         .build();
                 userRepository.create(user);
-                logger.infof("Utilisateur %s créé automatiquement avec le rôle '%s'", email, Role.CONSULTANT);
+                logger.infof("Utilisateur %s créé automatiquement avec les rôles %s", email, initialRoles);
             } else if (name != null && !name.isBlank() && !name.equals(user.name())) {
                 // Le SSO fait autorité sur le nom. Best-effort : cet augmentor tourne à chaque
                 // requête, un échec d'écriture ne doit pas refuser l'authentification.
