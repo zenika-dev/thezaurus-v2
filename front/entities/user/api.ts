@@ -1,7 +1,9 @@
 import {
   apiFetch,
   type BackendProfileView,
+  type BackendUserAdminView,
   type BackendUserSummary,
+  type Role,
 } from "@/shared/api";
 import type { NotificationPreferences, UserProfile } from "./model";
 
@@ -49,3 +51,27 @@ export const userApi = {
     return await res.json();
   },
 };
+
+export const adminUserApi = {
+  getAdminUsers: async (): Promise<BackendUserAdminView[]> => {
+    const res = await apiFetch("/api/admin/users");
+    if (!res.ok) throw new Error("Failed to fetch admin users");
+    return await res.json();
+  },
+  updateUserRoles: async (
+    email: string,
+    roles: Role[],
+  ): Promise<BackendUserAdminView> => {
+    const res = await apiFetch(
+      `/api/admin/users/${encodeURIComponent(email)}/roles`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roles }),
+      },
+    );
+    if (!res.ok) throw new Error("Failed to update user roles");
+    return await res.json();
+  },
+};
+
