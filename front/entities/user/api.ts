@@ -1,14 +1,7 @@
-import { apiFetch } from "@/shared/api";
+import { apiFetch, type BackendProfileView } from "@/shared/api";
 import type { NotificationPreferences, UserProfile } from "./model";
 
-interface BackendProfile {
-  name?: string | null;
-  email?: string | null;
-  notificationPreferences?: { email?: boolean; slack?: boolean } | null;
-  slackLinked?: boolean;
-}
-
-function mapBackendToFrontend(profile: BackendProfile): UserProfile {
+function mapBackendToFrontend(profile: BackendProfileView): UserProfile {
   return {
     name: profile.name ?? "",
     email: profile.email ?? "",

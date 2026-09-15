@@ -1,4 +1,8 @@
-export type { TalkData, TalkStatus, TalkReviewRequest, TalkReviewResponse } from "./model";
+export type {
+  TalkData,
+  TalkReviewRequest,
+  ApiErrorResponse,
+} from "./model";
 export { talkFormSchema } from "./schema";
 export type { TalkFormData } from "./schema";
 export {
@@ -7,7 +11,7 @@ export {
   formatLabels,
   languageLabels,
   talkStatusConfig,
+  withEditedSpeakers,
 } from "./model";
-export { talkApi, mapBackendToFrontend, mapFrontendToBackend } from "./api";
+export { talkApi, mapBackendToFrontend } from "./api";
 export { createTalkAction, updateTalkAction, deleteTalkAction, reviewTalkAction } from "./actions";
-

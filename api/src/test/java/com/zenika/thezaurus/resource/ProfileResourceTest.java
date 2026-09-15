@@ -59,7 +59,6 @@ public class ProfileResourceTest {
     public void testGetProfileNeverExposesSlackUserIdNorRoles() throws Exception {
         Mockito.when(userRepository.findByEmail("jane@zenika.com")).thenReturn(jane("U123", true, true));
 
-        // Seul le booléen de rattachement est publié.
         given().when()
                 .get("/api/me/profile")
                 .then()
@@ -83,7 +82,7 @@ public class ProfileResourceTest {
             user = "jane@zenika.com",
             roles = {Role.Names.CONSULTANT})
     public void testPreferencesDefaultToDisabledWhenAbsentFromDocument() throws Exception {
-        // Un document antérieur à la fonctionnalité n'a pas les champs.
+        // Valeurs par défaut lorsque les préférences ne sont pas renseignées dans le document.
         User legacy = User.builder()
                 .name("Jane Doe")
                 .email("jane@zenika.com")

@@ -6,14 +6,16 @@ import com.zenika.thezaurus.repository.UserRepository;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.util.concurrent.ExecutionException;
+import org.jboss.resteasy.reactive.RestResponse;
 
 /**
  * Profil de la personne connectée : identité en lecture seule, préférences de notification
@@ -31,13 +33,13 @@ public class ProfileResource {
 
     @GET
     @RolesAllowed({Role.Names.ADMIN, Role.Names.DT, Role.Names.CONSULTANT})
-    public Response getProfile() throws ExecutionException, InterruptedException {
+    public RestResponse<ProfileView> getProfile() throws ExecutionException, InterruptedException {
         String email = identity.getPrincipal().getName();
         User user = userRepository.findByEmail(email);
         if (user == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
-        return Response.ok(toProfile(user)).build();
+        return RestResponse.ok(toProfile(user));
     }
 
     /** Remplace les deux canaux d'un coup : le front renvoie l'objet complet à chaque bascule. */
@@ -45,18 +47,18 @@ public class ProfileResource {
     @Path("/notification-preferences")
     @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({Role.Names.ADMIN, Role.Names.DT, Role.Names.CONSULTANT})
-    public Response updateNotificationPreferences(NotificationPreferences preferences)
+    public RestResponse<NotificationPreferences> updateNotificationPreferences(NotificationPreferences preferences)
             throws ExecutionException, InterruptedException {
         if (preferences == null) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
+            return RestResponse.status(RestResponse.Status.BAD_REQUEST);
         }
         String email = identity.getPrincipal().getName();
         // Garde consultative : rend un 404 lisible plutôt que le 500 de l'update Firestore.
         if (userRepository.findByEmail(email) == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
         userRepository.updateNotificationPreferences(email, preferences.email(), preferences.slack());
-        return Response.ok(preferences).build();
+        return RestResponse.ok(preferences);
     }
 
     private static ProfileView toProfile(User user) {
@@ -69,7 +71,10 @@ public class ProfileResource {
 
     /** {@code slackLinked} et non le {@code slackUserId} : la page n'a besoin que de la joignabilité. */
     public record ProfileView(
-            String name, String email, NotificationPreferences notificationPreferences, boolean slackLinked) {}
+            @NotBlank String name,
+            @NotBlank String email,
+            @NotNull NotificationPreferences notificationPreferences,
+            boolean slackLinked) {}
 
     public record NotificationPreferences(boolean email, boolean slack) {}
 }

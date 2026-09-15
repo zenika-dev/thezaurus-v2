@@ -14,9 +14,9 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import org.jboss.resteasy.reactive.RestResponse;
 
 @Path("/blog-posts")
 @Produces(MediaType.APPLICATION_JSON)
@@ -34,39 +34,39 @@ public class BlogPostResource {
 
     @GET
     @Path("/{id}")
-    public Response get(@PathParam("id") String id) throws ExecutionException, InterruptedException {
+    public RestResponse<BlogPost> get(@PathParam("id") String id) throws ExecutionException, InterruptedException {
         BlogPost blogPost = service.findById(id);
         if (blogPost == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
-        return Response.ok(blogPost).build();
+        return RestResponse.ok(blogPost);
     }
 
     @POST
-    public Response create(BlogPost blogPost) throws ExecutionException, InterruptedException {
+    public RestResponse<BlogPost> create(BlogPost blogPost) throws ExecutionException, InterruptedException {
         BlogPost created = service.create(blogPost);
-        return Response.status(Response.Status.CREATED).entity(created).build();
+        return RestResponse.status(RestResponse.Status.CREATED, created);
     }
 
     @PUT
     @Path("/{id}")
-    public Response update(@PathParam("id") String id, BlogPost blogPost)
+    public RestResponse<BlogPost> update(@PathParam("id") String id, BlogPost blogPost)
             throws ExecutionException, InterruptedException {
         BlogPost updated = service.update(id, blogPost);
         if (updated == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
-        return Response.ok(updated).build();
+        return RestResponse.ok(updated);
     }
 
     @DELETE
     @Path("/{id}")
     @RolesAllowed(Role.Names.ADMIN)
-    public Response delete(@PathParam("id") String id) throws ExecutionException, InterruptedException {
+    public RestResponse<Void> delete(@PathParam("id") String id) throws ExecutionException, InterruptedException {
         boolean deleted = service.delete(id);
         if (!deleted) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return RestResponse.notFound();
         }
-        return Response.noContent().build();
+        return RestResponse.noContent();
     }
 }

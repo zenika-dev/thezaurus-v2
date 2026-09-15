@@ -19,7 +19,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Input from "@mui/material/Input";
 import TextareaAutosize from "@mui/material/TextareaAutosize";
 
-import { TalkReviewResponse } from "@/entities/talk";
+import type { BackendTalkReviewResponse } from "@/shared/api";
 
 interface TalkAssistantDialogProps {
   open: boolean;
@@ -28,7 +28,7 @@ interface TalkAssistantDialogProps {
   abstract: string;
   loading: boolean;
   error: string | null;
-  assistantReviewResult: TalkReviewResponse | null;
+  assistantReviewResult: BackendTalkReviewResponse | null;
   onApply: (title: string, abstract: string) => void;
 }
 
