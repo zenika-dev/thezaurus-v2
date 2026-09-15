@@ -24,4 +24,8 @@ export const queryKeys = {
     lists: () => ["users", "list"] as const,
     search: (query: string) => ["users", "search", query] as const,
   },
+  admin: {
+    all: ["admin"] as const,
+    users: () => ["admin", "users"] as const,
+  },
 } as const;

@@ -63,6 +63,9 @@ public class UserRepository {
     }
 
     public User findByEmail(String email) throws ExecutionException, InterruptedException {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
         DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(email);
         ApiFuture<DocumentSnapshot> future = docRef.get();
         DocumentSnapshot document = future.get();
