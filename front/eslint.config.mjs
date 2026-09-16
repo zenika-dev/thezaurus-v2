@@ -13,6 +13,20 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    files: ["app/**/page.tsx", "app/**/layout.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "ImportSpecifier[imported.name=/^use[A-Z]/], ImportDefaultSpecifier[local.name=/^use[A-Z]/]",
+          message:
+            "Il est interdit d'importer un hook React ('use...') dans un Server Component.",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

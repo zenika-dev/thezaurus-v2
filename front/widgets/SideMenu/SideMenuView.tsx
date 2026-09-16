@@ -2,9 +2,13 @@
 
 import { Drawer, styled } from "@mui/material";
 import Divider from "@mui/material/Divider";
+import List from "@mui/material/List";
 import { SideMenuHeader } from "./SideMenuHeader";
 import { SideMenuNavList } from "./SideMenuNavList";
 import { type NavItemConfig } from "./SideMenuNavItem";
+import { SideMenuProfileLink } from "./SideMenuProfileLink";
+import { SideMenuAdminLink } from "./SideMenuAdminLink";
+import { SideMenuThemeToggle } from "./SideMenuThemeToggle";
 
 const DRAWER_WIDTH = 255;
 const COLLAPSED_WIDTH = 88;
@@ -35,9 +39,6 @@ const StyledDrawer = styled(Drawer, { shouldForwardProp: (p) => p !== "open" })(
   }),
 );
 
-import { SideMenuProfileLink } from "./SideMenuProfileLink";
-import { SideMenuThemeToggle } from "./SideMenuThemeToggle";
-
 export interface SideMenuViewProps {
   open: boolean;
   onToggle: () => void;
@@ -57,7 +58,10 @@ export function SideMenuView({ open, onToggle, navItems }: SideMenuViewProps) {
       <SideMenuHeader open={open} onToggle={onToggle} />
       <SideMenuNavList open={open} items={navItems} />
       <Divider sx={{ mx: 2, borderColor: "var(--color-border)" }} />
-      <SideMenuProfileLink open={open} />
+      <List sx={{ py: 0.5 }}>
+        <SideMenuProfileLink open={open} />
+        <SideMenuAdminLink open={open} />
+      </List>
       <SideMenuThemeToggle open={open} />
     </StyledDrawer>
   );
