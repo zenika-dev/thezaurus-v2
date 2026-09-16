@@ -6,6 +6,7 @@ export const conferenceFormSchema = z.object({
   name:               z.string().min(1, "Le titre est requis"),
   location:           z.string().min(1, "La localisation est requise"),
   cfpLink:            z.string().optional(),
+  cfpOpeningDate:     z.string().optional(),
   cfpClosingDate:     z.string().optional(),
   cfpStatus:          z.enum(CONFERENCE_CFP_STATUSES),
   submittedTalksAmount: z.number(),

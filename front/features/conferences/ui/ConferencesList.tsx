@@ -124,12 +124,19 @@ export function ConferencesList() {
         {/* todo use real conferences */}
         {filteredConferences.map(
           (conference: ConferenceData, index: number) => {
+            const cfpOpeningDateJs = conference.cfpOpeningDate
+              ? dayjs(conference.cfpOpeningDate)
+              : null;
             const cfpClosingDateJs = conference.cfpClosingDate
               ? dayjs(conference.cfpClosingDate)
               : null;
             const isClosedByDate =
               cfpClosingDateJs && cfpClosingDateJs.isValid()
                 ? dayjs().isAfter(cfpClosingDateJs, "day")
+                : false;
+            const isNotYetOpenByDate =
+              cfpOpeningDateJs && cfpOpeningDateJs.isValid()
+                ? dayjs().isBefore(cfpOpeningDateJs, "day")
                 : false;
 
             return (
@@ -187,9 +194,11 @@ export function ConferencesList() {
                         className={`flex items-center gap-1 text-primary no-underline hover:underline ${isClosedByDate ? "text-text-muted hover:none" : ""}`}
                       >
                         {conference.cfpStatus === "Open"
-                          ? cfpClosingDateJs && cfpClosingDateJs.isValid()
-                            ? `CFP ouvert jusqu'au ${cfpClosingDateJs.format("DD-MM-YYYY")}`
-                            : "CFP ouvert"
+                          ? isNotYetOpenByDate
+                            ? `CFP ouvre le ${cfpOpeningDateJs!.format("DD-MM-YYYY")}`
+                            : cfpClosingDateJs && cfpClosingDateJs.isValid()
+                              ? `CFP ouvert jusqu'au ${cfpClosingDateJs.format("DD-MM-YYYY")}`
+                              : "CFP ouvert"
                           : "CFP fermé"}{" "}
                         <ExternalLinkIcon size={14} />
                       </a>

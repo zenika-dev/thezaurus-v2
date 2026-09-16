@@ -1111,6 +1111,9 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "cfpOpeningDate" : {
+            "type" : "string"
+          },
           "cfpClosingDate" : {
             "type" : "string"
           },
