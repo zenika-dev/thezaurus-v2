@@ -1,6 +1,111 @@
 {
   "openapi" : "3.1.0",
   "paths" : {
+    "/api/admin/reminder-template" : {
+      "put" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReminderTemplateUpdate"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReminderTemplateView"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Save",
+        "tags" : [ "Reminder Template Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN" ]
+        } ]
+      },
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReminderTemplateView"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "summary" : "Get",
+        "tags" : [ "Reminder Template Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN" ]
+        } ]
+      }
+    },
+    "/api/admin/reminder-template/preview" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReminderTemplatePreviewRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReminderTemplatePreview"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Preview",
+        "tags" : [ "Reminder Template Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN" ]
+        } ]
+      }
+    },
     "/api/admin/users" : {
       "get" : {
         "responses" : {
@@ -1321,6 +1426,69 @@
           },
           "slackLinked" : {
             "type" : "boolean"
+          }
+        }
+      },
+      "ReminderTemplatePreview" : {
+        "type" : "object",
+        "required" : [ "subject", "bodyHtml", "to" ],
+        "properties" : {
+          "subject" : {
+            "type" : "string"
+          },
+          "bodyHtml" : {
+            "type" : "string"
+          },
+          "to" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "ReminderTemplatePreviewRequest" : {
+        "type" : "object",
+        "properties" : {
+          "subject" : {
+            "type" : "string"
+          },
+          "bodyHtml" : {
+            "type" : "string"
+          },
+          "talkId" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ReminderTemplateUpdate" : {
+        "type" : "object",
+        "properties" : {
+          "subject" : {
+            "type" : "string"
+          },
+          "bodyHtml" : {
+            "type" : "string"
+          },
+          "revision" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "ReminderTemplateView" : {
+        "type" : "object",
+        "required" : [ "subject", "bodyHtml", "revision" ],
+        "properties" : {
+          "subject" : {
+            "type" : "string"
+          },
+          "bodyHtml" : {
+            "type" : "string"
+          },
+          "revision" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         }
       },
