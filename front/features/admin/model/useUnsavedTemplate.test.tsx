@@ -9,11 +9,11 @@ it("cancels a browser traversal before unmount when the user keeps their draft",
   Object.defineProperty(window, "navigation", { value: navigation, configurable: true });
   vi.spyOn(window, "confirm").mockReturnValue(false);
   const { rerender } = renderHook(({ dirty }) => useUnsavedTemplate(dirty), { initialProps: { dirty: true } });
-  const event = Object.assign(new Event("navigate", { cancelable: true }), { destination: { sameDocument: true }, hashChange: false });
+  const event = Object.assign(new Event("navigate", { cancelable: true }), { navigationType: "traverse", destination: { sameDocument: true }, hashChange: false });
   navigation.dispatchEvent(event);
   expect(event.defaultPrevented).toBe(true);
   rerender({ dirty: false });
-  const clean = Object.assign(new Event("navigate", { cancelable: true }), { destination: { sameDocument: true }, hashChange: false });
+  const clean = Object.assign(new Event("navigate", { cancelable: true }), { navigationType: "traverse", destination: { sameDocument: true }, hashChange: false });
   navigation.dispatchEvent(clean);
   expect(clean.defaultPrevented).toBe(false);
   Reflect.deleteProperty(window, "navigation");
