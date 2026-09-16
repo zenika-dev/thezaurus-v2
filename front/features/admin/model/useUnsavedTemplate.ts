@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { registerNavigationGuard } from "@/shared/lib/navigation-guard";
 
 export const unsavedTemplateMessage = "Des modifications du modèle ne sont pas enregistrées. Voulez-vous les abandonner ?";
 
-type TemplateNavigateEvent = Event & { hashChange: boolean; destination: { sameDocument: boolean; url?: string } };
+type TemplateNavigateEvent = Event & { navigationType: string; hashChange: boolean; destination: { sameDocument: boolean } };
 type NavigationEvents = {
   addEventListener(type: "navigate", listener: (event: TemplateNavigateEvent) => void): void;
   removeEventListener(type: "navigate", listener: (event: TemplateNavigateEvent) => void): void;
@@ -14,11 +15,21 @@ type NavigationEvents = {
 export function useUnsavedTemplate(dirty: boolean) {
   useEffect(() => {
     if (!dirty) return;
-    let confirmedUrl: string | null = null;
     let leaving = false;
-    let confirmationTimer: ReturnType<typeof setTimeout> | undefined;
+    let allowDocumentUnload = false;
+    let unloadTimer: ReturnType<typeof setTimeout> | undefined;
+    function confirmDeparture(href: string) {
+      const destination = new URL(href, window.location.href);
+      const current = new URL(window.location.href);
+      if (destination.origin === current.origin && destination.pathname === current.pathname && destination.search === current.search) return true;
+      leaving = false;
+      if (!window.confirm(unsavedTemplateMessage)) return false;
+      leaving = true;
+      return true;
+    }
+    const unregisterGuard = registerNavigationGuard(confirmDeparture);
     function beforeUnload(event: BeforeUnloadEvent) {
-      if (confirmedUrl) return;
+      if (allowDocumentUnload) return;
       event.preventDefault();
       event.returnValue = "";
     }
@@ -26,28 +37,30 @@ export function useUnsavedTemplate(dirty: boolean) {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
       if (!(link instanceof HTMLAnchorElement) || link.target === "_blank" || link.hasAttribute("download") || link.href === window.location.href) return;
-      if (!window.confirm(unsavedTemplateMessage)) {
+      if (!confirmDeparture(link.href)) {
         event.preventDefault();
         event.stopPropagation();
       } else {
-        leaving = true;
-        confirmedUrl = link.href;
-        clearTimeout(confirmationTimer);
-        confirmationTimer = setTimeout(() => { confirmedUrl = null; leaving = false; }, 1000);
+        // An ordinary anchor unloads in this turn. Asynchronous Next pushes
+        // are already checked before dispatch and do not prompt again.
+        allowDocumentUnload = true;
+        clearTimeout(unloadTimer);
+        unloadTimer = setTimeout(() => { allowDocumentUnload = false; }, 0);
       }
     }
     window.addEventListener("beforeunload", beforeUnload);
 
-    // Navigation API cancels traversals before Next unmounts the editor.
+    // Only browser history traversals are guarded here. Application pushes
+    // are checked before dispatch; cancelling their navigate event is too late.
     const navigation = (window as Window & { navigation?: NavigationEvents }).navigation;
     function navigate(event: TemplateNavigateEvent) {
-      if (event.hashChange || !event.cancelable || !event.destination.sameDocument) return;
-      if (event.destination.url === confirmedUrl) return;
+      if (event.navigationType !== "traverse" || event.hashChange || !event.cancelable || !event.destination.sameDocument) return;
       if (!window.confirm(unsavedTemplateMessage)) event.preventDefault();
       else leaving = true;
     }
     if (navigation) navigation.addEventListener("navigate", navigate);
-    // Next may navigate via pushState, which does not dispatch `navigate`.
+    // Ask before Next handles a Link. Waiting for its navigate/pushState event
+    // can be too late if React has already started replacing the dirty form.
     document.addEventListener("click", click, true);
 
     // A same-URL entry protects older browsers without cancellable navigation.
@@ -71,7 +84,8 @@ export function useUnsavedTemplate(dirty: boolean) {
     }
     return () => {
       window.removeEventListener("beforeunload", beforeUnload);
-      clearTimeout(confirmationTimer);
+      unregisterGuard();
+      clearTimeout(unloadTimer);
       document.removeEventListener("click", click, true);
       navigation?.removeEventListener("navigate", navigate);
       window.removeEventListener("popstate", popstate, true);
