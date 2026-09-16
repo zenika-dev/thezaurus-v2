@@ -1,0 +1,11 @@
+{
+  "name": "thezaurus-v2",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "Release tooling (semantic-release) for the thezaurus-v2 monorepo",
+  "devDependencies": {
+    "semantic-release": "^24.2.9",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1"
+  }
+}
