@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Alert, Autocomplete, Button, CircularProgress, MenuItem, Paper, TextField } from "@mui/material";
-import { talkApi } from "@/entities/talk";
-import { queryKeys, type BackendMessageTemplateDefinition, type BackendReminderTemplateView, type BackendReminderTemplatePreview } from "@/shared/api";
+
+import { type BackendMessageTemplateDefinition, type BackendReminderTemplateView, type BackendReminderTemplatePreview } from "@/shared/api";
 import { reminderTemplateApi, ReminderTemplateError } from "../api/reminder-template";
 import { useUnsavedTemplate, unsavedTemplateMessage } from "../model/useUnsavedTemplate";
 import { ReminderBodyEditor } from "./ReminderBodyEditor";
@@ -70,7 +70,7 @@ function TemplateForm({ initial, definition, onDirtyChange, onBusyChange }: Temp
   const [saved, setSaved] = useState(initial);
   const [subject, setSubject] = useState(initial.subject ?? "");
   const [bodyHtml, setBodyHtml] = useState(initial.bodyHtml ?? "");
-  const [talkId, setTalkId] = useState("");
+  const [contextId, setContextId] = useState("");
   const [preview, setPreview] = useState<BackendReminderTemplatePreview | null>(null);
   const [previewSource, setPreviewSource] = useState("");
   const [pending, setPending] = useState<"save" | "preview" | "reload" | null>(null);
@@ -78,9 +78,14 @@ function TemplateForm({ initial, definition, onDirtyChange, onBusyChange }: Temp
   const [success, setSuccess] = useState(false);
   const [conflict, setConflict] = useState(false);
   const [comparison, setComparison] = useState<BackendReminderTemplateView | null>(null);
-  const talks = useQuery({ queryKey: queryKeys.talks.lists(), queryFn: talkApi.getTalks });
+  const context = definition.previewContext;
+  const contexts = useQuery({
+    queryKey: ["admin", "template-contexts", definition.id, context?.optionsPath],
+    queryFn: () => reminderTemplateApi.contexts(context!.optionsPath!),
+    enabled: !!context?.optionsPath,
+  });
   const dirty = subject !== (saved.subject ?? "") || bodyHtml !== (saved.bodyHtml ?? "");
-  const source = JSON.stringify({ subject, bodyHtml, talkId });
+  const source = JSON.stringify({ subject, bodyHtml, contextId });
   useUnsavedTemplate(dirty);
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
@@ -112,7 +117,7 @@ function TemplateForm({ initial, definition, onDirtyChange, onBusyChange }: Temp
   async function renderPreview() {
     setPending("preview"); setError(""); setPreview(null);
     try {
-      const rendered = await reminderTemplateApi.preview(definition.apiPath!, { subject, bodyHtml, talkId });
+      const rendered = await reminderTemplateApi.preview(definition.apiPath!, { subject, bodyHtml, contextId });
       setPreview(rendered); setPreviewSource(source);
     } catch (error) { setError(errorMessage(error)); }
     finally { setPending(null); }
@@ -135,13 +140,13 @@ function TemplateForm({ initial, definition, onDirtyChange, onBusyChange }: Temp
         <span role="status" className="text-sm text-text-muted">{dirty ? "Modifications non enregistrées" : "Aucune modification en attente"}</span>
       </div>
       <section className="border-t border-border pt-5 flex flex-col gap-4" aria-labelledby="preview-heading">
-        <h3 id="preview-heading" className="text-lg font-semibold">Aperçu sur un talk</h3>
-        {talks.isError && <Alert severity="error" action={<Button onClick={() => talks.refetch()}>Réessayer</Button>}>Impossible de charger les talks.</Alert>}
-        <Autocomplete options={talks.data ?? []} getOptionLabel={(talk) => `${talk.title}${talk.date ? ` — ${talk.date}` : ""}`} getOptionKey={(talk) => talk.id} isOptionEqualToValue={(a, b) => a.id === b.id} value={talks.data?.find((talk) => talk.id === talkId) ?? null} onChange={(_, talk) => setTalkId(talk?.id ?? "")} loading={talks.isPending} disabled={!!pending} noOptionsText="Aucun talk disponible" loadingText="Chargement…" renderInput={(params) => <TextField {...params} label="Talk utilisé pour l’aperçu" />} />
-        <Button className="self-start!" variant="outlined" disabled={!!pending || !talkId || !subject.trim() || !bodyHtml.trim()} onClick={renderPreview}>{pending === "preview" ? "Génération…" : "Générer l’aperçu"}</Button>
+        <h3 id="preview-heading" className="text-lg font-semibold">Aperçu</h3>
+        {contexts.isError && <Alert severity="error" action={<Button onClick={() => contexts.refetch()}>Réessayer</Button>}>Impossible de charger les éléments pour l’aperçu.</Alert>}
+        {context && <Autocomplete options={contexts.data ?? []} getOptionLabel={(option) => option.label ?? ""} getOptionKey={(option) => option.id!} isOptionEqualToValue={(a, b) => a.id === b.id} value={contexts.data?.find((option) => option.id === contextId) ?? null} onChange={(_, option) => setContextId(option?.id ?? "")} loading={contexts.isPending} disabled={!!pending} noOptionsText="Aucun élément disponible" loadingText="Chargement…" renderInput={(params) => <TextField {...params} label={context.label} />} />}
+        <Button className="self-start!" variant="outlined" disabled={!!pending || (!!context && !contextId) || !subject.trim() || !bodyHtml.trim()} onClick={renderPreview}>{pending === "preview" ? "Génération…" : "Générer l’aperçu"}</Button>
         {preview && <div className="rounded-xl border border-border p-4">
-          {previewSource !== source && <Alert severity="info">Le contenu ou le talk a changé. Générez à nouveau l’aperçu.</Alert>}
-          <p className="text-sm break-words"><strong>À :</strong> {preview.to?.join(", ") || "Aucun email de speaker renseigné"}</p>
+          {previewSource !== source && <Alert severity="info">Le contenu ou le contexte a changé. Générez à nouveau l’aperçu.</Alert>}
+          <p className="text-sm break-words"><strong>À :</strong> {preview.to?.join(", ") || "Aucun destinataire renseigné"}</p>
           <p className="my-3"><strong>Sujet :</strong> {preview.subject}</p>
           <PreviewBody html={preview.bodyHtml ?? ""} />
         </div>}

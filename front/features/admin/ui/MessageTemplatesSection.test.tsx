@@ -6,11 +6,8 @@ import { reminderTemplateApi, ReminderTemplateError } from "../api/reminder-temp
 
 vi.mock("../api/reminder-template", async (original) => {
   const apiModule = await original<typeof import("../api/reminder-template")>();
-  return { ...apiModule, reminderTemplateApi: { list: vi.fn(), get: vi.fn(), save: vi.fn(), preview: vi.fn() } };
+  return { ...apiModule, reminderTemplateApi: { list: vi.fn(), contexts: vi.fn(), get: vi.fn(), save: vi.fn(), preview: vi.fn() } };
 });
-vi.mock("@/entities/talk", () => ({ talkApi: { getTalks: vi.fn().mockResolvedValue([
-  { id: "talk-1", title: "Qute en pratique", date: "2026-09-16" },
-]) } }));
 // Rich editor round trips are tested separately with the real Tiptap editor.
 vi.mock("./ReminderBodyEditor", () => ({
   ReminderBodyEditor: ({ initialHtml, onChange, disabled }: { initialHtml: string; onChange: (html: string) => void; disabled: boolean }) =>
@@ -23,12 +20,39 @@ function mount() {
 }
 
 beforeEach(() => {
-  vi.mocked(reminderTemplateApi.list).mockReset().mockResolvedValue([{ id: 'test', label: 'Modèle de test', apiPath: '/api/admin/test-template', variables: [], conditions: [], links: [] }]);
+  vi.mocked(reminderTemplateApi.contexts).mockReset().mockResolvedValue([{ id: 'talk-1', label: 'Qute en pratique — 2026-09-16' }]);
+  vi.mocked(reminderTemplateApi.list).mockReset().mockResolvedValue([{ id: 'test', label: 'Modèle de test', apiPath: '/api/admin/test-template', variables: [], conditions: [], links: [], previewContext: { label: "Contexte fourni par le backend", optionsPath: "/api/admin/test-contexts" } }]);
   vi.mocked(reminderTemplateApi.get).mockReset().mockResolvedValue({ subject: "", bodyHtml: "", revision: 0 });
   vi.mocked(reminderTemplateApi.save).mockReset().mockImplementation(async (_path, data) => ({ subject: data.subject ?? "", bodyHtml: data.bodyHtml ?? "", revision: 1 }));
   vi.mocked(reminderTemplateApi.preview).mockReset();
 });
 afterEach(cleanup);
+
+it("previews a non-talk context described entirely by the backend", async () => {
+  vi.mocked(reminderTemplateApi.list).mockResolvedValue([{ id: "conference", label: "Invitation", apiPath: "/api/admin/invitation", previewContext: { label: "Conférence", optionsPath: "/api/admin/conference-options" } }]);
+  vi.mocked(reminderTemplateApi.contexts).mockResolvedValue([{ id: "conf-2", label: "DevFest" }]);
+  vi.mocked(reminderTemplateApi.preview).mockResolvedValue({ subject: "Invitation", bodyHtml: "<p>Bienvenue</p>", to: [] });
+  mount();
+  await edit();
+  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Conférence" }));
+  fireEvent.click(await screen.findByRole("option", { name: "DevFest" }));
+  fireEvent.click(screen.getByRole("button", { name: "Générer l’aperçu" }));
+  await screen.findByTitle("Corps de l’email");
+  expect(reminderTemplateApi.contexts).toHaveBeenCalledWith("/api/admin/conference-options");
+  expect(reminderTemplateApi.preview).toHaveBeenCalledWith("/api/admin/invitation", expect.objectContaining({ contextId: "conf-2" }));
+});
+
+it("previews without a selector when the backend declares no context", async () => {
+  vi.mocked(reminderTemplateApi.list).mockResolvedValue([{ id: "generic", label: "Information", apiPath: "/api/admin/information" }]);
+  vi.mocked(reminderTemplateApi.preview).mockResolvedValue({ subject: "Information", bodyHtml: "<p>Bonjour</p>", to: [] });
+  mount();
+  await edit();
+  expect(screen.getAllByRole("combobox")).toHaveLength(1);
+  expect(reminderTemplateApi.contexts).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Générer l’aperçu" }));
+  await screen.findByTitle("Corps de l’email");
+  expect(reminderTemplateApi.preview).toHaveBeenCalledWith("/api/admin/information", expect.objectContaining({ contextId: "" }));
+});
 
 it("loads backend-defined models and protects a dirty draft when switching", async () => {
   vi.mocked(reminderTemplateApi.list).mockResolvedValue([
@@ -96,12 +120,12 @@ describe("modèle de rappel", () => {
   it("previews the unsaved draft for the selected real talk in a sandbox without saving", async () => {
     vi.mocked(reminderTemplateApi.preview).mockResolvedValue({ subject: "Rappel Qute en pratique", bodyHtml: "<p>Ajoutez la vidéo</p>", to: ["alice@example.com", "bob@example.com"] });
     mount(); await edit();
-    const talk = screen.getByRole("combobox", { name: "Talk utilisé pour l’aperçu" });
+    const talk = screen.getByRole("combobox", { name: "Contexte fourni par le backend" });
     fireEvent.mouseDown(talk);
     fireEvent.click(await screen.findByRole("option", { name: /Qute en pratique/ }));
     fireEvent.click(screen.getByRole("button", { name: "Générer l’aperçu" }));
     await screen.findByText(/alice@example.com, bob@example.com/);
-    expect(reminderTemplateApi.preview).toHaveBeenCalledWith("/api/admin/test-template", expect.objectContaining({ subject: "Rappel {talkTitle}", talkId: "talk-1" }));
+    expect(reminderTemplateApi.preview).toHaveBeenCalledWith("/api/admin/test-template", expect.objectContaining({ subject: "Rappel {talkTitle}", contextId: "talk-1" }));
     expect(reminderTemplateApi.save).not.toHaveBeenCalled();
     const frame = screen.getByTitle("Corps de l’email");
     expect(frame.getAttribute("sandbox")).toBe("");

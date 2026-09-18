@@ -96,6 +96,36 @@
         } ]
       }
     },
+    "/api/admin/reminder-template/contexts" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TemplateContextOption"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "summary" : "Contexts",
+        "tags" : [ "Reminder Template Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN" ]
+        } ]
+      }
+    },
     "/api/admin/reminder-template/preview" : {
       "post" : {
         "requestBody" : {
@@ -1445,6 +1475,9 @@
           },
           "help" : {
             "type" : "string"
+          },
+          "previewContext" : {
+            "$ref" : "#/components/schemas/PreviewContext"
           }
         }
       },
@@ -1477,6 +1510,17 @@
           },
           "slack" : {
             "type" : "boolean"
+          }
+        }
+      },
+      "PreviewContext" : {
+        "type" : "object",
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "optionsPath" : {
+            "type" : "string"
           }
         }
       },
@@ -1527,7 +1571,7 @@
           "bodyHtml" : {
             "type" : "string"
           },
-          "talkId" : {
+          "contextId" : {
             "type" : "string"
           }
         }
@@ -1687,6 +1731,17 @@
       "TalkStatus" : {
         "type" : "string",
         "enum" : [ "DRAFT", "PLANNED", "SUBMITTED", "ACCEPTED", "REJECTED", "DONE" ]
+      },
+      "TemplateContextOption" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          }
+        }
       },
       "TemplateLink" : {
         "type" : "object",
