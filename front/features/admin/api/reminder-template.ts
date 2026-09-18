@@ -4,6 +4,7 @@ import {
   type BackendReminderTemplateUpdate,
   type BackendReminderTemplatePreviewRequest,
   type BackendReminderTemplatePreview,
+  type BackendMessageTemplateDefinition,
 } from "@/shared/api";
 
 export class ReminderTemplateError extends Error {
@@ -12,8 +13,8 @@ export class ReminderTemplateError extends Error {
   }
 }
 
-async function request<T>(suffix = "", init?: RequestInit): Promise<T> {
-  const response = await apiFetch(`/api/admin/reminder-template${suffix}`, {
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await apiFetch(path, {
     ...init,
     cache: "no-store",
     headers: { "Content-Type": "application/json" },
@@ -31,9 +32,10 @@ async function request<T>(suffix = "", init?: RequestInit): Promise<T> {
 }
 
 export const reminderTemplateApi = {
-  get: () => request<BackendReminderTemplateView>(),
-  save: (template: BackendReminderTemplateUpdate) =>
-    request<BackendReminderTemplateView>("", { method: "PUT", body: JSON.stringify(template) }),
-  preview: (template: BackendReminderTemplatePreviewRequest) =>
-    request<BackendReminderTemplatePreview>("/preview", { method: "POST", body: JSON.stringify(template) }),
+  list: () => request<BackendMessageTemplateDefinition[]>("/api/admin/message-templates"),
+  get: (path: string) => request<BackendReminderTemplateView>(path),
+  save: (path: string, template: BackendReminderTemplateUpdate) =>
+    request<BackendReminderTemplateView>(path, { method: "PUT", body: JSON.stringify(template) }),
+  preview: (path: string, template: BackendReminderTemplatePreviewRequest) =>
+    request<BackendReminderTemplatePreview>(`${path}/preview`, { method: "POST", body: JSON.stringify(template) }),
 };
