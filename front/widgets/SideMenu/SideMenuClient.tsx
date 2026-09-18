@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useGuardedPush } from "@/shared/lib/navigation-guard";
 import { Calendar, CalendarDays, MicVocal, PenLine } from "lucide-react";
 import { SideMenuView } from "./SideMenuView";
 import { type NavItemConfig } from "./SideMenuNavItem";
@@ -24,7 +25,7 @@ interface SideMenuClientProps {
 
 export function SideMenuClient({ navLinks }: SideMenuClientProps) {
   const [open, setOpen] = useState(true);
-  const router = useRouter();
+  const push = useGuardedPush();
   const pathname = usePathname();
 
   const isActive = (path: string) =>
@@ -34,7 +35,7 @@ export function SideMenuClient({ navLinks }: SideMenuClientProps) {
     icon: iconMap[link.path] ?? Calendar,
     label: link.label,
     active: isActive(link.path),
-    onClick: () => router.push(link.path),
+    onClick: () => push(link.path),
   }));
 
   return (
