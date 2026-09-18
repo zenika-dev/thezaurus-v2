@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Alert, Autocomplete, Button, CircularProgress, MenuItem, Paper, TextField } from "@mui/material";
 import { talkApi } from "@/entities/talk";
-import { queryKeys, type BackendReminderTemplateView, type BackendReminderTemplatePreview } from "@/shared/api";
+import { queryKeys, type BackendMessageTemplateDefinition, type BackendReminderTemplateView, type BackendReminderTemplatePreview } from "@/shared/api";
 import { reminderTemplateApi, ReminderTemplateError } from "../api/reminder-template";
-import { useUnsavedTemplate } from "../model/useUnsavedTemplate";
+import { useUnsavedTemplate, unsavedTemplateMessage } from "../model/useUnsavedTemplate";
 import { ReminderBodyEditor } from "./ReminderBodyEditor";
 
 function errorMessage(error: unknown) {
@@ -18,16 +18,55 @@ function PreviewBody({ html }: { html: string }) {
 }
 
 export function MessageTemplatesSection({ onDirtyChange }: { onDirtyChange?: (dirty: boolean) => void }) {
+  const catalog = useQuery({
+    queryKey: ["admin", "message-templates"], queryFn: reminderTemplateApi.list,
+    refetchOnWindowFocus: false, staleTime: Infinity,
+  });
+  const [selectedId, setSelectedId] = useState<string>();
+  const [dirty, setDirty] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const selected = catalog.data?.find((model) => model.id === selectedId) ?? catalog.data?.[0];
+  const reportDirty = useCallback((value: boolean) => {
+    setDirty(value);
+    onDirtyChange?.(value);
+  }, [onDirtyChange]);
+  if (catalog.isPending) return <p role="status">Chargement des modèles…</p>;
+  if (catalog.isError) return <Alert severity="error" action={<Button onClick={() => catalog.refetch()}>Réessayer</Button>}>{errorMessage(catalog.error)}</Alert>;
+  if (!selected) return <Alert severity="info">Aucun modèle disponible.</Alert>;
+  return <Paper variant="outlined" className="border-border! rounded-2xl! p-5! sm:p-6! bg-surface!">
+    <div className="mb-6">
+      <TextField select label="Modèle" value={selected.id} disabled={busy} fullWidth onChange={(event) => {
+        if (event.target.value === selected.id) return;
+        if (dirty && !window.confirm(unsavedTemplateMessage)) return;
+        reportDirty(false);
+        setSelectedId(event.target.value);
+      }}>
+        {catalog.data.map((model) => <MenuItem key={model.id} value={model.id}>{model.label}</MenuItem>)}
+      </TextField>
+      <p className="text-sm text-text-muted mt-1">{selected.description}</p>
+    </div>
+    <SelectedTemplate key={selected.id} definition={selected} onDirtyChange={reportDirty} onBusyChange={setBusy} />
+  </Paper>;
+}
+
+type TemplateProps = {
+  definition: BackendMessageTemplateDefinition;
+  onDirtyChange: (dirty: boolean) => void;
+  onBusyChange: (busy: boolean) => void;
+};
+
+function SelectedTemplate({ definition, ...callbacks }: TemplateProps) {
   const template = useQuery({
-    queryKey: ["admin", "reminder-template"], queryFn: reminderTemplateApi.get,
+    queryKey: ["admin", "message-template", definition.id, definition.apiPath],
+    queryFn: () => reminderTemplateApi.get(definition.apiPath!),
     refetchOnWindowFocus: false, staleTime: Infinity, gcTime: 0,
   });
   if (template.isPending) return <p role="status"><CircularProgress size={18} /> Chargement du modèle…</p>;
   if (template.isError) return <Alert severity="error" action={<Button onClick={() => template.refetch()}>Réessayer</Button>}>{errorMessage(template.error)}</Alert>;
-  return <TemplateForm initial={template.data} onDirtyChange={onDirtyChange} />;
+  return <TemplateForm initial={template.data} definition={definition} {...callbacks} />;
 }
 
-function TemplateForm({ initial, onDirtyChange }: { initial: BackendReminderTemplateView; onDirtyChange?: (dirty: boolean) => void }) {
+function TemplateForm({ initial, definition, onDirtyChange, onBusyChange }: TemplateProps & { initial: BackendReminderTemplateView }) {
   const [saved, setSaved] = useState(initial);
   const [subject, setSubject] = useState(initial.subject ?? "");
   const [bodyHtml, setBodyHtml] = useState(initial.bodyHtml ?? "");
@@ -45,10 +84,12 @@ function TemplateForm({ initial, onDirtyChange }: { initial: BackendReminderTemp
   useUnsavedTemplate(dirty);
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
+  useEffect(() => { onBusyChange(!!pending); }, [pending, onBusyChange]);
+
   async function save() {
     setPending("save"); setError(""); setSuccess(false);
     try {
-      const updated = await reminderTemplateApi.save({ subject, bodyHtml, revision: saved.revision ?? 0 });
+      const updated = await reminderTemplateApi.save(definition.apiPath!, { subject, bodyHtml, revision: saved.revision ?? 0 });
       // Keep the editor's serialisation as baseline: the server may normalise HTML.
       setSaved({ ...updated, subject, bodyHtml });
       setConflict(false); setComparison(null); setSuccess(true);
@@ -61,7 +102,7 @@ function TemplateForm({ initial, onDirtyChange }: { initial: BackendReminderTemp
   async function reloadForComparison() {
     setPending("reload"); setError("");
     try {
-      const latest = await reminderTemplateApi.get();
+      const latest = await reminderTemplateApi.get(definition.apiPath!);
       setComparison(latest); setSaved(latest); setConflict(false);
       // Local fields are intentionally untouched so no draft text is lost.
     } catch (error) { setError(errorMessage(error)); }
@@ -71,20 +112,13 @@ function TemplateForm({ initial, onDirtyChange }: { initial: BackendReminderTemp
   async function renderPreview() {
     setPending("preview"); setError(""); setPreview(null);
     try {
-      const rendered = await reminderTemplateApi.preview({ subject, bodyHtml, talkId });
+      const rendered = await reminderTemplateApi.preview(definition.apiPath!, { subject, bodyHtml, talkId });
       setPreview(rendered); setPreviewSource(source);
     } catch (error) { setError(errorMessage(error)); }
     finally { setPending(null); }
   }
 
-  return <Paper variant="outlined" className="border-border! rounded-2xl! p-5! sm:p-6! bg-surface!">
-    <div className="mb-6">
-      <TextField select label="Modèle" value="talk-reminder" disabled={!!pending} fullWidth>
-        <MenuItem value="talk-reminder">Email de rappel</MenuItem>
-      </TextField>
-      <p className="text-sm text-text-muted mt-1">Un modèle commun à toute l’application. Le message s’adresse à tous les speakers du talk. Aucun email n’est envoyé depuis cette page.</p>
-    </div>
-    <div className="flex flex-col gap-5">
+  return <div className="flex flex-col gap-5">
       {error && <Alert severity="error">{error}</Alert>}
       {success && !dirty && <Alert severity="success">Modèle enregistré.</Alert>}
       {conflict && <Alert severity="warning" action={<Button disabled={!!pending} onClick={reloadForComparison}>Recharger pour comparer</Button>}>Un autre administrateur a modifié le modèle. Votre texte est conservé. Rechargez la version enregistrée avant de sauvegarder.</Alert>}
@@ -95,7 +129,7 @@ function TemplateForm({ initial, onDirtyChange }: { initial: BackendReminderTemp
         <PreviewBody html={comparison.bodyHtml ?? ""} />
       </div>}
       <TextField label="Sujet" value={subject} required disabled={!!pending} fullWidth onChange={(event) => { setSubject(event.target.value); setSuccess(false); }} />
-      <ReminderBodyEditor initialHtml={initial.bodyHtml ?? ""} disabled={!!pending} onChange={(html) => { setBodyHtml(html); setSuccess(false); }} />
+      <ReminderBodyEditor definition={definition} initialHtml={initial.bodyHtml ?? ""} disabled={!!pending} onChange={(html) => { setBodyHtml(html); setSuccess(false); }} />
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="contained" disabled={!!pending || conflict || !dirty || !subject.trim() || !bodyHtml.trim()} onClick={save}>{pending === "save" ? "Enregistrement…" : comparison ? "Enregistrer ma version après comparaison" : "Enregistrer"}</Button>
         <span role="status" className="text-sm text-text-muted">{dirty ? "Modifications non enregistrées" : "Aucune modification en attente"}</span>
@@ -112,6 +146,5 @@ function TemplateForm({ initial, onDirtyChange }: { initial: BackendReminderTemp
           <PreviewBody html={preview.bodyHtml ?? ""} />
         </div>}
       </section>
-    </div>
-  </Paper>;
+    </div>;
 }

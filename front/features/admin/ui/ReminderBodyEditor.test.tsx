@@ -8,9 +8,15 @@ Object.defineProperty(Range.prototype, "getBoundingClientRect", { configurable: 
 
 afterEach(cleanup);
 
+const definition = {
+  variables: [{ name: "talkTitle", label: "Titre du talk" }],
+  conditions: [{ name: "hasConference", label: "Conférence renseignée" }],
+  links: [{ variable: "talksUrl", label: "Lien vers Thezaurus", text: "Ouvrir Thezaurus" }],
+};
+
 it("inserts a Qute link through the standard link dialog", async () => {
   const onChange = vi.fn();
-  render(<ReminderBodyEditor initialHtml="<p></p>" disabled={false} onChange={onChange} />);
+  render(<ReminderBodyEditor definition={definition} initialHtml="<p></p>" disabled={false} onChange={onChange} />);
   await screen.findByRole("textbox", { name: "Corps du modèle" });
   const linkButton = screen.getByRole("button", { name: /Insérer ou modifier un lien/ });
   await waitFor(() => expect(linkButton.hasAttribute("disabled")).toBe(false));
@@ -25,7 +31,7 @@ it("inserts a Qute link through the standard link dialog", async () => {
 it("preserves visible Qute, supported formatting and variable links through an editor round trip", async () => {
   const onChange = vi.fn();
   const initialHtml = '<p>{#if hasConference}</p><p><strong>{conferenceName}</strong> <span style="font-size: 24px">Conférence</span></p><p>{/if}</p><p><a href="{talksUrl}">Ouvrir Thezaurus</a></p>';
-  const first = render(<ReminderBodyEditor initialHtml={initialHtml} disabled={false} onChange={onChange} />);
+  const first = render(<ReminderBodyEditor definition={definition} initialHtml={initialHtml} disabled={false} onChange={onChange} />);
   const body = await screen.findByRole("textbox", { name: "Corps du modèle" });
   expect(body.innerHTML).toContain('{#if hasConference}');
   expect(body.innerHTML).toContain('href="{talksUrl}"');
@@ -37,7 +43,7 @@ it("preserves visible Qute, supported formatting and variable links through an e
   expect(html).toContain("<strong>{conferenceName}</strong>");
   expect(html).toContain("font-size: 24px");
   first.unmount();
-  render(<ReminderBodyEditor initialHtml={html} disabled={false} onChange={onChange} />);
+  render(<ReminderBodyEditor definition={definition} initialHtml={html} disabled={false} onChange={onChange} />);
   const reopened = await screen.findByRole("textbox", { name: "Corps du modèle" });
   expect(reopened.innerHTML).toBe(html);
 });
