@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Alert, Autocomplete, Button, CircularProgress, Paper, TextField } from "@mui/material";
+import { Alert, Autocomplete, Button, CircularProgress, MenuItem, Paper, TextField } from "@mui/material";
 import { talkApi } from "@/entities/talk";
 import { queryKeys, type BackendReminderTemplateView, type BackendReminderTemplatePreview } from "@/shared/api";
 import { reminderTemplateApi, ReminderTemplateError } from "../api/reminder-template";
@@ -79,7 +79,9 @@ function TemplateForm({ initial, onDirtyChange }: { initial: BackendReminderTemp
 
   return <Paper variant="outlined" className="border-border! rounded-2xl! p-5! sm:p-6! bg-surface!">
     <div className="mb-6">
-      <h2 className="text-xl font-bold text-text">Modèle d’email de rappel</h2>
+      <TextField select label="Modèle" value="talk-reminder" disabled={!!pending} fullWidth>
+        <MenuItem value="talk-reminder">Email de rappel</MenuItem>
+      </TextField>
       <p className="text-sm text-text-muted mt-1">Un modèle commun à toute l’application. Le message s’adresse à tous les speakers du talk. Aucun email n’est envoyé depuis cette page.</p>
     </div>
     <div className="flex flex-col gap-5">
