@@ -1,3 +1,3 @@
 package com.zenika.thezaurus.model;
 
-public record ReminderTemplatePreviewRequest(String subject, String bodyHtml, String talkId) {}
+public record ReminderTemplatePreviewRequest(String subject, String bodyHtml, String contextId) {}

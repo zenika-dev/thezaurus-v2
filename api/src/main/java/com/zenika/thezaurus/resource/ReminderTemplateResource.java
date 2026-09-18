@@ -27,6 +27,16 @@ public class ReminderTemplateResource {
     TalkService talks;
 
     @GET
+    @Path("/contexts")
+    public java.util.List<TemplateContextOption> contexts() throws ExecutionException, InterruptedException {
+        return talks.findAll().stream()
+                .map(talk -> new TemplateContextOption(
+                        talk.id(),
+                        talk.title() + (talk.date() == null || talk.date().isBlank() ? "" : " — " + talk.date())))
+                .toList();
+    }
+
+    @GET
     public ReminderTemplateView get() throws ExecutionException, InterruptedException {
         return repository.get();
     }
@@ -48,12 +58,12 @@ public class ReminderTemplateResource {
     public ReminderTemplatePreview preview(ReminderTemplatePreviewRequest request)
             throws ExecutionException, InterruptedException {
         if (request == null
-                || request.talkId() == null
-                || request.talkId().isBlank()
-                || request.talkId().contains("/")) {
+                || request.contextId() == null
+                || request.contextId().isBlank()
+                || request.contextId().contains("/")) {
             throw ReminderTemplateRenderer.invalid("Sélectionnez un talk pour l’aperçu.");
         }
-        Talk talk = talks.findById(request.talkId());
+        Talk talk = talks.findById(request.contextId());
         if (talk == null) throw new ThezaurusException("Talk introuvable.", Response.Status.NOT_FOUND);
         return renderer.render(request.subject(), request.bodyHtml(), talk);
     }

@@ -5,6 +5,7 @@ import {
   type BackendReminderTemplatePreviewRequest,
   type BackendReminderTemplatePreview,
   type BackendMessageTemplateDefinition,
+  type BackendTemplateContextOption,
 } from "@/shared/api";
 
 export class ReminderTemplateError extends Error {
@@ -33,6 +34,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const reminderTemplateApi = {
   list: () => request<BackendMessageTemplateDefinition[]>("/api/admin/message-templates"),
+  contexts: (path: string) => request<BackendTemplateContextOption[]>(path),
   get: (path: string) => request<BackendReminderTemplateView>(path),
   save: (path: string, template: BackendReminderTemplateUpdate) =>
     request<BackendReminderTemplateView>(path, { method: "PUT", body: JSON.stringify(template) }),
