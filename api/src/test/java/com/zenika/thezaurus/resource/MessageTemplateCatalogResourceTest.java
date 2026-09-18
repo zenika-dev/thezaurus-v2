@@ -36,6 +36,8 @@ class MessageTemplateCatalogResourceTest {
                 .statusCode(200)
                 .body("", hasSize(1))
                 .body("[0].id", is("talk-reminder"))
+                .body("[0].previewContext.optionsPath", is("/api/admin/reminder-template/contexts"))
+                .body("[0].previewContext.label", is("Talk utilisé pour l’aperçu"))
                 .body("[0].label", is("Email de rappel"))
                 .body("[0].apiPath", is("/api/admin/reminder-template"))
                 .body("[0].variables.name", hasItems("talkTitle", "talkDate", "conferenceName", "talksUrl"))
