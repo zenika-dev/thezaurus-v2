@@ -8,6 +8,20 @@ Object.defineProperty(Range.prototype, "getBoundingClientRect", { configurable: 
 
 afterEach(cleanup);
 
+it("inserts a Qute link through the standard link dialog", async () => {
+  const onChange = vi.fn();
+  render(<ReminderBodyEditor initialHtml="<p></p>" disabled={false} onChange={onChange} />);
+  await screen.findByRole("textbox", { name: "Corps du modèle" });
+  const linkButton = screen.getByRole("button", { name: /Insérer ou modifier un lien/ });
+  await waitFor(() => expect(linkButton.hasAttribute("disabled")).toBe(false));
+  fireEvent.click(linkButton);
+  fireEvent.change(await screen.findByRole("textbox", { name: /^Texte/ }), { target: { value: "Voir les talks" } });
+  fireEvent.change(screen.getByRole("textbox", { name: /^URL/ }), { target: { value: "{talksUrl}" } });
+  fireEvent.click(screen.getByRole("button", { name: "Appliquer" }));
+  await waitFor(() => expect(onChange).toHaveBeenCalled());
+  expect(onChange.mock.lastCall![0]).toContain('<a href="{talksUrl}">Voir les talks</a>');
+});
+
 it("preserves visible Qute, supported formatting and variable links through an editor round trip", async () => {
   const onChange = vi.fn();
   const initialHtml = '<p>{#if hasConference}</p><p><strong>{conferenceName}</strong> <span style="font-size: 24px">Conférence</span></p><p>{/if}</p><p><a href="{talksUrl}">Ouvrir Thezaurus</a></p>';
