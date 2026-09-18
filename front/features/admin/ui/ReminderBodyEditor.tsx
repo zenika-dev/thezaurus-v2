@@ -1,15 +1,14 @@
 "use client";
 
-import { useRef } from "react";
 import {
   formatHref, LinkBubbleMenu, LinkBubbleMenuHandler, MenuButtonBold,
   MenuButtonBulletedList, MenuButtonEditLink, MenuButtonItalic,
   MenuButtonOrderedList, MenuButtonUnderline, MenuControlsContainer,
-  MenuDivider, MenuSelectFontSize, RichTextEditor, type RichTextEditorRef,
+  MenuButton, MenuDivider, MenuSelect, MenuSelectFontSize, RichTextEditor,
 } from "mui-tiptap";
 import StarterKit from "@tiptap/starter-kit";
 import { FontSize, TextStyle } from "@tiptap/extension-text-style";
-import { Button } from "@mui/material";
+import { MenuItem } from "@mui/material";
 
 export const templateVariables = [
   ["talkTitle", "Titre du talk"],
@@ -30,12 +29,9 @@ export function ReminderBodyEditor({ initialHtml, disabled, onChange }: {
   disabled: boolean;
   onChange: (html: string) => void;
 }) {
-  const editorRef = useRef<RichTextEditorRef>(null);
-
   return <fieldset disabled={disabled} className="border-0 p-0 m-0 min-w-0">
     <legend className="font-semibold mb-2">Corps du modèle</legend>
     <RichTextEditor
-      ref={editorRef}
       immediatelyRender={false}
       editable={!disabled}
       extensions={[
@@ -56,7 +52,7 @@ export function ReminderBodyEditor({ initialHtml, disabled, onChange }: {
       } }}
       onUpdate={({ editor }) => onChange(editor.isEmpty ? "" : editor.getHTML())}
       sx={{ "& .ProseMirror": { minHeight: 256, fontSize: "16px" } }}
-      renderControls={() => <MenuControlsContainer>
+      renderControls={(editor) => <MenuControlsContainer>
         <MenuButtonBold tooltipLabel="Gras" />
         <MenuButtonItalic tooltipLabel="Italique" />
         <MenuButtonUnderline tooltipLabel="Souligné" />
@@ -73,6 +69,22 @@ export function ReminderBodyEditor({ initialHtml, disabled, onChange }: {
         />
         <MenuDivider />
         <MenuButtonEditLink tooltipLabel="Insérer ou modifier un lien" />
+        <MenuDivider />
+        <MenuSelect inputProps={{ "aria-label": "Insérer une variable dans le corps" }} value="" displayEmpty renderValue={() => "Variable"} disabled={!editor?.isEditable} onChange={(event) => {
+          if (event.target.value) editor?.chain().focus().insertContent({ type: "text", text: `{${event.target.value}}` }).run();
+        }}>
+          {templateVariables.map(([variable, label]) => <MenuItem key={variable} value={variable}>{label}</MenuItem>)}
+        </MenuSelect>
+        <MenuSelect inputProps={{ "aria-label": "Insérer une condition" }} value="" displayEmpty renderValue={() => "Condition"} disabled={!editor?.isEditable} onChange={(event) => {
+          if (event.target.value) editor?.chain().focus().insertContent([
+            { type: "paragraph", content: [{ type: "text", text: `{#if ${event.target.value}}` }] },
+            { type: "paragraph", content: [{ type: "text", text: "Texte conditionnel à compléter" }] },
+            { type: "paragraph", content: [{ type: "text", text: "{/if}" }] },
+          ]).run();
+        }}>
+          {conditions.map(([condition, label]) => <MenuItem key={condition} value={condition}>{label}</MenuItem>)}
+        </MenuSelect>
+        <MenuButton tooltipLabel="Lien vers Thezaurus" disabled={!editor?.isEditable} onClick={() => editor?.chain().focus().insertContent({ type: "text", text: "Ouvrir Thezaurus", marks: [{ type: "link", attrs: { href: "{talksUrl}" } }] }).run()}>Lien vers Thezaurus</MenuButton>
       </MenuControlsContainer>}
     >
       {() => <LinkBubbleMenu
@@ -85,25 +97,6 @@ export function ReminderBodyEditor({ initialHtml, disabled, onChange }: {
         }}
       />}
     </RichTextEditor>
-      <div className="flex flex-wrap gap-2 p-2 border-b border-border">
-        <select aria-label="Insérer une variable dans le corps" value="" className="rounded border border-border bg-surface p-2 text-sm" onChange={(event) => {
-          if (event.target.value) editorRef.current?.editor?.chain().focus().insertContent({ type: "text", text: `{${event.target.value}}` }).run();
-        }}>
-          <option value="">Insérer une variable…</option>
-          {templateVariables.map(([variable, label]) => <option key={variable} value={variable}>{label}</option>)}
-        </select>
-        <select aria-label="Insérer une condition" value="" className="rounded border border-border bg-surface p-2 text-sm" onChange={(event) => {
-          if (event.target.value) editorRef.current?.editor?.chain().focus().insertContent([
-            { type: "paragraph", content: [{ type: "text", text: `{#if ${event.target.value}}` }] },
-            { type: "paragraph", content: [{ type: "text", text: "Texte conditionnel à compléter" }] },
-            { type: "paragraph", content: [{ type: "text", text: "{/if}" }] },
-          ]).run();
-        }}>
-          <option value="">Insérer une condition…</option>
-          {conditions.map(([condition, label]) => <option key={condition} value={condition}>{label}</option>)}
-        </select>
-        <Button onClick={() => editorRef.current?.editor?.chain().focus().insertContent({ type: "text", text: "Ouvrir Thezaurus", marks: [{ type: "link", attrs: { href: "{talksUrl}" } }] }).run()}>Lien vers Thezaurus</Button>
-      </div>
     <details className="text-sm text-text-muted mt-3">
       <summary className="cursor-pointer">Variables et conditions : aide à la rédaction</summary>
       <p>Les balises restent visibles dans l’éditeur. Leur valeur est remplacée dans l’aperçu. Placez les balises de condition dans des paragraphes séparés, sans mise en forme à l’intérieur des balises.</p>
