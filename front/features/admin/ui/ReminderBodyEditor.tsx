@@ -10,7 +10,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { FontSize, TextStyle } from "@tiptap/extension-text-style";
 import { MenuItem } from "@mui/material";
 
-export const templateVariables = [
+const templateVariables = [
   ["talkTitle", "Titre du talk"],
   ["talkDate", "Date du talk"],
   ["conferenceName", "Conférence"],

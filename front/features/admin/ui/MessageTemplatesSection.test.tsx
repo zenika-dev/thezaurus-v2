@@ -13,7 +13,6 @@ vi.mock("@/entities/talk", () => ({ talkApi: { getTalks: vi.fn().mockResolvedVal
 ]) } }));
 // Rich editor round trips are tested separately with the real Tiptap editor.
 vi.mock("./ReminderBodyEditor", () => ({
-  templateVariables: [["talkTitle", "Titre du talk"]],
   ReminderBodyEditor: ({ initialHtml, onChange, disabled }: { initialHtml: string; onChange: (html: string) => void; disabled: boolean }) =>
     <textarea aria-label="Corps du modèle" defaultValue={initialHtml} disabled={disabled} onChange={(event) => onChange(event.target.value)} />,
 }));
