@@ -1,6 +1,36 @@
 {
   "openapi" : "3.1.0",
   "paths" : {
+    "/api/admin/message-templates" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MessageTemplateDefinition"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Message Template Catalog Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN" ]
+        } ]
+      }
+    },
     "/api/admin/reminder-template" : {
       "put" : {
         "requestBody" : {
@@ -1377,6 +1407,47 @@
           }
         }
       },
+      "MessageTemplateDefinition" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "apiPath" : {
+            "type" : "string"
+          },
+          "variables" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TemplateToken"
+            }
+          },
+          "conditions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TemplateToken"
+            }
+          },
+          "links" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TemplateLink"
+            }
+          },
+          "example" : {
+            "type" : "string"
+          },
+          "help" : {
+            "type" : "string"
+          }
+        }
+      },
       "MonthLabel" : {
         "type" : "string",
         "enum" : [ "Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc" ]
@@ -1616,6 +1687,31 @@
       "TalkStatus" : {
         "type" : "string",
         "enum" : [ "DRAFT", "PLANNED", "SUBMITTED", "ACCEPTED", "REJECTED", "DONE" ]
+      },
+      "TemplateLink" : {
+        "type" : "object",
+        "properties" : {
+          "variable" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "text" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TemplateToken" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          }
+        }
       },
       "User" : {
         "type" : "object",

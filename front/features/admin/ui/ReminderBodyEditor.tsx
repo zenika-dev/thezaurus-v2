@@ -10,21 +10,10 @@ import StarterKit from "@tiptap/starter-kit";
 import { FontSize, TextStyle } from "@tiptap/extension-text-style";
 import { MenuItem } from "@mui/material";
 
-const templateVariables = [
-  ["talkTitle", "Titre du talk"],
-  ["talkDate", "Date du talk"],
-  ["conferenceName", "Conférence"],
-  ["talksUrl", "Lien vers Thezaurus"],
-] as const;
+import type { BackendMessageTemplateDefinition } from "@/shared/api";
 
-const conditions = [
-  ["hasConference", "Conférence renseignée"],
-  ["hasDate", "Date renseignée"],
-  ["missingVideo", "Vidéo manquante"],
-  ["missingAudience", "Audience manquante"],
-] as const;
-
-export function ReminderBodyEditor({ initialHtml, disabled, onChange }: {
+export function ReminderBodyEditor({ initialHtml, disabled, onChange, definition }: {
+  definition: BackendMessageTemplateDefinition;
   initialHtml: string;
   disabled: boolean;
   onChange: (html: string) => void;
@@ -41,7 +30,7 @@ export function ReminderBodyEditor({ initialHtml, disabled, onChange }: {
           link: {
             openOnClick: false, autolink: false, linkOnPaste: false,
             HTMLAttributes: { target: null, rel: null, class: null },
-            isAllowedUri: (url) => url === "{talksUrl}" || /^https?:\/\//i.test(url),
+            isAllowedUri: (url) => definition.links?.some((link) => url === `{${link.variable}}`) === true || /^https?:\/\//i.test(url),
           },
         }),
         TextStyle, FontSize, LinkBubbleMenuHandler,
@@ -73,7 +62,7 @@ export function ReminderBodyEditor({ initialHtml, disabled, onChange }: {
         <MenuSelect inputProps={{ "aria-label": "Insérer une variable dans le corps" }} value="" displayEmpty renderValue={() => "Variable"} disabled={!editor?.isEditable} onChange={(event) => {
           if (event.target.value) editor?.chain().focus().insertContent({ type: "text", text: `{${event.target.value}}` }).run();
         }}>
-          {templateVariables.map(([variable, label]) => <MenuItem key={variable} value={variable}>{label}</MenuItem>)}
+          {(definition.variables ?? []).map(({ name, label }) => <MenuItem key={name} value={name}>{label}</MenuItem>)}
         </MenuSelect>
         <MenuSelect inputProps={{ "aria-label": "Insérer une condition" }} value="" displayEmpty renderValue={() => "Condition"} disabled={!editor?.isEditable} onChange={(event) => {
           if (event.target.value) editor?.chain().focus().insertContent([
@@ -82,13 +71,13 @@ export function ReminderBodyEditor({ initialHtml, disabled, onChange }: {
             { type: "paragraph", content: [{ type: "text", text: "{/if}" }] },
           ]).run();
         }}>
-          {conditions.map(([condition, label]) => <MenuItem key={condition} value={condition}>{label}</MenuItem>)}
+          {(definition.conditions ?? []).map(({ name, label }) => <MenuItem key={name} value={name}>{label}</MenuItem>)}
         </MenuSelect>
-        <MenuButton tooltipLabel="Lien vers Thezaurus" disabled={!editor?.isEditable} onClick={() => editor?.chain().focus().insertContent({ type: "text", text: "Ouvrir Thezaurus", marks: [{ type: "link", attrs: { href: "{talksUrl}" } }] }).run()}>Lien vers Thezaurus</MenuButton>
+        {(definition.links ?? []).map((link) => <MenuButton key={link.variable} tooltipLabel={link.label ?? "Insérer un lien"} disabled={!editor?.isEditable} onClick={() => editor?.chain().focus().insertContent({ type: "text", text: link.text, marks: [{ type: "link", attrs: { href: `{${link.variable}}` } }] }).run()}>{link.label}</MenuButton>)}
       </MenuControlsContainer>}
     >
       {() => <LinkBubbleMenu
-        formatHref={(value) => value.trim() === "{talksUrl}" ? "{talksUrl}" : formatHref(value)}
+        formatHref={(value) => definition.links?.some((link) => value.trim() === `{${link.variable}}`) ? value.trim() : formatHref(value)}
         labels={{
           editLinkAddTitle: "Insérer un lien", editLinkEditTitle: "Modifier le lien",
           editLinkTextInputLabel: "Texte", editLinkHrefInputLabel: "URL",
@@ -100,9 +89,9 @@ export function ReminderBodyEditor({ initialHtml, disabled, onChange }: {
     <details className="text-sm text-text-muted mt-3">
       <summary className="cursor-pointer">Variables et conditions : aide à la rédaction</summary>
       <p>Les balises restent visibles dans l’éditeur. Leur valeur est remplacée dans l’aperçu. Placez les balises de condition dans des paragraphes séparés, sans mise en forme à l’intérieur des balises.</p>
-      <pre className="whitespace-pre-wrap bg-surface-muted rounded p-3">{"{#if hasConference}\nLors de {conferenceName}\n{#else}\nMerci pour votre talk {talkTitle}\n{/if}"}</pre>
-      <p>Date et conférence absentes donnent un texte vide. Une audience de zéro est renseignée. Le lien ouvre la liste des talks.</p>
-      <ul className="list-disc pl-5">{conditions.map(([condition, label]) => <li key={condition}><code>{condition}</code> : {label}</li>)}</ul>
+      <pre className="whitespace-pre-wrap bg-surface-muted rounded p-3">{definition.example}</pre>
+      <p>{definition.help}</p>
+      <ul className="list-disc pl-5">{(definition.conditions ?? []).map(({ name, label }) => <li key={name}><code>{name}</code> : {label}</li>)}</ul>
     </details>
   </fieldset>;
 }
