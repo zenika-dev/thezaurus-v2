@@ -32,6 +32,7 @@ class ReminderTemplateResourceTest {
 
     @Test
     void anonymousCannotReadSaveOrPreview() {
+        given().get(PATH + "/contexts").then().statusCode(401);
         given().get(PATH).then().statusCode(401);
         given().contentType(ContentType.JSON).body(update()).put(PATH).then().statusCode(401);
         given().contentType(ContentType.JSON)
@@ -46,6 +47,7 @@ class ReminderTemplateResourceTest {
             user = "user",
             roles = {Role.Names.CONSULTANT})
     void nonAdminCannotReadSaveOrPreview() {
+        given().get(PATH + "/contexts").then().statusCode(403);
         given().get(PATH).then().statusCode(403);
         given().contentType(ContentType.JSON).body(update()).put(PATH).then().statusCode(403);
         given().contentType(ContentType.JSON)
@@ -99,8 +101,14 @@ class ReminderTemplateResourceTest {
             user = "admin",
             roles = {Role.Names.ADMIN})
     void previewUsesUnsavedContentWithoutPersistence() throws Exception {
+        when(talks.findAll()).thenReturn(java.util.List.of(new Talk("one", "Mon talk", "description")));
+        given().get(PATH + "/contexts")
+                .then()
+                .statusCode(200)
+                .body("[0].id", is("one"))
+                .body("[0].label", is("Mon talk"));
         when(talks.findById("one")).thenReturn(new Talk("one", "Mon talk", "description"));
-        var request = Map.of("subject", "Rappel {talkTitle}", "bodyHtml", "<p>{talkTitle}</p>", "talkId", "one");
+        var request = Map.of("subject", "Rappel {talkTitle}", "bodyHtml", "<p>{talkTitle}</p>", "contextId", "one");
         given().contentType(ContentType.JSON)
                 .body(request)
                 .post(PATH + "/preview")
@@ -110,7 +118,7 @@ class ReminderTemplateResourceTest {
                 .body("bodyHtml", is("<p>Mon talk</p>"));
         verifyNoInteractions(repository);
         given().contentType(ContentType.JSON)
-                .body(Map.of("subject", "Sujet", "bodyHtml", "Corps", "talkId", "absent"))
+                .body(Map.of("subject", "Sujet", "bodyHtml", "Corps", "contextId", "absent"))
                 .post(PATH + "/preview")
                 .then()
                 .statusCode(404);
