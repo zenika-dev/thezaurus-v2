@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Alert, Autocomplete, Button, CircularProgress, Paper, TextField } from "@mui/material";
 import { talkApi } from "@/entities/talk";
 import { queryKeys, type BackendReminderTemplateView, type BackendReminderTemplatePreview } from "@/shared/api";
 import { reminderTemplateApi, ReminderTemplateError } from "../api/reminder-template";
 import { useUnsavedTemplate } from "../model/useUnsavedTemplate";
-import { ReminderBodyEditor, templateVariables } from "./ReminderBodyEditor";
+import { ReminderBodyEditor } from "./ReminderBodyEditor";
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Une erreur est survenue. Veuillez réessayer.";
@@ -39,7 +39,6 @@ function TemplateForm({ initial, onDirtyChange }: { initial: BackendReminderTemp
   const [success, setSuccess] = useState(false);
   const [conflict, setConflict] = useState(false);
   const [comparison, setComparison] = useState<BackendReminderTemplateView | null>(null);
-  const subjectInput = useRef<HTMLInputElement>(null);
   const talks = useQuery({ queryKey: queryKeys.talks.lists(), queryFn: talkApi.getTalks });
   const dirty = subject !== (saved.subject ?? "") || bodyHtml !== (saved.bodyHtml ?? "");
   const source = JSON.stringify({ subject, bodyHtml, talkId });
@@ -93,18 +92,7 @@ function TemplateForm({ initial, onDirtyChange }: { initial: BackendReminderTemp
         <p className="font-semibold">{comparison.subject}</p>
         <PreviewBody html={comparison.bodyHtml ?? ""} />
       </div>}
-      <TextField inputRef={subjectInput} label="Sujet" value={subject} required disabled={!!pending} fullWidth onChange={(event) => { setSubject(event.target.value); setSuccess(false); }} />
-      <select aria-label="Insérer une variable dans le sujet" value="" disabled={!!pending} className="self-start rounded border border-border bg-surface p-2 text-sm" onChange={(event) => {
-        const input = subjectInput.current;
-        const start = input?.selectionStart ?? subject.length;
-        const end = input?.selectionEnd ?? start;
-        const variable = `{${event.target.value}}`;
-        setSubject(subject.slice(0, start) + variable + subject.slice(end));
-        requestAnimationFrame(() => { input?.focus(); input?.setSelectionRange(start + variable.length, start + variable.length); });
-      }}>
-        <option value="">Insérer une variable dans le sujet…</option>
-        {templateVariables.map(([variable, label]) => <option key={variable} value={variable}>{label}</option>)}
-      </select>
+      <TextField label="Sujet" value={subject} required disabled={!!pending} fullWidth onChange={(event) => { setSubject(event.target.value); setSuccess(false); }} />
       <ReminderBodyEditor initialHtml={initial.bodyHtml ?? ""} disabled={!!pending} onChange={(html) => { setBodyHtml(html); setSuccess(false); }} />
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="contained" disabled={!!pending || conflict || !dirty || !subject.trim() || !bodyHtml.trim()} onClick={save}>{pending === "save" ? "Enregistrement…" : comparison ? "Enregistrer ma version après comparaison" : "Enregistrer"}</Button>
