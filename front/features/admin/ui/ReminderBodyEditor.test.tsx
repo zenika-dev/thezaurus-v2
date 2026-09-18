@@ -29,7 +29,8 @@ it("preserves visible Qute, supported formatting and variable links through an e
   const body = await screen.findByRole("textbox", { name: "Corps du modèle" });
   expect(body.innerHTML).toContain('{#if hasConference}');
   expect(body.innerHTML).toContain('href="{talksUrl}"');
-  fireEvent.change(screen.getByRole("combobox", { name: "Insérer une variable dans le corps" }), { target: { value: "talkTitle" } });
+  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Insérer une variable dans le corps" }));
+  fireEvent.click(await screen.findByRole("option", { name: "Titre du talk" }));
   await waitFor(() => expect(onChange).toHaveBeenCalled());
   const html: string = onChange.mock.lastCall![0];
   expect(html).toContain("{talkTitle}");
