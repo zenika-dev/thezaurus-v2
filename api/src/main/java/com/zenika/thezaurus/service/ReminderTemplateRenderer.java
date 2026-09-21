@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -30,11 +31,14 @@ import org.jsoup.safety.Safelist;
 @ApplicationScoped
 public class ReminderTemplateRenderer {
     private static final Set<String> VARIABLES = Set.of("talkTitle", "talkDate", "conferenceName", "talksUrl");
-    private static final Set<String> CONDITIONS = Set.of("hasConference", "hasDate", "missingVideo", "missingAudience");
+    private static final Set<String> CONDITIONS = ReminderTemplateMetadata.CONDITIONS.stream()
+            .map(condition -> condition.name())
+            .collect(Collectors.toUnmodifiableSet());
     private static final Pattern SIZE =
             Pattern.compile("font-size\\s*:\\s*(12|14|16|18|24|32)px\\s*;?", Pattern.CASE_INSENSITIVE);
-    private static final Pattern CONTROL =
-            Pattern.compile("\\{(?:#if (?:hasConference|hasDate|missingVideo|missingAudience)|#else|/if)}");
+    private static final Pattern CONTROL = Pattern.compile("\\{\\s*(?:#if\\s+(?:"
+            + CONDITIONS.stream().map(Pattern::quote).collect(Collectors.joining("|"))
+            + ")|#else|/if)\\s*}");
     private static final String URL_MARKER = "https://thezaurus-template.invalid/talks";
     private final Engine engine = Engine.builder().addDefaults().build();
 
