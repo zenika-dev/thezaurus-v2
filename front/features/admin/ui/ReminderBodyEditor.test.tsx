@@ -14,6 +14,19 @@ const definition = {
   links: [{ variable: "talksUrl", label: "Lien vers Thezaurus", text: "Ouvrir Thezaurus" }],
 };
 
+it("does not report a document change when saving or previewing disables the editor", async () => {
+  const onChange = vi.fn();
+  const initialHtml = '<p><span style="font-size: 24px">Texte enregistré</span></p>';
+  const props = { definition, initialHtml, onChange };
+  const { rerender } = render(<ReminderBodyEditor {...props} disabled={false} />);
+  await screen.findByRole("textbox", { name: "Corps du modèle" });
+  rerender(<ReminderBodyEditor {...props} disabled={true} />);
+  await waitFor(() => expect(screen.getByRole("textbox", { name: "Corps du modèle" }).getAttribute("contenteditable")).toBe("false"));
+  rerender(<ReminderBodyEditor {...props} disabled={false} />);
+  await waitFor(() => expect(screen.getByRole("textbox", { name: "Corps du modèle" }).getAttribute("contenteditable")).toBe("true"));
+  expect(onChange).not.toHaveBeenCalled();
+});
+
 it("inserts a Qute link through the standard link dialog", async () => {
   const onChange = vi.fn();
   render(<ReminderBodyEditor definition={definition} initialHtml="<p></p>" disabled={false} onChange={onChange} />);
