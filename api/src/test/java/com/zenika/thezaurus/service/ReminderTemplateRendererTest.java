@@ -117,4 +117,14 @@ class ReminderTemplateRendererTest {
                                 talk("Titre", null, null, null, null))
                         .bodyHtml());
     }
+
+    @Test
+    void spacedConditionControlsDoNotCountAsContentOrLeaveParagraphs() {
+        assertThrows(ThezaurusException.class, () -> renderer.validate("Sujet", "<p>{#if hasDate }</p><p>{/if}</p>"));
+        var result = renderer.render(
+                "Sujet",
+                "<p>{#if hasDate }</p><p>Avec date</p><p>{#else}</p><p>Sans date</p><p>{/if}</p>",
+                talk("Talk", null, null, null, null));
+        assertEquals("<p>Sans date</p>", result.bodyHtml());
+    }
 }
