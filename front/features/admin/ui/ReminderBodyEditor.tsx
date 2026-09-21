@@ -39,7 +39,9 @@ export function ReminderBodyEditor({ initialHtml, disabled, onChange, definition
       editorProps={{ attributes: {
         role: "textbox", "aria-label": "Corps du modèle", "aria-multiline": "true",
       } }}
-      onUpdate={({ editor }) => onChange(editor.isEmpty ? "" : editor.getHTML())}
+      onUpdate={({ editor, transaction }) => {
+        if (transaction.docChanged) onChange(editor.isEmpty ? "" : editor.getHTML());
+      }}
       sx={{ "& .ProseMirror": { minHeight: 256, fontSize: "16px" } }}
       renderControls={(editor) => <MenuControlsContainer>
         <MenuButtonBold tooltipLabel="Gras" />

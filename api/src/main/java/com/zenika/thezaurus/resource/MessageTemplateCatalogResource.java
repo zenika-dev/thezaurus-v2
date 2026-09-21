@@ -4,6 +4,7 @@ import com.zenika.thezaurus.model.MessageTemplateDefinition;
 import com.zenika.thezaurus.model.MessageTemplateDefinition.TemplateLink;
 import com.zenika.thezaurus.model.MessageTemplateDefinition.TemplateToken;
 import com.zenika.thezaurus.model.Role;
+import com.zenika.thezaurus.service.ReminderTemplateMetadata;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -27,11 +28,7 @@ public class MessageTemplateCatalogResource {
                         new TemplateToken("talkDate", "Date du talk"),
                         new TemplateToken("conferenceName", "Conférence"),
                         new TemplateToken("talksUrl", "Lien vers Thezaurus")),
-                List.of(
-                        new TemplateToken("hasConference", "Conférence renseignée"),
-                        new TemplateToken("hasDate", "Date renseignée"),
-                        new TemplateToken("missingVideo", "Vidéo manquante"),
-                        new TemplateToken("missingAudience", "Audience manquante")),
+                ReminderTemplateMetadata.CONDITIONS,
                 List.of(new TemplateLink("talksUrl", "Lien vers Thezaurus", "Ouvrir Thezaurus")),
                 "{#if hasConference}\nLors de {conferenceName}\n{#else}\nMerci pour votre talk {talkTitle}\n{/if}",
                 "Date et conférence absentes donnent un texte vide. Une audience de zéro est renseignée. Le lien ouvre la liste des talks.",
