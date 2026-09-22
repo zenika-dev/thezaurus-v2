@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useGuardedPush } from "@/shared/lib/navigation-guard";
 import { useSession } from "next-auth/react";
 import { Settings } from "lucide-react";
 import { SideMenuNavItem } from "./SideMenuNavItem";
@@ -10,7 +11,7 @@ interface SideMenuAdminLinkProps {
 }
 
 export function SideMenuAdminLink({ open }: SideMenuAdminLinkProps) {
-  const router = useRouter();
+  const push = useGuardedPush();
   const pathname = usePathname();
   const { data: session } = useSession();
 
@@ -25,7 +26,7 @@ export function SideMenuAdminLink({ open }: SideMenuAdminLinkProps) {
       label="Administration"
       open={open}
       active={pathname.startsWith("/admin")}
-      onClick={() => router.push("/admin")}
+      onClick={() => push("/admin")}
     />
   );
 }
