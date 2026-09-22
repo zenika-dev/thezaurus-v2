@@ -5,231 +5,102 @@
 ![Firestore](https://img.shields.io/badge/Firestore-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
 ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)
 ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![Next.js](https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![MUI](https://img.shields.io/badge/MUI-%230081CB.svg?style=for-the-badge&logo=mui&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
 
-Ce projet est une refonte du projet TheZaurus déjà existant dans un autre projet GitHub : https://github.com/zenika-open-source/thezaurus
+Ce projet est la refonte moderne de l'application **TheZaurus** : [zenika-open-source/thezaurus](https://github.com/zenika-open-source/thezaurus).
 
-## Architecture 
+TheZaurus permet la gestion et le suivi des partages de connaissances chez Zenika : talks, articles de blog et participations à des conférences.
 
-Le projet est pour le moment constitué :
+---
 
-- d'une interface en React 
-- d'un composant back end Java Quarkus
-- d'une base de données Firestore
+## 🏛️ Architecture du projet
 
-## Front end 
+Le projet s'articule autour des composants suivants :
 
-
-### API Endpoints
-
-Une API Quarkus est disponible dans le dossier `api` pour gérer les entités suivantes dans Firestore :
-
-- **Talks** (`/talks`) : `GET`, `GET /{id}`, `POST`, `PUT /{id}`, `DELETE /{id}`
-- **Blog Posts** (`/blog-posts`) : `GET`, `GET /{id}`, `POST`, `PUT /{id}`, `DELETE /{id}`
-- **Conferences** (`/conferences`) : `GET`, `GET /{id}`, `POST`, `PUT /{id}`, `DELETE /{id}`
-- **Status** (`/status`) : `GET` (Statut simple de l'application)
-- **Health Checks** (`/q/health`) : Points de terminaison standards Quarkus (Liveness/Readiness)
-
-### Contrat OpenAPI et types partagés
-
-Les types TypeScript décrivant les payloads de l'API ne sont **pas écrits à la main** : ils sont
-générés depuis le contrat OpenAPI que Quarkus dérive des annotations JAX-RS.
+- **Frontend (`front/`)** : Application React / Next.js (App Router), stylisée avec TailwindCSS & Material UI (MUI), typée avec TypeScript et sécurisée avec NextAuth.
+- **Backend API (`api/`)** : API REST développée avec Java 21 et Quarkus, exposant les ressources et intégrant le SDK Bolt pour Slack.
+- **Base de données** : Google Cloud Firestore (avec émulateur local Firebase pour le développement).
 
 ```
-Resources JAX-RS ──(build Maven)──> api/openapi.json ──(openapi-typescript)───> front/shared/api/schema.d.ts
-                                                     ├─(script maison)────────> front/shared/api/enums.ts
-                                                     └─(script maison)────────> front/shared/api/contract.ts
+thezaurus-v2/
+├── api/             # Backend Java Quarkus (JAX-RS, Firestore, Slack Bot)
+├── front/           # Frontend Next.js / React / TypeScript
+├── docs/            # Documentation détaillée du projet
+├── docker-compose.* # Orchestration des conteneurs locaux et Cloud
 ```
 
-`schema.d.ts` ne contient que des types bruts. `enums.ts` et `contract.ts` en sont les compléments :
-`enums.ts` fournit les enums runtime sous forme de tableaux (listes déroulantes, `z.enum`), tandis que
-`contract.ts` expose des alias de types lisibles (`BackendBlogPost`, `BackendTalk`, …).
+---
 
-Les fichiers intermédiaires sont **versionnés**, pour deux raisons : le job CI `front` reste
-indépendant du job `api` (pas de build Maven ni d'échange d'artefact), et toute évolution du
-contrat apparaît noir sur blanc dans le diff de la PR.
+## 🔌 API & Endpoints
 
-Après toute modification d'une ressource REST ou d'un modèle côté `api`, régénérer :
+L'API Quarkus gère les entités principales dans Firestore :
 
-```bash
-cd api && ./mvnw package -DskipTests && cp target/openapi/openapi.json openapi.json
-```
+- **Talks** (`/talks`) : CRUD des présentations et talks
+- **Blog Posts** (`/blog-posts`) : CRUD des articles de blog
+- **Conferences** (`/conferences`) : CRUD des conférences
+- **Users** (`/users`) : Gestion des utilisateurs et des rôles
+- **Status** (`/status`) : Statut simple de l'application
+- **Health Checks** (`/q/health`) : Métriques de santé Quarkus (Liveness / Readiness)
+- **OpenAPI & Swagger UI** (`/q/openapi`, `/q/swagger-ui`) : Documentation interactive de l'API
 
-```bash
-cd front && npm run generate:api
-```
+---
 
-La CI échoue si l'un de ces fichiers est obsolète. Côté front, les types se consomment via les
-alias lisibles exportés par `shared/api` (`BackendBlogPost`, `BackendTalk`, `BackendConference`, …)
-plutôt que par `components["schemas"][…]`.
+## ⚡ Démarrage rapide
 
-La spec reste également servie à chaud sur `/q/openapi` (et l'UI Swagger sur `/q/swagger-ui` en dev).
+1. **Configurer l'environnement :**
+   ```bash
+   cp .env-template .env
+   ```
+   *(Renseignez vos identifiants OAuth Google `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` dans le `.env`)*
 
-## Configuration
-
-Toute la configuration passe par un fichier `.env` **à la racine du projet**, lu automatiquement par Docker Compose (et jamais versionné) :
-
-```bash
-cp .env-template .env
-```
-
-### Variables d'environnement
-
-| Variable | Requise | Utilisée par | Description |
-|---|---|---|---|
-| **Mode de fonctionnement** | | | |
-| Mode de lancement | — | Docker Compose | `docker compose up` (défaut) : charge automatiquement `docker-compose.override.yml` → mode **dev** avec émulateur Firestore local. `docker compose -f docker-compose.yml up` (override exclu explicitement) : mode **prod**, connexion au vrai Firestore GCP. |
-| **Authentification (front)** | | | |
-| `GOOGLE_CLIENT_ID` | ✅ | front, api | Client OAuth Google — console GCP > *APIs & Services > Credentials > OAuth 2.0 Client IDs*. `http://localhost:3000/api/auth/callback/google` doit être dans les *Authorized redirect URIs*. Sert aussi d'audience JWT à l'API en dev. |
-| `GOOGLE_CLIENT_SECRET` | ✅ | front | Secret du client OAuth. Affiché uniquement à sa création (bouton *Add secret* si perdu). |
-| `NEXTAUTH_URL` | ✅ | front | URL du front en local : `http://localhost:3000`. |
-| `NEXTAUTH_SECRET` | ✅ | front | Signature des sessions NextAuth. À générer : `openssl rand -base64 32`. |
-| **Firestore GCP** (mode `prod` uniquement) | | | |
-| `GOOGLE_CLOUD_PROJECT_ID` | mode prod | api | Projet GCP cible. Défaut du compose : `thezaurus-494709` (projet de l'équipe). |
-| `FIRESTORE_DATABASE_ID` | mode prod | api | Base Firestore. Défaut : `thezaurus-dev`. ⚠️ Ne jamais pointer `thezaurus-prod` en local. |
-| `FIRESTORE_COLLECTION_PREFIX` | — | api | Préfixe des collections (ex : `dev` → `dev_talks`). Défaut : `dev`. |
-| `GCLOUD_ADC` | Windows, mode prod | Docker Compose | Chemin du fichier *Application Default Credentials* monté dans le conteneur API. Inutile sur Linux/Mac (défaut : `~/.config/gcloud/...`) ; sous Windows : `C:/Users/<vous>/AppData/Roaming/gcloud/application_default_credentials.json`. |
-| **Bot Slack** (optionnel — voir la section dédiée) | | | |
-| `SLACK_BOT_TOKEN` | — | api | Bot User OAuth Token (`xoxb-...`). Absent = bot désactivé. |
-| `SLACK_SIGNING_SECRET` | — | api | Vérification de l'origine des requêtes Slack. |
-| `SLACK_APP_TOKEN` | — | api | Token app-level (`xapp-...`), si utilisé. |
-| **Déploiement Cloud Run** (`docker-compose.cloud.yml` uniquement) | | | |
-| `NEXTAUTH_PUBLIC_URL` | déploiement | front | URL publique du front déployé, utilisée comme `NEXTAUTH_URL` en prod. À ajouter aux *Authorized redirect URIs* du client OAuth. |
-| `GOOGLE_IAP_AUDIENCE` | déploiement | api | Audience du JWT IAP vérifiée par l'API en prod. ⚠️ Non câblée à ce jour — à valider avec la personne qui gère le déploiement. |
-
-### Mode dev (émulateur — défaut)
-
-Rien à configurer : `docker compose up` démarre un émulateur Firestore local avec la stack (port 9000, données en RAM, réinitialisées à chaque `docker compose down`). Aucun credential GCP requis — seules les variables d'authentification du front sont à renseigner.
-
-### Mode prod (vrai Firestore GCP)
-
-Lancez `docker-compose.yml` seul, en excluant explicitement l'override dev :
-
-```bash
-docker compose -f docker-compose.yml up --build
-```
-
-Sans `docker-compose.override.yml`, l'émulateur Firestore n'existe plus dans la stack et l'API tourne en profil `prod` : elle se connecte au vrai Firestore. Il faut alors des *Application Default Credentials* : installez la [gcloud CLI](https://cloud.google.com/sdk/docs/install) puis :
-
-```bash
-gcloud auth application-default login
-```
-
-⚠️ **Sous Windows**, gcloud écrit ce fichier dans `%APPDATA%\gcloud\`, pas dans `~/.config/gcloud` : renseignez `GCLOUD_ADC` (voir tableau). Après un changement de mode, relancez avec `docker compose up -d --force-recreate --remove-orphans`.
-
-### Configuration du bot Slack (`/talk``)
-
-L'API expose un bot Slack (commandes slash `/talk`) via le SDK [Bolt for Java](https://github.com/slackapi/java-slack-sdk). Cette intégration est **optionnelle** : si les variables ci-dessous ne sont pas renseignées, l'application démarre normalement mais le bot Slack reste désactivé (aucune commande n'est enregistrée, aucun appel n'est fait à l'API Slack).
-
-Les variables `SLACK_BOT_TOKEN` et `SLACK_SIGNING_SECRET` sont décrites dans le [tableau des variables d'environnement](#variables-denvironnement) ; les étapes 5 et 6 ci-dessous indiquent où les récupérer dans Slack.
-
-#### Créer l'application Slack à partir du manifest
-
-Le fichier [`api/src/main/resources/manifest.yaml`](api/src/main/resources/manifest.yaml) décrit entièrement la configuration de l'application Slack (nom du bot, commandes slash, interactivité, scopes OAuth...). Il permet de créer l'app Slack en une fois plutôt que de configurer chaque écran manuellement :
-
-1. Rendez-vous sur https://api.slack.com/apps puis cliquez sur **Create New App**.
-2. Choisissez **From a manifest** et sélectionnez le workspace Slack sur lequel vous voulez installer l'app (idéalement un workspace de dev/test).
-3. Collez le contenu de `manifest.yaml` (onglet **YAML**), puis remplacez chaque occurrence de `https://your-url.zenika.com` par l'URL publique de votre API (URL de déploiement, ou URL ngrok en local — voir ci-dessous).
-4. Validez la création (**Create**), puis vérifiez le résumé (**Review summary & create app**).
-5. Dans **OAuth & Permissions**, cliquez sur **Install to Workspace** et autorisez l'app, puis copiez le **Bot User OAuth Token** (commence par `xoxb-`) dans `SLACK_BOT_TOKEN`.
-6. Dans **Basic Information > App Credentials**, copiez le **Signing Secret** dans `SLACK_SIGNING_SECRET`.
-7. Renseignez ces deux valeurs dans votre `.env`, puis (re)démarrez l'application.
-
-#### Tester en local avec ngrok
-
-Slack doit pouvoir atteindre votre API sur une URL HTTPS publique pour délivrer les commandes slash sur `/slack/events`. En local, vous pouvez exposer votre API avec [ngrok](https://ngrok.com/) :
-
-```bash
-ngrok http 8080
-```
-
-Utilisez ensuite l'URL HTTPS fournie par ngrok (ex : `https://xxxx.ngrok-free.app/slack/events`) comme `url` des commandes slash et comme `request_url` d'interactivité dans le manifest de l'app Slack.
-
-⚠️ L'URL ngrok change à chaque redémarrage (sauf domaine réservé) : il faut alors mettre à jour la configuration de l'app Slack (Slash Commands + Interactivity) avec la nouvelle URL.
-
-#### Commandes disponibles
-
-- `/talk` : ouvre une modale permettant de créer un talk (titre, speakers, agence, description, statut, visibilité, conférence, date)
-
-## Déploiement Local (Docker Compose)
-
-1. Assurez-vous d'avoir Docker installé et le `.env` configuré (section précédente).
-2. Lancez :
+2. **Démarrer l'application avec Docker Compose :**
    ```bash
    docker compose up --build
    ```
-3. L'application sera disponible aux adresses suivantes :
-   - **Frontend** : `http://localhost:3000`
-   - **API** : `http://localhost:8080`
-   - **Swagger UI** : `http://localhost:8080/q/swagger-ui/`
-   - **Émulateur Firestore** : `http://localhost:9000` (mode `dev` uniquement)
-   - **Emulator UI (Firebase)** : `http://localhost:4000/firestore/local-dev/data` (mode `dev` uniquement) — parcourt les collections/documents dans un navigateur, sans rien installer.
 
-### Vérifier les données de l'émulateur (mode dev)
+3. **Accéder aux services :**
+   - **Frontend** : [http://localhost:3000](http://localhost:3000)
+   - **API Backend** : [http://localhost:8080](http://localhost:8080)
+   - **Swagger UI** : [http://localhost:8080/q/swagger-ui/](http://localhost:8080/q/swagger-ui/)
+   - **Firebase Emulator UI** : [http://localhost:4000/firestore/local-dev/data](http://localhost:4000/firestore/local-dev/data)
 
-Le plus simple : ouvrir l'**Emulator UI** ci-dessus dans un navigateur.
+---
 
-L'API REST de l'émulateur permet aussi d'inspecter les documents en ligne de commande :
+## 📚 Documentation détaillée
 
-```bash
-curl "http://localhost:9000/v1/projects/local-dev/databases/(default)/documents/dev_talks"
-```
+Pour approfondir, consultez les guides disponibles dans le dossier [`docs/`](docs/) :
 
-(même principe pour `dev_blog_posts` et `dev_conferences` — le préfixe vient de `FIRESTORE_COLLECTION_PREFIX`)
+- 📖 **[Guide d'installation et de développement](docs/Installation.md)** : 
+  - Configuration exhaustive des variables d'environnement (`.env`)
+  - Modes de fonctionnement (Émulateur Firestore local vs Firestore GCP)
+  - Synchronisation du contrat OpenAPI et génération automatique des types TypeScript
+  - Règles de formatage du code Java (Spotless)
+  - Dépannage et pièges fréquents
+- 🤖 **[Guide du Bot Slack](docs/SlackBot.md)** :
+  - Configuration de l'application Slack depuis le manifest
+  - Exposition locale avec ngrok
+  - Commandes slash (`/talk`)
 
-> **Pièges connus**
-> - En mode `prod`, si l'API loggue `Error reading credential file ... /tmp/credentials.json: File does not exist` : le fichier ADC n'existait pas quand le conteneur a été créé, et Docker a monté un dossier vide à la place. Vérifiez que `gcloud auth application-default login` a bien créé le fichier (et supprimez un éventuel **dossier** `application_default_credentials.json` créé par Docker à cet emplacement), puis recréez le conteneur : `docker compose up -d --force-recreate api`.
-> - Si le front loggue `client_secret_basic client authentication method requires a client_secret` : `GOOGLE_CLIENT_SECRET` manque dans votre `.env`.
+---
 
-> **Note** : le mode Quarkus Dev hors Docker (`./mvnw quarkus:dev` dans `api/`) utilise l'émulateur sur `localhost:9000` par défaut (voir `%dev.quarkus.google.cloud.firestore.host-override` dans `api/src/main/resources/application.properties`).
+## 🚢 Déploiement
 
-## Deploiement
+Le déploiement est actuellement effectué sur **Google Cloud Run** :
 
-Le déploiement est pour le moment manuel. Il faut s'assurer de :
+1. Définir les variables d'environnement de production :
+   ```bash
+   export $(grep -v '^#' .env | xargs)
+   ```
+2. Lancer le déploiement Cloud Run :
+   ```bash
+   gcloud run compose up docker-compose.cloud.yml --allow-unauthenticated
+   ```
 
-- 1) Définir les variables d'environnement du projet
-  ```bash
-  export $(grep -v '^#' .env | xargs)
-  ```
-- 2) Lancer la commande
-  ```bash
-  gcloud run compose up docker-compose.cloud.yml --allow-unauthenticated
-  ```
+> ⚠️ Avant de déployer, assurez-vous de cibler les variables de production (ex. `FIRESTORE_DATABASE_ID=thezaurus-prod` et `FIRESTORE_COLLECTION_PREFIX=prod`).
 
-⚠️ Le fichier `.env` est celui de votre configuration locale. Donc avant de déployer, merci de bien respecter les variables d'environnement présentes dans ce fichier, notamment :
-
-  ```bash
-  FIRESTORE_DATABASE_ID=thezaurus-prod
-  FIRESTORE_COLLECTION_PREFIX=prod
-  ```
-
-## Formatage du code (module `api`)
-
-Le style Java est imposé par [Spotless](https://github.com/diffplug/spotless) avec le formateur
-[palantir-java-format](https://github.com/palantir/palantir-java-format) : indentation de 4 espaces, 120 colonnes,
-imports triés et imports inutilisés supprimés. Aucun réglage d'IDE n'est nécessaire, et les réglages personnels ne
-font plus foi.
-
-`spotless:check` est branché sur la phase `validate` : **tout build du module `api` échoue si un fichier est mal
-formaté**. Pour reformater les sources :
-
-```bash
-cd api && ./mvnw spotless:apply
-```
-
-Pour vérifier sans rien modifier :
-
-```bash
-cd api && ./mvnw spotless:check
-```
-
-Le commit de reformatage initial est listé dans `.git-blame-ignore-revs`. Pour que `git blame` l'ignore :
-
-```bash
-git config blame.ignoreRevsFile .git-blame-ignore-revs
-```
+---
 
 Made with ❤️ by Zenika
