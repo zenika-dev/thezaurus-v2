@@ -83,23 +83,16 @@ Pour approfondir, consultez les guides disponibles dans le dossier [`docs/`](doc
   - Configuration de l'application Slack depuis le manifest
   - Exposition locale avec ngrok
   - Commandes slash (`/talk`)
+- 🚢 **[Guide de déploiement Cloud Run](docs/Deploiement.md)** :
+  - Architecture multi-conteneurs Cloud Run (Ingress & Backend)
+  - Prérequis et variables d'environnement de production
+  - Commandes de déploiement et consultation des logs
 
 ---
 
 ## 🚢 Déploiement
 
-Le déploiement est actuellement effectué sur **Google Cloud Run** :
-
-1. Définir les variables d'environnement de production :
-   ```bash
-   export $(grep -v '^#' .env | xargs)
-   ```
-2. Lancer le déploiement Cloud Run :
-   ```bash
-   gcloud run compose up docker-compose.cloud.yml --allow-unauthenticated
-   ```
-
-> ⚠️ Avant de déployer, assurez-vous de cibler les variables de production (ex. `FIRESTORE_DATABASE_ID=thezaurus-prod` et `FIRESTORE_COLLECTION_PREFIX=prod`).
+Le déploiement en production s'effectue sur **Google Cloud Run** via `gcloud run compose`. Consultez le [Guide de déploiement détaillé](docs/Deploiement.md) pour les étapes complètes.
 
 ---
 
