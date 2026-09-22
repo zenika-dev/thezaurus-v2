@@ -34,6 +34,7 @@ cp .env-template .env
 | `GOOGLE_CLOUD_PROJECT_ID` | mode prod | api | Identifiant du projet GCP (ex. `thezaurus-494709`). En mode dev avec émulateur, `local-dev` est utilisé. |
 | `FIRESTORE_DATABASE_ID` | mode prod | api | Nom de la base Firestore cible (défaut : `thezaurus-dev`). ⚠️ Ne jamais cibler la base de production en local. |
 | `FIRESTORE_COLLECTION_PREFIX` | — | api | Préfixe des collections (ex : `dev` → `dev_talks`). Défaut : `dev`. |
+| `GCP_REGION` | déploiement | api, front | Région GCP de déploiement Cloud Run (défaut : `europe-west1`). |
 | `GCLOUD_ADC` | Windows (mode prod) | Docker Compose | Chemin du fichier *Application Default Credentials* monté dans le conteneur API. Automatique sur Linux/Mac (`~/.config/gcloud/...`) ; sous Windows : `C:/Users/<vous>/AppData/Roaming/gcloud/application_default_credentials.json`. |
 | **Bot Slack** (optionnel) | | | |
 | `SLACK_BOT_TOKEN` | — | api | Bot User OAuth Token (`xoxb-...`). Absent = bot désactivé. Voir [SlackBot.md](./SlackBot.md). |

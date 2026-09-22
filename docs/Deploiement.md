@@ -22,9 +22,13 @@ TheZaurus-v2 s'exécute sur Cloud Run selon une architecture **multi-conteneurs 
      ```bash
      gcloud auth login
      ```
-   - Sélectionnez le projet cible (ex : `thezaurus-494709`) :
+   - Sélectionnez le projet cible :
      ```bash
-     gcloud config set project thezaurus-494709
+     gcloud config set project <your project id>
+     ```
+   - Définissez la région Cloud Run par défaut (**`europe-west1`**) :
+     ```bash
+     gcloud config set run/region europe-west1
      ```
 
 2. **Permissions GCP** :
@@ -41,9 +45,10 @@ TheZaurus-v2 s'exécute sur Cloud Run selon une architecture **multi-conteneurs 
 
 Avant de déployer, préparez les variables de production requises :
 
-| Variable | Description | Exemple |
+| Variable | Description | Valeur par défaut / Exemple |
 |---|---|---|
 | `GOOGLE_CLOUD_PROJECT_ID` | Identifiant du projet GCP cible | `thezaurus-494709` |
+| `GCP_REGION` | Région de déploiement Cloud Run | `europe-west1` |
 | `FIRESTORE_DATABASE_ID` | Base Firestore cible | `thezaurus-prod` *(ou `thezaurus-dev` pour la pré-prod)* |
 | `FIRESTORE_COLLECTION_PREFIX` | Préfixe des collections Firestore | `prod` *(ou `dev`)* |
 | `GOOGLE_CLIENT_ID` | ID client OAuth Google | `xxxx.apps.googleusercontent.com` |
@@ -69,28 +74,29 @@ export $(grep -v '^#' .env.prod | xargs)
 Ou exportez-les manuellement :
 
 ```bash
-export GOOGLE_CLOUD_PROJECT_ID=thezaurus-494709
-export FIRESTORE_DATABASE_ID=thezaurus-prod
+export GOOGLE_CLOUD_PROJECT_ID=<your project id>
+export GCP_REGION=europe-west1
+export FIRESTORE_DATABASE_ID=<your database id>
 export FIRESTORE_COLLECTION_PREFIX=prod
 export NEXTAUTH_PUBLIC_URL=https://votre-service-url.run.app
-export NEXTAUTH_SECRET="votre-secret-de-session"
-export GOOGLE_CLIENT_ID="votre-client-id"
-export GOOGLE_CLIENT_SECRET="votre-client-secret"
-export REASONING_ENGINE_URL="votre-url-reasoning-engine"
+export NEXTAUTH_SECRET="<your secret>"
+export GOOGLE_CLIENT_ID="<your client id>"
+export GOOGLE_CLIENT_SECRET="<your client secret>"
+export REASONING_ENGINE_URL="<your reasoning engine url>"
 ```
 
 ### 2. Lancer le déploiement Cloud Run
 
-Exécutez la commande `gcloud run compose` en ciblant le fichier de configuration de déploiement :
+Exécutez la commande `gcloud run compose` en spécifiant la région (**`europe-west1`**) et le fichier de configuration :
 
 ```bash
-gcloud run compose up docker-compose.cloud.yml --allow-unauthenticated
+gcloud run compose up docker-compose.cloud.yml --region ${GCP_REGION:-europe-west1} --allow-unauthenticated
 ```
 
 > [!NOTE]
 > Si `docker-compose.cloud.yml` n'est pas spécifié, la configuration de base de `docker-compose.yml` peut être utilisée directement :
 > ```bash
-> gcloud run compose up docker-compose.yml --allow-unauthenticated
+> gcloud run compose up docker-compose.yml --region ${GCP_REGION:-europe-west1} --allow-unauthenticated
 > ```
 
 ---
@@ -99,12 +105,12 @@ gcloud run compose up docker-compose.cloud.yml --allow-unauthenticated
 
 1. **Vérifier l'état du service déployé** :
    ```bash
-   gcloud run services list
+   gcloud run services list --region ${GCP_REGION:-europe-west1}
    ```
 
 2. **Consulter les logs en temps réel** :
    ```bash
-   gcloud run services logs tail thezaurus-v2 --region europe-west1
+   gcloud run services logs tail thezaurus-v2 --region ${GCP_REGION:-europe-west1}
    ```
 
 3. **Mise à jour de la configuration de l'application Slack (si utilisée)** :
