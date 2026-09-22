@@ -87,17 +87,13 @@ export REASONING_ENGINE_URL="<your reasoning engine url>"
 
 ### 2. Lancer le déploiement Cloud Run
 
-Exécutez la commande `gcloud run compose` en spécifiant la région (**`europe-west1`**) et le fichier de configuration :
+Exécutez la commande `gcloud run compose` en spécifiant la région (**`europe-west1`**) et le fichier `docker-compose.yml` :
 
 ```bash
-gcloud run compose up docker-compose.cloud.yml --region ${GCP_REGION:-europe-west1} --allow-unauthenticated
+gcloud run compose up -f docker-compose.yml --region ${GCP_REGION:-europe-west1} --allow-unauthenticated
 ```
 
-> [!NOTE]
-> Si `docker-compose.cloud.yml` n'est pas spécifié, la configuration de base de `docker-compose.yml` peut être utilisée directement :
-> ```bash
-> gcloud run compose up docker-compose.yml --region ${GCP_REGION:-europe-west1} --allow-unauthenticated
-> ```
+*(Ou simplement `gcloud run compose up --region ${GCP_REGION:-europe-west1} --allow-unauthenticated` car `docker-compose.yml` est le fichier chargé par défaut).*
 
 ---
 

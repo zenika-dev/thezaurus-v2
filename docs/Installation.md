@@ -42,7 +42,7 @@ cp .env-template .env
 | `SLACK_APP_TOKEN` | — | api | Token app-level (`xapp-...`), si utilisé. |
 | **Agent Talk / Reasoning Engine** | | | |
 | `REASONING_ENGINE_URL` | — | api | URL du Reasoning Engine Vertex AI pour l'agent IA. |
-| **Déploiement Cloud Run** (`docker-compose.cloud.yml` uniquement) | | | |
+| **Déploiement Cloud Run** | | | |
 | `NEXTAUTH_PUBLIC_URL` | déploiement | front | URL publique du front déployé, utilisée comme `NEXTAUTH_URL` en prod. À ajouter aux *Authorized redirect URIs* du client OAuth. |
 | `GOOGLE_IAP_AUDIENCE` | déploiement | api | Audience du JWT IAP vérifiée par l'API en prod. |
 
