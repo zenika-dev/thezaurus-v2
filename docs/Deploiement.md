@@ -53,7 +53,7 @@ Avant de déployer, préparez les variables de production requises :
 | `FIRESTORE_COLLECTION_PREFIX` | Préfixe des collections Firestore | `prod` *(ou `dev`)* |
 | `GOOGLE_CLIENT_ID` | ID client OAuth Google | `xxxx.apps.googleusercontent.com` |
 | `GOOGLE_CLIENT_SECRET` | Secret client OAuth Google | `GOCSPX-xxxx` |
-| `NEXTAUTH_PUBLIC_URL` | URL publique du front déployé | `https://thezaurus.zenika.com` |
+| `NEXTAUTH_URL` / `NEXTAUTH_PUBLIC_URL` | URL publique HTTPS du front déployé | `https://thezaurus.zenika.com` |
 | `NEXTAUTH_SECRET` | Secret de signature des sessions NextAuth | `$(openssl rand -base64 32)` |
 | `REASONING_ENGINE_URL` | URL de l'agent IA Vertex AI Reasoning Engine | `https://europe-west1-aiplatform.googleapis.com/...` |
 | `SLACK_BOT_TOKEN` *(optionnel)* | Token OAuth du Bot Slack | `xoxb-...` |
