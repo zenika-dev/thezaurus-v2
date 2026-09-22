@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
 import type { UserProfile } from "@/entities/user";
 
 interface ProfileIdentityProps {
@@ -21,9 +22,11 @@ export function ProfileIdentity({ profile }: ProfileIdentityProps) {
     >
       <div className="flex items-center gap-4 mb-6">
         {avatarUrl && !imageFailed ? (
-          <img
+          <Image
             src={avatarUrl}
             alt={profile.name || "Photo de profil"}
+ 
+            unoptimized 
             referrerPolicy="no-referrer"
             onError={() => setImageFailed(true)}
             className="w-16 h-16 rounded-full object-cover border border-gray-200 dark:border-[#2d2d2d] shrink-0"
