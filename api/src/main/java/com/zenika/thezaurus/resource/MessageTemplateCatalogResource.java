@@ -24,6 +24,7 @@ public class MessageTemplateCatalogResource {
                 "Un modèle commun à toute l’application. Le message s’adresse à tous les speakers du talk. Aucun email n’est envoyé depuis cette page.",
                 "/api/admin/reminder-template",
                 List.of(
+                        new TemplateToken("speakers", "Noms des speakers"),
                         new TemplateToken("talkTitle", "Titre du talk"),
                         new TemplateToken("talkDate", "Date du talk"),
                         new TemplateToken("conferenceName", "Conférence"),
