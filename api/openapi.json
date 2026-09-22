@@ -98,16 +98,20 @@
     },
     "/api/admin/reminder-template/contexts" : {
       "get" : {
+        "parameters" : [ {
+          "name" : "cursor",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/TemplateContextOption"
-                  }
+                  "$ref" : "#/components/schemas/TemplateContextPage"
                 }
               }
             }
@@ -1739,6 +1743,20 @@
             "type" : "string"
           },
           "label" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TemplateContextPage" : {
+        "type" : "object",
+        "properties" : {
+          "options" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TemplateContextOption"
+            }
+          },
+          "nextCursor" : {
             "type" : "string"
           }
         }

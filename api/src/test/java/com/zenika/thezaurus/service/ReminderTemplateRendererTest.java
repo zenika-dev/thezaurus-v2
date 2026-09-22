@@ -22,8 +22,11 @@ class ReminderTemplateRendererTest {
                 title,
                 "description",
                 List.of(
-                        User.builder().email("one@zenika.com").build(),
-                        User.builder().email("two@zenika.com").build(),
+                        User.builder()
+                                .name("Alice & Bob")
+                                .email("one@zenika.com")
+                                .build(),
+                        User.builder().name("<Chloé>").email("two@zenika.com").build(),
                         User.builder().email("").build()),
                 "office",
                 conference,
@@ -68,6 +71,25 @@ class ReminderTemplateRendererTest {
                 "Sujet", body, talk("Talk", "2026-09-16", new Conference("c", "Conf", null), null, null));
         assertTrue(missing.bodyHtml().contains("ConférenceVidéoAudience"));
         assertFalse(missing.bodyHtml().contains("<p></p>"));
+    }
+
+    @Test
+    void collectiveNamesAreEscapedAndReplayKeepsLegacyTemplatesWorking() {
+        var result = renderer.render(
+                "Bonjour {speakers}",
+                "<p>{speakers}</p>{#if missingReplay}Replay{/if}{#if missingVideo}Legacy{/if}",
+                talk("Talk", null, null, null, null));
+        assertEquals("Bonjour Alice & Bob, <Chloé>", result.subject());
+        assertEquals("<p>Alice &amp; Bob, &lt;Chloé&gt;</p>ReplayLegacy", result.bodyHtml());
+        var present = renderer.render(
+                "Sujet",
+                "<p>Texte</p>{#if missingReplay}Absent{/if}",
+                talk("Talk", null, null, "https://example.org/replay", 0));
+        assertEquals("<p>Texte</p>", present.bodyHtml());
+        assertEquals(
+                "<p></p>",
+                renderer.render("Sujet", "<p>{speakers}</p>", new Talk("id", "Titre", "Description"))
+                        .bodyHtml());
     }
 
     @ParameterizedTest

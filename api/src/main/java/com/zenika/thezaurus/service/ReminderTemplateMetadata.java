@@ -9,6 +9,6 @@ public final class ReminderTemplateMetadata {
     public static final List<TemplateToken> CONDITIONS = List.of(
             new TemplateToken("hasConference", "Conférence renseignée"),
             new TemplateToken("hasDate", "Date renseignée"),
-            new TemplateToken("missingVideo", "Vidéo manquante"),
+            new TemplateToken("missingReplay", "Replay manquant"),
             new TemplateToken("missingAudience", "Audience manquante"));
 }

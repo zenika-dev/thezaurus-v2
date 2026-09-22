@@ -58,6 +58,19 @@ class ReminderTemplateRepositoryTest {
     }
 
     @Test
+    void existingDocumentWithMissingFieldsCanBeReadAndSaved() throws Exception {
+        when(snapshot.exists()).thenReturn(true);
+        // Mockito's default boxed Long is zero: return null explicitly as Firestore does.
+        when(snapshot.getLong("revision")).thenReturn(null);
+        var current = repository.get();
+        assertEquals("", current.subject());
+        assertEquals("", current.bodyHtml());
+        assertEquals(0, current.revision());
+        assertEquals(
+                1, repository.save("Sujet", "<p>Corps</p>", current.revision()).revision());
+    }
+
+    @Test
     void staleRevisionNeverWrites() throws Exception {
         when(snapshot.exists()).thenReturn(true);
         when(snapshot.getLong("revision")).thenReturn(2L);

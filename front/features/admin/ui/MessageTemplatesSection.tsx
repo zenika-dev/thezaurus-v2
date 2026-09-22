@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Alert, Autocomplete, Button, CircularProgress, MenuItem, Paper, TextField } from "@mui/material";
 
 import { type BackendMessageTemplateDefinition, type BackendReminderTemplateView, type BackendReminderTemplatePreview } from "@/shared/api";
@@ -14,7 +14,7 @@ function errorMessage(error: unknown) {
 }
 
 function PreviewBody({ html }: { html: string }) {
-  return <iframe title="Corps de l’email" sandbox="" referrerPolicy="no-referrer" className="w-full min-h-72 border-0 bg-white rounded" srcDoc={`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><style>body{font:16px system-ui,sans-serif;color:#18181b;padding:16px;overflow-wrap:anywhere}a{color:#2563eb}</style></head><body>${html}</body></html>`} />;
+  return <div className="h-72 min-h-72 resize-y overflow-hidden"><iframe title="Corps de l’email" sandbox="" referrerPolicy="no-referrer" className="w-full h-full border-0 bg-white rounded" srcDoc={`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><style>body{font:16px system-ui,sans-serif;color:#18181b;padding:16px;overflow-wrap:anywhere}a{color:#2563eb}</style></head><body>${html}</body></html>`} /></div>;
 }
 
 export function MessageTemplatesSection({ onDirtyChange }: { onDirtyChange?: (dirty: boolean) => void }) {
@@ -79,11 +79,14 @@ function TemplateForm({ initial, definition, onDirtyChange, onBusyChange }: Temp
   const [conflict, setConflict] = useState(false);
   const [comparison, setComparison] = useState<BackendReminderTemplateView | null>(null);
   const context = definition.previewContext;
-  const contexts = useQuery({
+  const contexts = useInfiniteQuery({
     queryKey: ["admin", "template-contexts", definition.id, context?.optionsPath],
-    queryFn: () => reminderTemplateApi.contexts(context!.optionsPath!),
+    queryFn: ({ pageParam }) => reminderTemplateApi.contexts(context!.optionsPath!, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (page) => page.nextCursor || undefined,
     enabled: !!context?.optionsPath,
   });
+  const contextOptions = contexts.data?.pages.flatMap((page) => page.options ?? []).filter((option) => !!option.id) ?? [];
   const dirty = subject !== (saved.subject ?? "") || bodyHtml !== (saved.bodyHtml ?? "");
   const source = JSON.stringify({ subject, bodyHtml, contextId });
   useUnsavedTemplate(dirty);
@@ -142,7 +145,8 @@ function TemplateForm({ initial, definition, onDirtyChange, onBusyChange }: Temp
       <section className="border-t border-border pt-5 flex flex-col gap-4" aria-labelledby="preview-heading">
         <h3 id="preview-heading" className="text-lg font-semibold">Aperçu</h3>
         {contexts.isError && <Alert severity="error" action={<Button onClick={() => contexts.refetch()}>Réessayer</Button>}>Impossible de charger les éléments pour l’aperçu.</Alert>}
-        {context && <Autocomplete options={contexts.data ?? []} getOptionLabel={(option) => option.label ?? ""} getOptionKey={(option) => option.id!} isOptionEqualToValue={(a, b) => a.id === b.id} value={contexts.data?.find((option) => option.id === contextId) ?? null} onChange={(_, option) => setContextId(option?.id ?? "")} loading={contexts.isPending} disabled={!!pending} noOptionsText="Aucun élément disponible" loadingText="Chargement…" renderInput={(params) => <TextField {...params} label={context.label} />} />}
+        {context && <Autocomplete options={contextOptions} getOptionLabel={(option) => option.label ?? ""} getOptionKey={(option) => option.id ?? option.label ?? ""} isOptionEqualToValue={(a, b) => a.id === b.id} value={contextOptions.find((option) => option.id === contextId) ?? null} onChange={(_, option) => setContextId(option?.id ?? "")} loading={contexts.isPending} disabled={!!pending} noOptionsText="Aucun élément dans les pages chargées" loadingText="Chargement…" renderInput={(params) => <TextField {...params} label={context.label} />} />}
+        {context && contexts.hasNextPage && <Button className="self-start!" disabled={!!pending || contexts.isFetchingNextPage} onClick={() => contexts.fetchNextPage()}>{contexts.isFetchingNextPage ? "Chargement…" : "Charger plus d’éléments"}</Button>}
         <Button className="self-start!" variant="outlined" disabled={!!pending || (!!context && !contextId) || !subject.trim() || !bodyHtml.trim()} onClick={renderPreview}>{pending === "preview" ? "Génération…" : "Générer l’aperçu"}</Button>
         {preview && <div className="rounded-xl border border-border p-4">
           {previewSource !== source && <Alert severity="info">Le contenu ou le contexte a changé. Générez à nouveau l’aperçu.</Alert>}

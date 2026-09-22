@@ -40,8 +40,8 @@ class MessageTemplateCatalogResourceTest {
                 .body("[0].previewContext.label", is("Talk utilisé pour l’aperçu"))
                 .body("[0].label", is("Email de rappel"))
                 .body("[0].apiPath", is("/api/admin/reminder-template"))
-                .body("[0].variables.name", hasItems("talkTitle", "talkDate", "conferenceName", "talksUrl"))
-                .body("[0].conditions.name", hasItems("hasConference", "hasDate", "missingVideo", "missingAudience"))
+                .body("[0].variables.name", hasItems("talkTitle", "talkDate", "conferenceName", "talksUrl", "speakers"))
+                .body("[0].conditions.name", hasItems("hasConference", "hasDate", "missingReplay", "missingAudience"))
                 .body("[0].links[0].variable", is("talksUrl"));
     }
 }

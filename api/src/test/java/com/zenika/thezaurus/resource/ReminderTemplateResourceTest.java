@@ -101,12 +101,14 @@ class ReminderTemplateResourceTest {
             user = "admin",
             roles = {Role.Names.ADMIN})
     void previewUsesUnsavedContentWithoutPersistence() throws Exception {
-        when(talks.findAll()).thenReturn(java.util.List.of(new Talk("one", "Mon talk", "description")));
+        when(talks.findContextOptions(null))
+                .thenReturn(
+                        new TemplateContextPage(java.util.List.of(new TemplateContextOption("one", "Mon talk")), null));
         given().get(PATH + "/contexts")
                 .then()
                 .statusCode(200)
-                .body("[0].id", is("one"))
-                .body("[0].label", is("Mon talk"));
+                .body("options[0].id", is("one"))
+                .body("options[0].label", is("Mon talk"));
         when(talks.findById("one")).thenReturn(new Talk("one", "Mon talk", "description"));
         var request = Map.of("subject", "Rappel {talkTitle}", "bodyHtml", "<p>{talkTitle}</p>", "contextId", "one");
         given().contentType(ContentType.JSON)
