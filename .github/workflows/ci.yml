@@ -70,7 +70,7 @@ jobs:
           cache-dependency-path: front/package-lock.json
 
       - name: Cache Next.js build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             front/.next/cache
