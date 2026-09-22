@@ -20,7 +20,7 @@ function mount() {
 }
 
 beforeEach(() => {
-  vi.mocked(reminderTemplateApi.contexts).mockReset().mockResolvedValue([{ id: 'talk-1', label: 'Qute en pratique — 2026-09-16' }]);
+  vi.mocked(reminderTemplateApi.contexts).mockReset().mockResolvedValue({ options: [{ id: 'talk-1', label: 'Qute en pratique — 2026-09-16' }] });
   vi.mocked(reminderTemplateApi.list).mockReset().mockResolvedValue([{ id: 'test', label: 'Modèle de test', apiPath: '/api/admin/test-template', variables: [], conditions: [], links: [], previewContext: { label: "Contexte fourni par le backend", optionsPath: "/api/admin/test-contexts" } }]);
   vi.mocked(reminderTemplateApi.get).mockReset().mockResolvedValue({ subject: "", bodyHtml: "", revision: 0 });
   vi.mocked(reminderTemplateApi.save).mockReset().mockImplementation(async (_path, data) => ({ subject: data.subject ?? "", bodyHtml: data.bodyHtml ?? "", revision: 1 }));
@@ -28,9 +28,26 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+it("loads another context page without losing the selected option", async () => {
+  vi.mocked(reminderTemplateApi.contexts)
+    .mockResolvedValueOnce({ options: [{ id: "first", label: "Premier" }], nextCursor: "first" })
+    .mockResolvedValueOnce({ options: [{ id: "second", label: "Deuxième" }] });
+  mount();
+  await edit();
+  const selector = screen.getByRole("combobox", { name: "Contexte fourni par le backend" });
+  fireEvent.mouseDown(selector);
+  fireEvent.click(await screen.findByRole("option", { name: "Premier" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Charger plus d’éléments" }));
+  await waitFor(() => expect(reminderTemplateApi.contexts).toHaveBeenCalledWith("/api/admin/test-contexts", "first"));
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Charger plus d’éléments" })).toBeNull());
+  expect((selector as HTMLInputElement).value).toBe("Premier");
+  fireEvent.mouseDown(selector);
+  expect(await screen.findByRole("option", { name: "Deuxième" })).toBeTruthy();
+});
+
 it("previews a non-talk context described entirely by the backend", async () => {
   vi.mocked(reminderTemplateApi.list).mockResolvedValue([{ id: "conference", label: "Invitation", apiPath: "/api/admin/invitation", previewContext: { label: "Conférence", optionsPath: "/api/admin/conference-options" } }]);
-  vi.mocked(reminderTemplateApi.contexts).mockResolvedValue([{ id: "conf-2", label: "DevFest" }]);
+  vi.mocked(reminderTemplateApi.contexts).mockResolvedValue({ options: [{ id: "conf-2", label: "DevFest" }] });
   vi.mocked(reminderTemplateApi.preview).mockResolvedValue({ subject: "Invitation", bodyHtml: "<p>Bienvenue</p>", to: [] });
   mount();
   await edit();
@@ -38,7 +55,7 @@ it("previews a non-talk context described entirely by the backend", async () => 
   fireEvent.click(await screen.findByRole("option", { name: "DevFest" }));
   fireEvent.click(screen.getByRole("button", { name: "Générer l’aperçu" }));
   await screen.findByTitle("Corps de l’email");
-  expect(reminderTemplateApi.contexts).toHaveBeenCalledWith("/api/admin/conference-options");
+  expect(reminderTemplateApi.contexts).toHaveBeenCalledWith("/api/admin/conference-options", undefined);
   expect(reminderTemplateApi.preview).toHaveBeenCalledWith("/api/admin/invitation", expect.objectContaining({ contextId: "conf-2" }));
 });
 
