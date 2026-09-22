@@ -74,8 +74,8 @@ L'API Quarkus gère les entités principales dans Firestore :
 Pour approfondir, consultez les guides disponibles dans le dossier [`docs/`](docs/) :
 
 - 📖 **[Guide d'installation et de développement](docs/Installation.md)** : 
-  - Configuration exhaustive des variables d'environnement (`.env`)
-  - Modes de fonctionnement (Émulateur Firestore local vs Firestore GCP)
+  - Configuration et variables d'environnement (`.env`)
+  - Lancement local avec Docker Compose et émulateur Firestore
   - Synchronisation du contrat OpenAPI et génération automatique des types TypeScript
   - Règles de formatage du code Java (Spotless)
   - Dépannage et pièges fréquents

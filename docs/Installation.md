@@ -9,7 +9,6 @@ Ce guide détaille l'installation, la configuration et le workflow de développe
 - [Docker](https://docs.docker.com/get-docker/) et Docker Compose
 - [Node.js](https://nodejs.org/) (version 20+ recommandée pour le développement front-end)
 - [Java 21+](https://adoptium.net/) et Maven (optionnel, si vous exécutez l'API hors Docker)
-- [Google Cloud SDK (`gcloud`)](https://cloud.google.com/sdk/docs/install) (uniquement pour le mode connecté à GCP)
 
 ---
 
@@ -25,22 +24,21 @@ cp .env-template .env
 
 | Variable | Requise | Utilisée par | Description |
 |---|---|---|---|
-| **Mode de fonctionnement** | | | |
-| Mode de lancement | — | Docker Compose | `docker compose up` (défaut) : charge automatiquement `docker-compose.override.yml` → mode **dev** avec émulateur Firestore local.<br>`docker compose -f docker-compose.yml up` : mode **prod**, connexion au vrai Firestore GCP. |
 | **Authentification (front)** | | | |
 | `GOOGLE_CLIENT_ID` | ✅ | front, api | Client OAuth Google — console GCP > *APIs & Services > Credentials > OAuth 2.0 Client IDs*. `http://localhost:3000/api/auth/callback/google` doit être dans les *Authorized redirect URIs*. Sert aussi d'audience JWT à l'API en dev. |
 | `GOOGLE_CLIENT_SECRET` | ✅ | front | Secret du client OAuth. Affiché uniquement à sa création (bouton *Add secret* si perdu). |
 | `NEXTAUTH_URL` | ✅ | front | URL du front en local : `http://localhost:3000`. |
 | `NEXTAUTH_SECRET` | ✅ | front | Signature des sessions NextAuth. À générer : `openssl rand -base64 32`. |
-| **Firestore GCP** (mode `prod` uniquement) | | | |
-| `GOOGLE_CLOUD_PROJECT_ID` | mode prod | api | Projet GCP cible. Défaut du compose : `thezaurus-494709` (projet de l'équipe). |
-| `FIRESTORE_DATABASE_ID` | mode prod | api | Base Firestore. Défaut : `thezaurus-dev`. ⚠️ Ne jamais pointer `thezaurus-prod` en local. |
+| **Firestore** | | | |
+| `GOOGLE_CLOUD_PROJECT_ID` | — | api | Identifiant du projet GCP (ex. `thezaurus-494709`). En local, l'émulateur utilise `local-dev`. |
+| `FIRESTORE_DATABASE_ID` | — | api | Nom de la base Firestore (défaut : `thezaurus-dev`). |
 | `FIRESTORE_COLLECTION_PREFIX` | — | api | Préfixe des collections (ex : `dev` → `dev_talks`). Défaut : `dev`. |
-| `GCLOUD_ADC` | Windows, mode prod | Docker Compose | Chemin du fichier *Application Default Credentials* monté dans le conteneur API. Inutile sur Linux/Mac (défaut : `~/.config/gcloud/...`) ; sous Windows : `C:/Users/<vous>/AppData/Roaming/gcloud/application_default_credentials.json`. |
 | **Bot Slack** (optionnel) | | | |
 | `SLACK_BOT_TOKEN` | — | api | Bot User OAuth Token (`xoxb-...`). Absent = bot désactivé. Voir [SlackBot.md](./SlackBot.md). |
 | `SLACK_SIGNING_SECRET` | — | api | Vérification de l'origine des requêtes Slack. |
 | `SLACK_APP_TOKEN` | — | api | Token app-level (`xapp-...`), si utilisé. |
+| **Agent Talk / Reasoning Engine** | | | |
+| `REASONING_ENGINE_URL` | — | api | URL du Reasoning Engine Vertex AI pour l'agent IA. |
 | **Déploiement Cloud Run** (`docker-compose.cloud.yml` uniquement) | | | |
 | `NEXTAUTH_PUBLIC_URL` | déploiement | front | URL publique du front déployé, utilisée comme `NEXTAUTH_URL` en prod. À ajouter aux *Authorized redirect URIs* du client OAuth. |
 | `GOOGLE_IAP_AUDIENCE` | déploiement | api | Audience du JWT IAP vérifiée par l'API en prod. |
@@ -49,28 +47,11 @@ cp .env-template .env
 
 ## 🚀 Lancement de l'environnement local (Docker Compose)
 
-### 1. Mode Dev (Émulateur Firestore — Recommandé)
-
-Par défaut, `docker compose up` démarre un émulateur Firestore local avec la stack (port 9000, données en mémoire). Aucun identifiant GCP n'est requis : seules les variables d'authentification OAuth Google du front sont nécessaires.
+En développement local, `docker compose up` démarre l'ensemble de la stack avec un émulateur Firestore local (port 9000, données en mémoire). Aucun identifiant GCP n'est requis : seules les variables d'authentification OAuth Google du front sont nécessaires.
 
 ```bash
 docker compose up --build
 ```
-
-### 2. Mode Prod (Connexion au vrai Firestore GCP)
-
-Pour tester avec la base Firestore réelle hébergée sur GCP, lancez `docker-compose.yml` seul en excluant l'override dev :
-
-1. Authentifiez-vous sur GCP pour générer les *Application Default Credentials* :
-   ```bash
-   gcloud auth application-default login
-   ```
-2. Démarrez les conteneurs :
-   ```bash
-   docker compose -f docker-compose.yml up --build
-   ```
-
-> ⚠️ **Sous Windows** : `gcloud` écrit le fichier dans `%APPDATA%\gcloud\`. Renseignez la variable `GCLOUD_ADC` dans votre `.env`.
 
 ---
 
@@ -83,7 +64,7 @@ Une fois la stack démarrée, les services suivants sont accessibles :
 | **Frontend** | [http://localhost:3000](http://localhost:3000) | Interface utilisateur Next.js |
 | **API Backend** | [http://localhost:8080](http://localhost:8080) | API REST Quarkus |
 | **Swagger UI** | [http://localhost:8080/q/swagger-ui/](http://localhost:8080/q/swagger-ui/) | Documentation interactive OpenAPI |
-| **Emulator UI (Firebase)** | [http://localhost:4000/firestore/local-dev/data](http://localhost:4000/firestore/local-dev/data) | Console visuelle Firestore (mode dev) |
+| **Emulator UI (Firebase)** | [http://localhost:4000/firestore/local-dev/data](http://localhost:4000/firestore/local-dev/data) | Console visuelle Firestore (parcours des données) |
 | **Émulateur Firestore** | `http://localhost:9000` | Port gRPC / REST de l'émulateur |
 
 ### Inspection des données de l'émulateur
@@ -150,11 +131,6 @@ Le style Java est imposé par [Spotless](https://github.com/diffplug/spotless) a
 
 ## 🛠️ Dépannage et pièges connus
 
-- **Erreur de credential file (`/tmp/credentials.json: File does not exist`)** :  
-  En mode prod, si le fichier ADC n'existait pas lors du premier démarrage du conteneur, Docker a pu monter un dossier vide à la place. Exécutez `gcloud auth application-default login`, supprimez l'éventuel dossier parasite, puis recréez le conteneur :
-  ```bash
-  docker compose up -d --force-recreate api
-  ```
 - **Erreur `client_secret_basic client authentication method requires a client_secret`** :  
   Vérifiez que la variable `GOOGLE_CLIENT_SECRET` est correctement renseignée dans votre `.env`.
 - **Mode Quarkus Dev hors Docker** :  
