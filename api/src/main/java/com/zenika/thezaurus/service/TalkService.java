@@ -2,6 +2,7 @@ package com.zenika.thezaurus.service;
 
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.Talk;
+import com.zenika.thezaurus.model.TemplateContextPage;
 import com.zenika.thezaurus.repository.TalkRepository;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -20,6 +21,10 @@ public class TalkService {
 
     public List<Talk> findAll() throws ExecutionException, InterruptedException {
         return repository.findAll();
+    }
+
+    public TemplateContextPage findContextOptions(String cursor) throws ExecutionException, InterruptedException {
+        return repository.findContextOptions(cursor);
     }
 
     public Talk findById(String id) throws ExecutionException, InterruptedException {

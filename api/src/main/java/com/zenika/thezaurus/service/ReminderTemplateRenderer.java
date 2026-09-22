@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -30,9 +31,12 @@ import org.jsoup.safety.Safelist;
 /** Shared, side-effect-free renderer for previews and future delivery. No Java objects reach Qute. */
 @ApplicationScoped
 public class ReminderTemplateRenderer {
-    private static final Set<String> VARIABLES = Set.of("talkTitle", "talkDate", "conferenceName", "talksUrl");
-    private static final Set<String> CONDITIONS = ReminderTemplateMetadata.CONDITIONS.stream()
-            .map(condition -> condition.name())
+    private static final Set<String> VARIABLES =
+            Set.of("talkTitle", "talkDate", "conferenceName", "talksUrl", "speakers");
+    // Read existing templates while exposing only the domain term "Replay" in the editor.
+    private static final Set<String> CONDITIONS = Stream.concat(
+                    ReminderTemplateMetadata.CONDITIONS.stream().map(condition -> condition.name()),
+                    Stream.of("missingVideo"))
             .collect(Collectors.toUnmodifiableSet());
     private static final Pattern SIZE =
             Pattern.compile("font-size\\s*:\\s*(12|14|16|18|24|32)px\\s*;?", Pattern.CASE_INSENSITIVE);
@@ -114,8 +118,19 @@ public class ReminderTemplateRenderer {
         data.put("talksUrl", talksUrl());
         data.put("hasDate", !date.isBlank());
         data.put("hasConference", !conference.isBlank());
-        data.put("missingVideo", text(talk.replay()).isBlank());
+        data.put("missingReplay", text(talk.replay()).isBlank());
+        data.put("missingVideo", data.get("missingReplay"));
         data.put("missingAudience", talk.audience() == null);
+        data.put(
+                "speakers",
+                talk.speakers() == null
+                        ? ""
+                        : talk.speakers().stream()
+                                .filter(Objects::nonNull)
+                                .map(speaker -> text(speaker.name()).trim())
+                                .filter(name -> !name.isEmpty())
+                                .distinct()
+                                .collect(Collectors.joining(", ")));
         String renderedSubject = engine.parse(template.subject())
                 .data(data)
                 .render()

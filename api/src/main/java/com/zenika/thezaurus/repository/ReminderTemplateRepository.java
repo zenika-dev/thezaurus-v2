@@ -62,7 +62,10 @@ public class ReminderTemplateRepository {
 
     private static ReminderTemplateView view(DocumentSnapshot snapshot) {
         if (!snapshot.exists()) return new ReminderTemplateView("", "", 0);
+        Long revision = snapshot.getLong("revision");
         return new ReminderTemplateView(
-                snapshot.getString("subject"), snapshot.getString("bodyHtml"), snapshot.getLong("revision"));
+                Optional.ofNullable(snapshot.getString("subject")).orElse(""),
+                Optional.ofNullable(snapshot.getString("bodyHtml")).orElse(""),
+                revision == null ? 0 : revision);
     }
 }

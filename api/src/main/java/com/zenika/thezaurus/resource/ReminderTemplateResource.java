@@ -28,12 +28,12 @@ public class ReminderTemplateResource {
 
     @GET
     @Path("/contexts")
-    public java.util.List<TemplateContextOption> contexts() throws ExecutionException, InterruptedException {
-        return talks.findAll().stream()
-                .map(talk -> new TemplateContextOption(
-                        talk.id(),
-                        talk.title() + (talk.date() == null || talk.date().isBlank() ? "" : " — " + talk.date())))
-                .toList();
+    public TemplateContextPage contexts(@QueryParam("cursor") String cursor)
+            throws ExecutionException, InterruptedException {
+        if (cursor != null && (cursor.isBlank() || cursor.contains("/") || cursor.length() > 1500)) {
+            throw ReminderTemplateRenderer.invalid("Curseur de pagination invalide.");
+        }
+        return talks.findContextOptions(cursor);
     }
 
     @GET
