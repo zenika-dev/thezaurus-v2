@@ -13,7 +13,9 @@ import com.zenika.thezaurus.model.ConferencePeriod;
 import com.zenika.thezaurus.model.DatePrecision;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.WebApplicationException;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -86,23 +88,58 @@ public class ConferenceRepository {
             conference.setId(UUID.randomUUID().toString());
         }
         DocumentReference docRef = firestore.collection(getCollectionName()).document(conference.getId());
-        ApiFuture<WriteResult> result = docRef.set(conference);
+        ApiFuture<WriteResult> result = docRef.create(conference);
         result.get();
         return conference;
     }
 
     public Conference update(String id, Conference conference) throws ExecutionException, InterruptedException {
         conference.setId(id);
-        DocumentReference docRef = firestore.collection(getCollectionName()).document(id);
-        ApiFuture<WriteResult> result = docRef.set(conference);
-        result.get();
-        return conference;
+        DocumentReference reference = firestore.collection(getCollectionName()).document(id);
+        return FirestoreTransactions.run(firestore, transaction -> {
+            DocumentSnapshot existing = transaction.get(reference).get();
+            if (!existing.exists()) throw new WebApplicationException("Conférence introuvable", 404);
+            if (Boolean.TRUE.equals(existing.getBoolean("deleting"))) {
+                throw new WebApplicationException("Suppression de la conférence en cours", 409);
+            }
+            transaction.set(reference, conference);
+            return conference;
+        });
     }
 
+    /**
+     * Marque d'abord la conférence pour refuser de nouveaux rattachements. Les conversions
+     * se font par transactions de 400 talks, sans écraser leurs autres champs. Une interruption
+     * conserve la conférence et sa marque ; relancer la suppression reprend le travail restant.
+     */
     public void delete(String id) throws ExecutionException, InterruptedException {
-        ApiFuture<WriteResult> writeResult =
-                firestore.collection(getCollectionName()).document(id).delete();
-        writeResult.get();
+        DocumentReference reference = firestore.collection(getCollectionName()).document(id);
+        FirestoreTransactions.run(firestore, transaction -> {
+            if (transaction.get(reference).get().exists()) transaction.update(reference, "deleting", true);
+            return null;
+        });
+        boolean finished;
+        do {
+            finished = FirestoreTransactions.run(firestore, transaction -> {
+                DocumentSnapshot conference = transaction.get(reference).get();
+                if (!conference.exists()) return true;
+                QuerySnapshot talks = transaction
+                        .get(firestore
+                                .collection(getCollectionName().replaceFirst("conferences$", "talks"))
+                                .whereEqualTo("conference.id", id)
+                                .limit(400))
+                        .get();
+                if (talks.getDocuments().isEmpty()) {
+                    transaction.delete(reference);
+                    return true;
+                }
+                String name = conference.getString("name");
+                for (QueryDocumentSnapshot talk : talks.getDocuments()) {
+                    transaction.update(talk.getReference(), "conference", Map.of("name", name));
+                }
+                return false;
+            });
+        } while (!finished);
     }
 
     /**

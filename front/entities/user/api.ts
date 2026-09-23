@@ -4,6 +4,7 @@ import {
   type BackendUserAdminView,
   type BackendUserSummary,
   type Role,
+  type Office,
 } from "@/shared/api";
 import type { NotificationPreferences, UserProfile } from "./model";
 
@@ -11,6 +12,7 @@ function mapBackendToFrontend(profile: BackendProfileView): UserProfile {
   return {
     name: profile.name ?? "",
     email: profile.email ?? "",
+    office: profile.office ?? "",
     notificationPreferences: {
       // Un canal ne doit jamais s'activer tout seul.
       email: profile.notificationPreferences?.email ?? false,
@@ -21,6 +23,12 @@ function mapBackendToFrontend(profile: BackendProfileView): UserProfile {
 }
 
 export const profileApi = {
+  updateOffice: async (office: Office | ""): Promise<void> => {
+    const res = await apiFetch("/api/me/profile/office", {
+      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ office }),
+    });
+    if (!res.ok) throw new Error("Impossible de modifier l’agence");
+  },
   getProfile: async (): Promise<UserProfile> => {
     const res = await apiFetch("/api/me/profile");
     if (!res.ok) throw new Error("Failed to fetch profile");

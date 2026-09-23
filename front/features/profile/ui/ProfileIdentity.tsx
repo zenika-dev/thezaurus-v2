@@ -25,8 +25,9 @@ export function ProfileIdentity({ profile }: ProfileIdentityProps) {
           <Image
             src={avatarUrl}
             alt={profile.name || "Photo de profil"}
- 
-            unoptimized 
+            width={64}
+            height={64}
+            unoptimized
             referrerPolicy="no-referrer"
             onError={() => setImageFailed(true)}
             className="w-16 h-16 rounded-full object-cover border border-gray-200 dark:border-[#2d2d2d] shrink-0"

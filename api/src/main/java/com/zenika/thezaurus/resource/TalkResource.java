@@ -2,12 +2,15 @@ package com.zenika.thezaurus.resource;
 
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.Talk;
+import com.zenika.thezaurus.model.TalkFormat;
 import com.zenika.thezaurus.model.TalkReviewRequest;
 import com.zenika.thezaurus.model.TalkReviewResponse;
 import com.zenika.thezaurus.service.TalkReviewService;
 import com.zenika.thezaurus.service.TalkService;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -36,6 +39,9 @@ public class TalkResource {
     @Inject
     TalkReviewService talkReviewService;
 
+    @Inject
+    SecurityIdentity identity;
+
     @GET
     public List<Talk> list() throws ExecutionException, InterruptedException {
         return service.findAll();
@@ -59,8 +65,21 @@ public class TalkResource {
 
     @PUT
     @Path("/{id}")
-    public RestResponse<Talk> update(@PathParam("id") String id, Talk talk)
+    public RestResponse<Talk> update(@PathParam("id") String id, @Valid Talk talk)
             throws ExecutionException, InterruptedException {
+        Talk existing = service.findById(id);
+        if (existing == null) {
+            return RestResponse.notFound();
+        }
+        boolean privileged = identity.hasRole(Role.Names.ADMIN) || identity.hasRole(Role.Names.DT);
+        if (!existing.canBeEditedBy(identity.getPrincipal().getName(), privileged)) {
+            return RestResponse.status(RestResponse.Status.FORBIDDEN);
+        }
+        if (talk == null
+                || (!TalkFormat.isSupported(talk.format())
+                        && !java.util.Objects.equals(talk.format(), existing.format()))) {
+            return RestResponse.status(RestResponse.Status.BAD_REQUEST);
+        }
         Talk updated = service.update(id, talk);
         if (updated == null) {
             return RestResponse.notFound();

@@ -10,7 +10,6 @@ import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { Eye, Funnel } from "lucide-react";
 import { TalkStatus } from "@/shared/api";
-import type { TalkData } from "@/entities/talk";
 import { agencyLabels, talkStatusConfig } from "@/entities/talk";
 import { SpeakerChip } from "@/entities/user";
 import dynamic from "next/dynamic";
@@ -29,15 +28,8 @@ export function TalkTable() {
 
   const selectedTalk = talks.find((talkItem) => talkItem.id === selectedTalkId) ?? null;
 
-  const handleUpdate = async (updated: TalkData) => {
-    try { await updateTalk(updated); }
-    catch { alert("Erreur lors de la mise à jour du talk"); }
-  };
-
-  const handleDelete = async (id: string) => {
-    try { await deleteTalk(id); }
-    catch { alert("Erreur lors de la suppression du talk"); }
-  };
+  const handleUpdate = updateTalk;
+  const handleDelete = deleteTalk;
 
   const filteredTalks = talks.filter((talk) => {
     if (statusFilter !== "All" && talk.status !== statusFilter) {
