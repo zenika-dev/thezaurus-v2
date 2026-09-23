@@ -29,6 +29,7 @@ export interface ConferenceData {
   location: BackendLocation;
   date: ConferencePeriod;
   cfpLink?: string;
+  cfpOpeningDate?: string;
   cfpClosingDate?: string;
   cfpStatus: ConferenceCFPStatus;
   submittedTalksAmount: number;
