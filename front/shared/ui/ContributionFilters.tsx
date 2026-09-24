@@ -1,8 +1,25 @@
 "use client";
 
 import { Funnel } from "lucide-react";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Switch from "@mui/material/Switch";
+
+function FilterButton({ label, active, onClick }: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={`inline-flex items-center gap-1 px-3 py-1 rounded-2xl text-xs font-sans border cursor-pointer transition-colors ${
+        active ? "bg-primary text-white border-primary" : "bg-surface-hover text-text border-transparent hover:bg-border-strong"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
 
 interface ContributionFiltersProps<S extends string> {
   statuses: readonly S[];
@@ -19,27 +36,23 @@ export function ContributionFilters<S extends string>({
 }: ContributionFiltersProps<S>) {
   return (
     <div className="flex items-center gap-6 flex-wrap mb-6">
+      <FilterButton
+        active={personalOnly}
+        onClick={() => onPersonalChange(!personalOnly)}
+        label={personalLabel}
+      />
       <div className="flex items-center gap-2 flex-wrap" role="group" aria-label="Statut">
         <Funnel size={14} className="text-text-muted shrink-0" />
         <span className="text-xs text-text-muted mr-2">Statut :</span>
         {(["All", ...statuses] as const).map((value) => (
-          <button
+          <FilterButton
             key={value}
-            type="button"
-            aria-pressed={status === value}
+            active={status === value}
             onClick={() => onStatusChange(value)}
-            className={`inline-flex items-center gap-1 px-3 py-1 rounded-2xl text-xs font-sans border cursor-pointer transition-colors ${
-              status === value ? "bg-primary text-white border-primary" : "bg-surface-hover text-text border-transparent hover:bg-border-strong"
-            }`}
-          >
-            {value === "All" ? "Tous" : labels[value].label}
-          </button>
+            label={value === "All" ? "Tous" : labels[value].label}
+          />
         ))}
       </div>
-      <FormControlLabel
-        control={<Switch size="small" checked={personalOnly} onChange={(_, checked) => onPersonalChange(checked)} />}
-        label={personalLabel}
-      />
       {(status !== "All" || personalOnly) && (
         <button
           type="button"
