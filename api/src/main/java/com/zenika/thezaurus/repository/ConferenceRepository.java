@@ -141,47 +141,4 @@ public class ConferenceRepository {
             });
         } while (!finished);
     }
-
-    /**
-     * Normalise les dates stockées sous forme de chaîne de caractères vers le format structuré
-     * {@link ConferencePeriod}. Opération idempotente : les documents portant déjà une structure
-     * {@code Map} sont ignorés.
-     *
-     * <p>Une chaîne non reconnue est convertie en période vide : {@code Conference.date} étant typé
-     * {@link ConferencePeriod}, une valeur textuelle non convertible ferait échouer la désérialisation
-     * du document lors des lectures.
-     *
-     * <p>Les écritures sont groupées par {@link WriteBatch} de {@link #BATCH_SIZE}.
-     *
-     * @return le nombre de documents mis à jour
-     */
-    public int migrateLegacyDates() throws ExecutionException, InterruptedException {
-        QuerySnapshot snapshot = firestore.collection(getCollectionName()).get().get();
-        int migrated = 0;
-        WriteBatch batch = firestore.batch();
-        int pending = 0;
-        for (QueryDocumentSnapshot doc : snapshot.getDocuments()) {
-            if (!(doc.get("date") instanceof String legacy)) {
-                continue;
-            }
-            ConferencePeriod period = ConferencePeriod.fromLegacyString(legacy);
-            if (period == null) {
-                logger.warnv(
-                        "Conférence {0} : date « {1} » non reconnue, réécrite en période vide — à corriger manuellement",
-                        doc.getId(), legacy);
-                period = new ConferencePeriod("", "", DatePrecision.DAY);
-            }
-            batch.update(doc.getReference(), "date", period.toFirestoreMap());
-            migrated++;
-            if (++pending == BATCH_SIZE) {
-                batch.commit().get();
-                batch = firestore.batch();
-                pending = 0;
-            }
-        }
-        if (pending > 0) {
-            batch.commit().get();
-        }
-        return migrated;
-    }
 }

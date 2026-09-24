@@ -24,9 +24,6 @@ public class LegacyDataMigration {
     Logger logger;
 
     @Inject
-    ConferenceRepository conferenceRepository;
-
-    @Inject
     TalkRepository talkRepository;
 
     /**
@@ -40,13 +37,7 @@ public class LegacyDataMigration {
         if (!enabled) {
             return;
         }
-        int migratedConferenceDates = conferenceRepository.migrateLegacyDates();
         int migratedTalks = talkRepository.migrateLegacyConferences();
         if (migratedTalks > 0) logger.infov("Migration des conférences de talks : {0} talk(s)", migratedTalks);
-        if (migratedConferenceDates > 0) {
-            logger.infov(
-                    "Migration dates de conférences : {0} conférence(s) réécrite(s) au format ConferencePeriod",
-                    migratedConferenceDates);
-        }
     }
 }
