@@ -26,7 +26,8 @@ describe("Mes articles", () => {
     const user = userEvent.setup();
     renderPosts(role);
     expect(screen.getByText("Homonyme")).toBeInTheDocument();
-    await user.click(screen.getByRole("switch", { name: "Mes articles" }));
+    await user.click(screen.getByRole("button", { name: "Mes articles" }));
+    expect(screen.getByRole("button", { name: "Mes articles" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Mon brouillon")).toBeInTheDocument();
     expect(screen.queryByText("Homonyme")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Draft" }));
@@ -34,12 +35,12 @@ describe("Mes articles", () => {
     await user.click(screen.getByRole("button", { name: "Réinitialiser" }));
     expect(screen.getByText("Homonyme")).toBeInTheDocument();
     expect(screen.getByText("Ma publication")).toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: "Mes articles" })).not.toBeChecked();
+    expect(screen.getByRole("button", { name: "Mes articles" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("ne rapproche pas les auteurs sans email d'une session sans email", async () => {
     renderPosts("CONSULTANT", null);
-    await userEvent.setup().click(screen.getByRole("switch", { name: "Mes articles" }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Mes articles" }));
     expect(screen.queryByText("Homonyme")).not.toBeInTheDocument();
     expect(screen.getByText("Aucun article ne correspond aux filtres sélectionnés.")).toBeInTheDocument();
   });
@@ -47,10 +48,13 @@ describe("Mes articles", () => {
   it("revient désactivé après fermeture et réouverture de la page", async () => {
     const user = userEvent.setup();
     const view = renderPosts();
-    await user.click(screen.getByRole("switch", { name: "Mes articles" }));
+    await user.click(screen.getByRole("button", { name: "Mes articles" }));
+    await user.click(screen.getByRole("button", { name: "Mes articles" }));
+    expect(screen.getByText("Homonyme")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Mes articles" }));
     view.unmount();
     renderPosts();
-    expect(screen.getByRole("switch", { name: "Mes articles" })).not.toBeChecked();
+    expect(screen.getByRole("button", { name: "Mes articles" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByText("Homonyme")).toBeInTheDocument();
   });
 });
@@ -68,13 +72,14 @@ describe("Mes talks", () => {
       </SessionProvider>,
     );
     const user = userEvent.setup();
-    await user.click(screen.getByRole("switch", { name: "Mes talks" }));
+    await user.click(screen.getByRole("button", { name: "Mes talks" }));
+    expect(screen.getByRole("button", { name: "Mes talks" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Mon talk")).toBeInTheDocument();
     expect(screen.queryByText("Autre talk")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Accepted" }));
     expect(screen.queryByText("Mon talk")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Réinitialiser" }));
     expect(screen.getByText("Autre talk")).toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: "Mes talks" })).not.toBeChecked();
+    expect(screen.getByRole("button", { name: "Mes talks" })).toHaveAttribute("aria-pressed", "false");
   });
 });
