@@ -4,7 +4,9 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
 import com.zenika.thezaurus.model.BlogPost;
+import com.zenika.thezaurus.model.BlogPostStatus;
 import com.zenika.thezaurus.model.Role;
+import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.service.BlogPostService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -47,6 +49,9 @@ public class BlogPostResourceTest {
     @Test
     public void testCreate() throws Exception {
         BlogPost input = new BlogPost(null, "New Post", "Desc");
+        input.setWriters(Collections.singletonList(User.builder().name("Alice").build()));
+        input.setStatus(BlogPostStatus.DRAFT);
+        input.setTags(Collections.singletonList("java"));
         BlogPost created = new BlogPost("new-id", "New Post", "Desc");
 
         Mockito.when(service.create(Mockito.any(BlogPost.class))).thenReturn(created);

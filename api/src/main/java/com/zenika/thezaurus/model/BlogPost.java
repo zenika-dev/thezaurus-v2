@@ -1,5 +1,6 @@
 package com.zenika.thezaurus.model;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -12,7 +13,7 @@ public class BlogPost {
     private String title;
 
     @NotEmpty
-    private List<String> writers;
+    private List<@NotNull @Valid User> writers;
 
     private String creationDate;
     private String publicationDate;
@@ -49,11 +50,11 @@ public class BlogPost {
         this.title = title;
     }
 
-    public List<String> getWriters() {
+    public List<User> getWriters() {
         return writers;
     }
 
-    public void setWriters(List<String> writers) {
+    public void setWriters(List<User> writers) {
         this.writers = writers;
     }
 
