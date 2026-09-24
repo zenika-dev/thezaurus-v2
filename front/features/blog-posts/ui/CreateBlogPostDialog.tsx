@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
+import { SpeakerAutocomplete } from "@/entities/talk/ui/SpeakerAutocomplete";
 import { useTheme } from "next-themes";
 import { DatePickerProvider } from "@/shared/ui";
 import { useForm, Controller } from "react-hook-form";
@@ -40,6 +42,8 @@ interface CreateBlogPostDialogProps {
 }
 
 export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPostDialogProps) {
+  const { data: session } = useSession();
+  const authorsInitialized = useRef(false);
   const [creationDate, setCreationDate] = useState<Dayjs | null>(null);
   const [expectedPublicationDate, setExpectedPublicationDate] = useState<Dayjs | null>(null);
   const [creationDateError, setCreationDateError] = useState<string | null>(null);
@@ -51,14 +55,29 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
     control,
     watch,
     reset,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<BlogPostFormData>({
     resolver: zodResolver(blogPostFormSchema),
     defaultValues: {
-      title: "", author: "", tags: [],
+      title: "", writers: [], tags: [],
       status: "IDEA", link: "", googleDocDraftLink: "",
     },
   });
+
+  useEffect(() => {
+    if (!open) {
+      authorsInitialized.current = false;
+      return;
+    }
+    if (!authorsInitialized.current && session?.user?.name) {
+      authorsInitialized.current = true;
+      if (getValues("writers").length === 0) {
+        setValue("writers", [{ name: session.user.name, email: session.user.email ?? "" }]);
+      }
+    }
+  }, [open, session?.user?.name, session?.user?.email, getValues, setValue]);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const link = watch("link");
@@ -98,12 +117,11 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
     return valid;
   };
 
-  const onSave = ({ author, ...data }: BlogPostFormData) => {
+  const onSave = (data: BlogPostFormData) => {
     if (!validateDates()) return;
     onSubmit({
       id: crypto.randomUUID(),
       ...data,
-      writers: [author],
       creationDate: creationDate!.format("DD-MM-YYYY"),
       publicationDate: expectedPublicationDate?.format("DD-MM-YYYY") ?? "",
     });
@@ -168,15 +186,19 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
           />
 
           <div className="grid grid-cols-2 gap-4">
-            <TextField
-              {...register("author")}
-              id="post-author"
-              label="Auteur"
-              required
-              fullWidth
-              placeholder="Prénom Nom"
-              error={!!errors.author}
-              helperText={errors.author?.message}
+            <Controller
+              name="writers"
+              control={control}
+              render={({ field }) => (
+                <SpeakerAutocomplete
+                  id="post-authors" label="Auteurs" kind="auteur" required
+                  value={field.value} onChange={(writers) => {
+                    authorsInitialized.current = true;
+                    field.onChange(writers);
+                  }}
+                  error={!!errors.writers} helperText={errors.writers?.message}
+                />
+              )}
             />
 
             <Controller
