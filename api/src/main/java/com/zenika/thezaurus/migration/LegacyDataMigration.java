@@ -1,6 +1,5 @@
 package com.zenika.thezaurus.migration;
 
-import com.zenika.thezaurus.repository.ConferenceRepository;
 import com.zenika.thezaurus.repository.TalkRepository;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
