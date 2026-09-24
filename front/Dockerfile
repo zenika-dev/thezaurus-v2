@@ -1,18 +1,21 @@
 FROM node:24-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY front/package.json front/package-lock.json ./
 RUN npm ci --ignore-scripts
 
 FROM deps AS dev
 ENV NEXT_TELEMETRY_DISABLED=1
-COPY . .
+COPY front/ .
+COPY api/openapi.json /api/openapi.json
+RUN npm run generate:api
 EXPOSE 3000
 CMD ["npm", "run", "dev", "--", "-H", "0.0.0.0", "-p", "3000"]
 
 FROM node:24-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY front/ .
+COPY api/openapi.json /api/openapi.json
 ARG GOOGLE_CLIENT_ID
 ENV GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
 RUN npm run build

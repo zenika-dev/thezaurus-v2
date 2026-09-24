@@ -24,6 +24,7 @@ export function useConferencesMutations() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.talks.lists() });
     },
   });
 
@@ -42,6 +43,7 @@ export function useConferencesMutations() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.talks.lists() });
     },
   });
 
@@ -60,6 +62,7 @@ export function useConferencesMutations() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.talks.lists() });
     },
   });
 

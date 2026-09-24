@@ -1,9 +1,10 @@
 package com.zenika.thezaurus.resource;
 
+import com.zenika.thezaurus.model.Office;
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.repository.UserRepository;
-import io.quarkus.security.identity.SecurityIdentity;
+import com.zenika.thezaurus.service.CurrentUserService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.NotBlank;
@@ -14,6 +15,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import org.jboss.resteasy.reactive.RestResponse;
 
@@ -26,20 +28,37 @@ import org.jboss.resteasy.reactive.RestResponse;
 public class ProfileResource {
 
     @Inject
-    SecurityIdentity identity;
+    CurrentUserService currentUser;
 
     @Inject
     UserRepository userRepository;
 
+    @PUT
+    @Path("/office")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({Role.Names.ADMIN, Role.Names.DT, Role.Names.CONSULTANT})
+    public RestResponse<OfficePreference> updateOffice(OfficePreference preference)
+            throws ExecutionException, InterruptedException {
+        if (preference == null) {
+            return RestResponse.status(RestResponse.Status.BAD_REQUEST);
+        }
+        Optional<User> user = currentUser.getUser();
+        if (user.isEmpty()) return RestResponse.notFound();
+        userRepository.updateOffice(
+                user.get().email(),
+                preference.office() == null ? "" : preference.office().value());
+        return RestResponse.ok(preference);
+    }
+
+    public record OfficePreference(Office office) {}
+
     @GET
     @RolesAllowed({Role.Names.ADMIN, Role.Names.DT, Role.Names.CONSULTANT})
     public RestResponse<ProfileView> getProfile() throws ExecutionException, InterruptedException {
-        String email = identity.getPrincipal().getName();
-        User user = userRepository.findByEmail(email);
-        if (user == null) {
-            return RestResponse.notFound();
-        }
-        return RestResponse.ok(toProfile(user));
+        return currentUser
+                .getUser()
+                .map(user -> RestResponse.ok(toProfile(user)))
+                .orElseGet(RestResponse::notFound);
     }
 
     /** Remplace les deux canaux d'un coup : le front renvoie l'objet complet à chaque bascule. */
@@ -52,12 +71,9 @@ public class ProfileResource {
         if (preferences == null) {
             return RestResponse.status(RestResponse.Status.BAD_REQUEST);
         }
-        String email = identity.getPrincipal().getName();
-        // Garde consultative : rend un 404 lisible plutôt que le 500 de l'update Firestore.
-        if (userRepository.findByEmail(email) == null) {
-            return RestResponse.notFound();
-        }
-        userRepository.updateNotificationPreferences(email, preferences.email(), preferences.slack());
+        Optional<User> user = currentUser.getUser();
+        if (user.isEmpty()) return RestResponse.notFound();
+        userRepository.updateNotificationPreferences(user.get().email(), preferences.email(), preferences.slack());
         return RestResponse.ok(preferences);
     }
 
@@ -66,7 +82,8 @@ public class ProfileResource {
                 user.name(),
                 user.email(),
                 new NotificationPreferences(user.notifiesByEmail(), user.notifiesOnSlack()),
-                user.slackUserId() != null && !user.slackUserId().isBlank());
+                user.slackUserId() != null && !user.slackUserId().isBlank(),
+                Office.fromValue(user.office()));
     }
 
     /** {@code slackLinked} et non le {@code slackUserId} : la page n'a besoin que de la joignabilité. */
@@ -74,7 +91,8 @@ public class ProfileResource {
             @NotBlank String name,
             @NotBlank String email,
             @NotNull NotificationPreferences notificationPreferences,
-            boolean slackLinked) {}
+            boolean slackLinked,
+            Office office) {}
 
     public record NotificationPreferences(boolean email, boolean slack) {}
 }

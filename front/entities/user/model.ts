@@ -1,4 +1,4 @@
-import type { BackendNotificationPreferences, BackendProfileView } from "@/shared/api";
+import type { BackendNotificationPreferences, BackendProfileView, Office } from "@/shared/api";
 
 /**
  * Canaux de notification par lesquels l'utilisateur·trice peut être joint·e. Version totale du
@@ -10,6 +10,7 @@ export type NotificationPreferences = Required<BackendNotificationPreferences>;
  * Profil de la personne connectée. `name` et `email` viennent du SSO, en lecture seule.
  * `slackLinked` et non le `slackUserId` : le backend ne publie pas l'identifiant Slack.
  */
-export type UserProfile = Omit<Required<BackendProfileView>, "notificationPreferences"> & {
+export type UserProfile = Omit<Required<BackendProfileView>, "notificationPreferences" | "office"> & {
   notificationPreferences: NotificationPreferences;
+  office: Office | "";
 };

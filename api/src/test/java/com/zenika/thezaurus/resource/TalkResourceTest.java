@@ -40,6 +40,155 @@ public class TalkResourceTest {
     TalkReviewService talkReviewService;
 
     @Test
+    public void consultantCannotGrantThemselvesEditingRights() throws Exception {
+        Talk existing = new Talk(
+                        "Title",
+                        "Abstract",
+                        List.of(User.builder()
+                                .name("Jane")
+                                .email("jane@zenika.com")
+                                .build()),
+                        "nantes",
+                        TalkStatus.PLANNED,
+                        Visibility.PRIVATE)
+                .withId("1");
+        Mockito.when(service.findById("1")).thenReturn(existing);
+        Mockito.when(service.update(Mockito.eq("1"), Mockito.any())).thenReturn(existing);
+        given().contentType(ContentType.JSON)
+                .body("""
+                {"title":"Title","description":"Abstract","office":"nantes",
+                 "speakers":[{"name":"Dev","email":"dev@zenika.com"}],
+                 "format":"conference","status":"PLANNED","visibility":"PRIVATE"}
+                """)
+                .when()
+                .put("/talks/1")
+                .then()
+                .statusCode(403);
+        Mockito.verify(service, Mockito.never()).update(Mockito.anyString(), Mockito.any());
+    }
+
+    private String completeTalk(String email) {
+        return """
+                {"title":"Title","description":"Abstract","office":"nantes",
+                 "speakers":[{"name":"Speaker","email":"%s"}],
+                 "format":"conference","status":"PLANNED","visibility":"PRIVATE"}
+                """.formatted(email);
+    }
+
+    @Test
+    public void consultantCanRemoveThemselvesButCannotEditAgain() throws Exception {
+        java.util.concurrent.atomic.AtomicReference<Talk> stored =
+                new java.util.concurrent.atomic.AtomicReference<>(new Talk(
+                                "Title",
+                                "Abstract",
+                                List.of(User.builder()
+                                        .name("Dev")
+                                        .email("DEV@zenika.com")
+                                        .build()),
+                                "nantes",
+                                TalkStatus.PLANNED,
+                                Visibility.PRIVATE)
+                        .withId("1"));
+        Mockito.when(service.findById("1")).thenAnswer(invocation -> stored.get());
+        Mockito.when(service.update(Mockito.eq("1"), Mockito.any())).thenAnswer(invocation -> {
+            stored.set(invocation.getArgument(1));
+            return stored.get();
+        });
+        given().contentType(ContentType.JSON)
+                .body(completeTalk("replacement@zenika.com"))
+                .when()
+                .put("/talks/1")
+                .then()
+                .statusCode(200);
+        given().contentType(ContentType.JSON)
+                .body(completeTalk("dev@zenika.com"))
+                .when()
+                .put("/talks/1")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(
+            user = "director@zenika.com",
+            roles = {Role.Names.DT})
+    public void directorCanEditATalkWithoutBeingASpeaker() throws Exception {
+        Talk existing = new Talk("1", "Title", "Abstract");
+        Mockito.when(service.findById("1")).thenReturn(existing);
+        Mockito.when(service.update(Mockito.eq("1"), Mockito.any()))
+                .thenAnswer(invocation -> invocation.getArgument(1));
+        given().contentType(ContentType.JSON)
+                .body(completeTalk("speaker@zenika.com"))
+                .when()
+                .put("/talks/1")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    public void lastSpeakerCannotBeRemoved() throws Exception {
+        Talk existing = new Talk(
+                        "Title",
+                        "Abstract",
+                        List.of(User.builder()
+                                .name("Dev")
+                                .email("dev@zenika.com")
+                                .build()),
+                        "nantes",
+                        TalkStatus.DRAFT,
+                        Visibility.PRIVATE)
+                .withId("1");
+        Mockito.when(service.findById("1")).thenReturn(existing);
+        given().contentType(ContentType.JSON)
+                .body("""
+                {"title":"Title","description":"Abstract","office":"nantes","speakers":[],
+                 "format":"conference","status":"DRAFT","visibility":"PRIVATE"}
+                """)
+                .when()
+                .put("/talks/1")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @TestSecurity(
+            user = "admin@zenika.com",
+            roles = {Role.Names.ADMIN})
+    public void existingLegacyFormatCanBeKeptButNotIntroduced() throws Exception {
+        Talk old = new Talk(
+                "1",
+                "Title",
+                "Abstract",
+                List.of(User.builder().name("Speaker").build()),
+                "nantes",
+                null,
+                TalkStatus.PLANNED,
+                Visibility.PRIVATE,
+                "video",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+        Mockito.when(service.findById("1")).thenReturn(old);
+        Mockito.when(service.update(Mockito.eq("1"), Mockito.any()))
+                .thenAnswer(invocation -> invocation.getArgument(1));
+        given().contentType(ContentType.JSON)
+                .body(completeTalk("speaker@zenika.com").replace("conference", "video"))
+                .when()
+                .put("/talks/1")
+                .then()
+                .statusCode(200);
+        given().contentType(ContentType.JSON)
+                .body(completeTalk("speaker@zenika.com").replace("conference", "training"))
+                .when()
+                .put("/talks/1")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
     @DisplayName("GET /talks - retourne la liste des talks")
     public void testList() throws Exception {
         Mockito.when(service.findAll()).thenReturn(Collections.singletonList(new Talk("1", "Titre", "Description")));
@@ -51,6 +200,22 @@ public class TalkResourceTest {
                 .body("size()", is(1))
                 .body("[0].id", is("1"))
                 .body("[0].title", is("Titre"));
+    }
+
+    @Test
+    @TestSecurity(
+            user = "admin@zenika.com",
+            roles = {Role.Names.ADMIN})
+    public void editingEvenADraftRequiresCompleteFields() throws Exception {
+        Talk draft = new Talk("1", "Idea", "");
+        Mockito.when(service.findById("1")).thenReturn(draft);
+        Mockito.when(service.update(Mockito.eq("1"), Mockito.any())).thenReturn(draft);
+        given().contentType(ContentType.JSON)
+                .body("{\"title\":\"Idea\",\"status\":\"DRAFT\"}")
+                .when()
+                .put("/talks/1")
+                .then()
+                .statusCode(400);
     }
 
     @Test

@@ -23,7 +23,8 @@ services:
   # UI Frontend (Next.js)
   front:
     build:
-      context: ./front
+      context: .
+      dockerfile: front/Dockerfile
       target: runner
       args:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}

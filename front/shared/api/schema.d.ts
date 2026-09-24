@@ -286,6 +286,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/profile/office": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Office */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OfficePreference"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OfficePreference"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Authorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users": {
         parameters: {
             query?: never;
@@ -1501,11 +1562,17 @@ export interface components {
             email?: boolean;
             slack?: boolean;
         };
+        /** @enum {string} */
+        Office: "paris" | "nantes" | "rennes" | "bordeaux" | "lyon" | "lille" | "grenoble" | "singapour" | "montreal";
+        OfficePreference: {
+            office?: components["schemas"]["Office"];
+        };
         ProfileView: {
             name: string;
             email: string;
             notificationPreferences: components["schemas"]["NotificationPreferences"];
             slackLinked?: boolean;
+            office?: components["schemas"]["Office"];
         };
         /** @enum {string} */
         Role: "ADMIN" | "DT" | "CONSULTANT";
@@ -1521,7 +1588,8 @@ export interface components {
             conference?: components["schemas"]["Conference"];
             status: components["schemas"]["TalkStatus"];
             visibility: components["schemas"]["Visibility"];
-            format: string;
+            /** @description Format proposé par TalkFormat, ou ancienne valeur conservée sans modification */
+            format: string | components["schemas"]["TalkFormat"];
             date?: string;
             language?: string;
             notes?: string;
@@ -1530,6 +1598,8 @@ export interface components {
             /** Format: int32 */
             audience?: number;
         };
+        /** @enum {string} */
+        TalkFormat: "quicky" | "conference" | "workshop";
         TalkReviewRequest: {
             title: string;
             abstract: string;

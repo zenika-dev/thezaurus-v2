@@ -1,0 +1,10 @@
+# Le contexte est la racine du dépôt ; seuls le frontend et son contrat sont utiles.
+**
+!front/
+!front/**
+!api/
+!api/openapi.json
+front/node_modules
+front/.next
+front/.env*
+front/*.md

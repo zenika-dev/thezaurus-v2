@@ -23,6 +23,14 @@ public class UserRepository {
 
     private static final String COLLECTION_NAME = "users";
 
+    public void updateOffice(String email, String office) throws ExecutionException, InterruptedException {
+        firestore
+                .collection(COLLECTION_NAME)
+                .document(email)
+                .update(Map.of("office", office))
+                .get();
+    }
+
     public List<User> findAll(int maxResults) throws ExecutionException, InterruptedException {
         ApiFuture<QuerySnapshot> future =
                 firestore.collection(COLLECTION_NAME).limit(maxResults).get();
