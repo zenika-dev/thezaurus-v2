@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { SpeakerAutocomplete } from "@/entities/talk/ui/SpeakerAutocomplete";
+import { ContributorAutocomplete } from "@/entities/user";
 import { useTheme } from "next-themes";
 import { DatePickerProvider } from "@/shared/ui";
 import { useForm, Controller } from "react-hook-form";
@@ -190,13 +190,20 @@ export function CreateBlogPostDialog({ open, onClose, onSubmit }: CreateBlogPost
               name="writers"
               control={control}
               render={({ field }) => (
-                <SpeakerAutocomplete
-                  id="post-authors" label="Auteurs" kind="auteur" required
-                  value={field.value} onChange={(writers) => {
+                <ContributorAutocomplete
+                  id="post-authors"
+                  label="Auteurs"
+                  placeholder="Rechercher ou saisir un auteur..."
+                  addAnotherPlaceholder="Ajouter un autre auteur..."
+                  externalLabel="— Auteur sans email (texte libre)"
+                  required
+                  value={field.value}
+                  onChange={(writers) => {
                     authorsInitialized.current = true;
                     field.onChange(writers);
                   }}
-                  error={!!errors.writers} helperText={errors.writers?.message}
+                  error={!!errors.writers}
+                  helperText={errors.writers?.message}
                 />
               )}
             />

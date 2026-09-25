@@ -23,8 +23,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { BlogPostStatus } from "@/shared/api";
 import type { BlogPostData } from "@/entities/post";
 import { blogPostTags, blogPostStatusConfig } from "@/entities/post";
-import { SpeakerAutocomplete } from "@/entities/talk/ui/SpeakerAutocomplete";
-import type { SpeakerFormData } from "@/entities/talk/schema";
+import { ContributorAutocomplete, type ContributorFormData } from "@/entities/user";
 import { isValidUrl } from "@/shared/lib";
 
 interface BlogPostDetailsDialogProps {
@@ -43,7 +42,7 @@ export function BlogPostDetailsDialog({
   onDelete,
 }: BlogPostDetailsDialogProps) {
   const [title, setTitle] = useState("");
-  const [writers, setWriters] = useState<SpeakerFormData[]>([]);
+  const [writers, setWriters] = useState<ContributorFormData[]>([]);
   const [creationDate, setCreationDate] = useState<Dayjs | null>(null);
   const [expectedPublicationDate, setExpectedPublicationDate] =
     useState<Dayjs | null>(null);
@@ -170,9 +169,15 @@ export function BlogPostDetailsDialog({
             />
 
             <div className="grid grid-cols-2 gap-4">
-              <SpeakerAutocomplete
-                id="edit-post-authors" label="Auteurs" kind="auteur" required
-                value={writers} onChange={setWriters}
+              <ContributorAutocomplete
+                id="edit-post-authors"
+                label="Auteurs"
+                placeholder="Rechercher ou saisir un auteur..."
+                addAnotherPlaceholder="Ajouter un autre auteur..."
+                externalLabel="— Auteur sans email (texte libre)"
+                required
+                value={writers}
+                onChange={setWriters}
               />
 
               <FormControl fullWidth required>
