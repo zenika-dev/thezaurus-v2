@@ -1,12 +1,9 @@
 import { z } from "zod";
 import { Visibility } from "@/shared/api";
+import { contributorSchema, type ContributorFormData } from "@/entities/user";
 
-export const speakerSchema = z.object({
-  name: z.string().trim().min(1, "Le nom est requis"),
-  email: z.email("Email invalide").optional().or(z.literal("")),
-});
-
-export type SpeakerFormData = z.infer<typeof speakerSchema>;
+export const speakerSchema = contributorSchema;
+export type SpeakerFormData = ContributorFormData;
 
 export const talkFormSchema = z.object({
   title:       z.string().trim().min(1, "Le titre est requis"),
