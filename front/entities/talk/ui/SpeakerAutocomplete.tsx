@@ -32,6 +32,7 @@ export function areSpeakersEqual(
 }
 
 export interface SpeakerAutocompleteProps {
+    kind?: "speaker" | "auteur";
     value: SpeakerFormData[];
     onChange: (speakers: SpeakerFormData[]) => void;
     id?: string;
@@ -46,6 +47,7 @@ export interface SpeakerAutocompleteProps {
 }
 
 export function SpeakerAutocomplete({
+                                        kind = "speaker",
                                         id,
                                         value = [],
                                         onChange,
@@ -106,8 +108,8 @@ export function SpeakerAutocomplete({
 
     const dynamicPlaceholder =
         value.length === 0
-            ? (placeholder ?? "Rechercher ou saisir un speaker...")
-            : "Ajouter un autre speaker...";
+            ? (placeholder ?? `Rechercher ou saisir un ${kind}...`)
+            : `Ajouter un autre ${kind}...`;
 
     return (
         <Autocomplete<SpeakerFormData, true, false, true>
@@ -222,7 +224,7 @@ export function SpeakerAutocomplete({
                         <div className="flex items-center gap-2 min-w-0">
                             <SpeakerChip name={name} email={email} size="small" />
                             <span className="text-xs text-text-muted truncate">
-                                {isInternal ? `(${email})` : "— Intervenant externe (texte libre)"}
+                                {isInternal ? `(${email})` : kind === "auteur" ? "— Auteur sans email (texte libre)" : "— Intervenant externe (texte libre)"}
                             </span>
                         </div>
                         {isSelected ? (

@@ -1411,7 +1411,7 @@ export interface components {
         BlogPost: {
             id?: string;
             title: string;
-            writers: string[];
+            writers: components["schemas"]["User"][];
             creationDate?: string;
             publicationDate?: string;
             link?: string;

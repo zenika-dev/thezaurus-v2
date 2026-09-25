@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { ContributionFilters } from "@/shared/ui/ContributionFilters";
+import { isContributor } from "@/entities/user/lib/isContributor";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -8,7 +11,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
-import { Eye, Funnel } from "lucide-react";
+import { Eye } from "lucide-react";
 import { TalkStatus } from "@/shared/api";
 import type { TalkData } from "@/entities/talk";
 import { agencyLabels, talkStatusConfig } from "@/entities/talk";
@@ -23,6 +26,8 @@ const TalkDetailsDialog = dynamic(
 );
 
 export function TalkTable() {
+  const { data: session } = useSession();
+  const [personalOnly, setPersonalOnly] = useState(false);
   const [selectedTalkId, setSelectedTalkId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"All" | TalkStatus>("All");
   const { talks, updateTalk, deleteTalk } = useTalks();
@@ -39,61 +44,18 @@ export function TalkTable() {
     catch { alert("Erreur lors de la suppression du talk"); }
   };
 
-  const filteredTalks = talks.filter((talk) => {
-    if (statusFilter !== "All" && talk.status !== statusFilter) {
-      return false;
-    }
-    return true;
-  });
-
-  const FilterBadge = ({
-    label,
-    active,
-    onClick,
-  }: {
-    label: string;
-    active: boolean;
-    onClick: () => void;
-  }) => (
-    <button
-      onClick={onClick}
-      className={`inline-flex items-center gap-1 px-3 py-1 rounded-2xl text-xs font-sans border cursor-pointer transition-colors ${
-        active
-          ? "bg-primary text-white border-primary"
-          : "bg-surface-hover text-text border-transparent hover:bg-border-strong"
-      }`}
-    >
-      {label}
-    </button>
+  const filteredTalks = talks.filter((talk) =>
+    (statusFilter === "All" || talk.status === statusFilter) &&
+    (!personalOnly || isContributor(talk.speakers, session?.user?.email)),
   );
 
   return (
     <>
-      <div className="flex flex-col gap-6 mb-6">
-        <div className="flex items-center gap-6 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Funnel size={14} className="text-text-muted shrink-0" />
-            <span className="text-xs text-text-muted mr-2">Statut :</span>
-            {(["All", ...TalkStatus] as const).map((status) => (
-              <FilterBadge
-                key={status}
-                label={status === "All" ? "Tous" : talkStatusConfig[status].label}
-                active={statusFilter === status}
-                onClick={() => setStatusFilter(status)}
-              />
-            ))}
-          </div>
-
-          {statusFilter !== "All" && (
-            <button
-              onClick={() => setStatusFilter("All")}
-              className="flex text-xs items-center font-sans gap-1 cursor-pointer text-primary border border-primary/20 px-3 py-1 rounded-2xl bg-primary/10 transition-colors no-underline hover:bg-primary/20 hover:text-primary"
-            >
-              Réinitialiser
-            </button>
-          )}
-        </div>
-      </div>
+      <ContributionFilters
+        statuses={TalkStatus} labels={talkStatusConfig}
+        status={statusFilter} onStatusChange={setStatusFilter}
+        personalLabel="Mes talks" personalOnly={personalOnly} onPersonalChange={setPersonalOnly}
+      />
 
       <TableContainer
         component={Paper}

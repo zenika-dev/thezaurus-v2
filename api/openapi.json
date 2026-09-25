@@ -1038,7 +1038,7 @@
           "writers" : {
             "type" : "array",
             "items" : {
-              "type" : "string"
+              "$ref" : "#/components/schemas/User"
             },
             "minItems" : 1
           },

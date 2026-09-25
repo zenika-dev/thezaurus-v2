@@ -22,7 +22,9 @@ import { ExternalLinkIcon, FileText, Library, Trash2 } from "lucide-react";
 import dayjs, { type Dayjs } from "dayjs";
 import { BlogPostStatus } from "@/shared/api";
 import type { BlogPostData } from "@/entities/post";
-import { blogPostTags, blogPostStatusConfig, withPrimaryWriter } from "@/entities/post";
+import { blogPostTags, blogPostStatusConfig } from "@/entities/post";
+import { SpeakerAutocomplete } from "@/entities/talk/ui/SpeakerAutocomplete";
+import type { SpeakerFormData } from "@/entities/talk/schema";
 import { isValidUrl } from "@/shared/lib";
 
 interface BlogPostDetailsDialogProps {
@@ -41,7 +43,7 @@ export function BlogPostDetailsDialog({
   onDelete,
 }: BlogPostDetailsDialogProps) {
   const [title, setTitle] = useState("");
-  const [author, setAuthor] = useState("");
+  const [writers, setWriters] = useState<SpeakerFormData[]>([]);
   const [creationDate, setCreationDate] = useState<Dayjs | null>(null);
   const [expectedPublicationDate, setExpectedPublicationDate] =
     useState<Dayjs | null>(null);
@@ -56,7 +58,7 @@ export function BlogPostDetailsDialog({
     if (post && open) {
       /* eslint-disable react-hooks/set-state-in-effect */
       setTitle(post.title ?? "");
-      setAuthor(post.writers?.[0] ?? "");
+      setWriters(post.writers ?? []);
       setCreationDate(
         post.creationDate ? dayjs(post.creationDate, "DD-MM-YYYY") : null,
       );
@@ -74,7 +76,7 @@ export function BlogPostDetailsDialog({
   }, [post, open]);
 
   const handleSave = () => {
-    if (!title.trim() || !author.trim() || !creationDate || tags.length === 0) {
+    if (!title.trim() || writers.length === 0 || writers.some((writer) => !writer.name.trim()) || !creationDate || tags.length === 0) {
       setToastMsg("Merci de remplir tous les champs obligatoires.");
       setToastOpen(true);
       return;
@@ -95,7 +97,7 @@ export function BlogPostDetailsDialog({
       onUpdate({
         ...post,
         title: title.trim(),
-        writers: withPrimaryWriter(post.writers, author.trim()),
+        writers: writers.map((writer) => ({ ...writer, name: writer.name.trim(), email: writer.email?.trim() || undefined })),
         creationDate: creationDate.format("DD-MM-YYYY"),
         publicationDate:
           expectedPublicationDate?.format("DD-MM-YYYY") ?? "",
@@ -168,12 +170,9 @@ export function BlogPostDetailsDialog({
             />
 
             <div className="grid grid-cols-2 gap-4">
-              <TextField
-                label="Auteur"
-                required
-                fullWidth
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
+              <SpeakerAutocomplete
+                id="edit-post-authors" label="Auteurs" kind="auteur" required
+                value={writers} onChange={setWriters}
               />
 
               <FormControl fullWidth required>

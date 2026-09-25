@@ -5,6 +5,7 @@ import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.service.BlogPostService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -43,14 +44,14 @@ public class BlogPostResource {
     }
 
     @POST
-    public RestResponse<BlogPost> create(BlogPost blogPost) throws ExecutionException, InterruptedException {
+    public RestResponse<BlogPost> create(@Valid BlogPost blogPost) throws ExecutionException, InterruptedException {
         BlogPost created = service.create(blogPost);
         return RestResponse.status(RestResponse.Status.CREATED, created);
     }
 
     @PUT
     @Path("/{id}")
-    public RestResponse<BlogPost> update(@PathParam("id") String id, BlogPost blogPost)
+    public RestResponse<BlogPost> update(@PathParam("id") String id, @Valid BlogPost blogPost)
             throws ExecutionException, InterruptedException {
         BlogPost updated = service.update(id, blogPost);
         if (updated == null) {
