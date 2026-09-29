@@ -12,12 +12,12 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.39.4</quarkus.platform.version>
+        <quarkus.platform.version>3.39.5</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.6.0</surefire-plugin.version>
         <slack-sdk.version>1.51.0</slack-sdk.version>
         <lombok.version>1.18.48</lombok.version>
-        <spotless-plugin.version>3.10.2</spotless-plugin.version>
+        <spotless-plugin.version>3.10.3</spotless-plugin.version>
         <palantir-java-format.version>2.97.0</palantir-java-format.version>
     </properties>
 
