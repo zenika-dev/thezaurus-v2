@@ -1,6 +1,7 @@
 package com.zenika.thezaurus.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import lombok.Builder;
@@ -26,11 +27,12 @@ import lombok.Builder;
 @Builder
 public record User(
         @NotBlank String name,
-        String email,
+        @Email String email,
         String slackUserId,
         @JsonIgnore List<Role> roles,
         @JsonIgnore Boolean emailNotificationsEnabled,
-        @JsonIgnore Boolean slackNotificationsEnabled) {
+        @JsonIgnore Boolean slackNotificationsEnabled,
+        @JsonIgnore String office) {
 
     public boolean notifiesByEmail() {
         return Boolean.TRUE.equals(emailNotificationsEnabled);
@@ -41,10 +43,10 @@ public record User(
     }
 
     public User withName(String name) {
-        return new User(name, email, slackUserId, roles, emailNotificationsEnabled, slackNotificationsEnabled);
+        return new User(name, email, slackUserId, roles, emailNotificationsEnabled, slackNotificationsEnabled, office);
     }
 
     public User withRoles(List<Role> roles) {
-        return new User(name, email, slackUserId, roles, emailNotificationsEnabled, slackNotificationsEnabled);
+        return new User(name, email, slackUserId, roles, emailNotificationsEnabled, slackNotificationsEnabled, office);
     }
 }

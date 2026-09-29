@@ -173,6 +173,46 @@
         } ]
       }
     },
+    "/api/me/profile/office" : {
+      "put" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OfficePreference"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OfficePreference"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Update Office",
+        "tags" : [ "Profile Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN", "DT", "CONSULTANT" ]
+        } ]
+      }
+    },
     "/api/users" : {
       "get" : {
         "parameters" : [ {
@@ -1304,6 +1344,18 @@
           }
         }
       },
+      "Office" : {
+        "type" : "string",
+        "enum" : [ "paris", "nantes", "rennes", "bordeaux", "lyon", "lille", "grenoble", "singapour", "montreal" ]
+      },
+      "OfficePreference" : {
+        "type" : "object",
+        "properties" : {
+          "office" : {
+            "$ref" : "#/components/schemas/Office"
+          }
+        }
+      },
       "ProfileView" : {
         "type" : "object",
         "required" : [ "name", "email", "notificationPreferences" ],
@@ -1321,6 +1373,9 @@
           },
           "slackLinked" : {
             "type" : "boolean"
+          },
+          "office" : {
+            "$ref" : "#/components/schemas/Office"
           }
         }
       },
@@ -1376,6 +1431,12 @@
           },
           "format" : {
             "type" : "string",
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/TalkFormat"
+            }, {
+              "type" : "string"
+            } ],
+            "description" : "Format proposé par TalkFormat, ou ancienne valeur conservée sans modification",
             "pattern" : "\\S"
           },
           "date" : {
@@ -1388,10 +1449,12 @@
             "type" : "string"
           },
           "slides" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "^$|https?://[^\\s]+"
           },
           "replay" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "^$|https?://[^\\s]+"
           },
           "audience" : {
             "type" : "integer",
@@ -1400,6 +1463,10 @@
           }
         },
         "required" : [ "title", "description", "speakers", "office", "status", "visibility", "format" ]
+      },
+      "TalkFormat" : {
+        "type" : "string",
+        "enum" : [ "quicky", "conference", "workshop" ]
       },
       "TalkReviewRequest" : {
         "type" : "object",

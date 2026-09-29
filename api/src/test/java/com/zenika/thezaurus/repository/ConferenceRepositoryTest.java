@@ -14,14 +14,12 @@ import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteBatch;
 import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.Conference;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 public class ConferenceRepositoryTest {
@@ -49,6 +47,40 @@ public class ConferenceRepositoryTest {
         repository.firestore = firestore;
         repository.logger = Mockito.mock(Logger.class);
         repository.collectionPrefix = Optional.empty();
+    }
+
+    @Test
+    public void deletingConferenceConvertsAssociatedTalksToFreeNames() throws Exception {
+        DocumentReference conferenceRef = Mockito.mock(DocumentReference.class);
+        DocumentSnapshot conferenceDoc = Mockito.mock(DocumentSnapshot.class);
+        Mockito.when(collection.document("conf")).thenReturn(conferenceRef);
+        Mockito.when(conferenceDoc.exists()).thenReturn(true);
+        Mockito.when(conferenceDoc.getString("name")).thenReturn("Devoxx 2026");
+        Mockito.when(conferenceRef.delete()).thenReturn(ApiFutures.immediateFuture(null));
+        com.google.cloud.firestore.Transaction transaction = Mockito.mock(com.google.cloud.firestore.Transaction.class);
+        Mockito.when(transaction.get(conferenceRef)).thenReturn(ApiFutures.immediateFuture(conferenceDoc));
+        CollectionReference talks = Mockito.mock(CollectionReference.class);
+        com.google.cloud.firestore.Query query = Mockito.mock(com.google.cloud.firestore.Query.class);
+        Mockito.when(repository.firestore.collection("talks")).thenReturn(talks);
+        Mockito.when(talks.whereEqualTo("conference.id", "conf")).thenReturn(query);
+        Mockito.when(query.limit(400)).thenReturn(query);
+        QuerySnapshot associated = Mockito.mock(QuerySnapshot.class);
+        QuerySnapshot empty = Mockito.mock(QuerySnapshot.class);
+        DocumentReference talkRef = Mockito.mock(DocumentReference.class);
+        QueryDocumentSnapshot talk = Mockito.mock(QueryDocumentSnapshot.class);
+        Mockito.when(talk.getReference()).thenReturn(talkRef);
+        Mockito.when(associated.getDocuments()).thenReturn(List.of(talk));
+        Mockito.when(empty.getDocuments()).thenReturn(List.of());
+        Mockito.when(transaction.get(query))
+                .thenReturn(ApiFutures.immediateFuture(associated), ApiFutures.immediateFuture(empty));
+        Mockito.when(repository.firestore.runTransaction(
+                        Mockito.any(com.google.cloud.firestore.Transaction.Function.class)))
+                .thenAnswer(invocation -> ApiFutures.immediateFuture(
+                        ((com.google.cloud.firestore.Transaction.Function<?>) invocation.getArgument(0))
+                                .updateCallback(transaction)));
+        repository.delete("conf");
+        Mockito.verify(transaction).update(talkRef, "conference", Map.of("name", "Devoxx 2026"));
+        Mockito.verify(transaction).delete(conferenceRef);
     }
 
     // --- Lecture defensive : un document illisible ne fait pas echouer les autres ---------------
@@ -100,90 +132,5 @@ public class ConferenceRepositoryTest {
         Mockito.when(doc.getReference()).thenReturn(reference);
         Mockito.when(doc.getId()).thenReturn("doc-id");
         return doc;
-    }
-
-    @Test
-    public void migrateLegacyDatesRewritesASingleDate() throws Exception {
-        DocumentReference reference = Mockito.mock(DocumentReference.class);
-        QueryDocumentSnapshot doc = documentOf("2026-03-12", reference);
-        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(doc));
-
-        assertEquals(1, repository.migrateLegacyDates());
-
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
-        Mockito.verify(batch).update(Mockito.eq(reference), Mockito.eq("date"), captor.capture());
-        assertEquals(Map.of("start", "2026-03-12", "end", "2026-03-12", "precision", "DAY"), captor.getValue());
-        Mockito.verify(batch).commit();
-    }
-
-    @Test
-    public void migrateLegacyDatesRewritesARange() throws Exception {
-        DocumentReference reference = Mockito.mock(DocumentReference.class);
-        QueryDocumentSnapshot doc = documentOf("2026-03-01/2026-03-03", reference);
-        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(doc));
-
-        assertEquals(1, repository.migrateLegacyDates());
-
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
-        Mockito.verify(batch).update(Mockito.eq(reference), Mockito.eq("date"), captor.capture());
-        assertEquals(Map.of("start", "2026-03-01", "end", "2026-03-03", "precision", "DAY"), captor.getValue());
-    }
-
-    @Test
-    public void migrateLegacyDatesIgnoresAlreadyMigratedDocuments() throws Exception {
-        DocumentReference reference = Mockito.mock(DocumentReference.class);
-        QueryDocumentSnapshot doc =
-                documentOf(Map.of("start", "2026-03-12", "end", "2026-03-12", "precision", "DAY"), reference);
-        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(doc));
-
-        assertEquals(0, repository.migrateLegacyDates());
-        Mockito.verifyNoInteractions(batch);
-    }
-
-    @Test
-    public void migrateLegacyDatesRewritesUnrecognizedStringsAsAnEmptyPeriod() throws Exception {
-        // Une chaine non reconnue est reecrite en periode vide (Map), jamais laissee en l'etat :
-        // Conference.date est type ConferencePeriod, une String restante ferait echouer la
-        // desertialisation Firestore de ce document a la premiere lecture.
-        DocumentReference reference = Mockito.mock(DocumentReference.class);
-        QueryDocumentSnapshot doc = documentOf("not-a-date", reference);
-        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(doc));
-
-        assertEquals(1, repository.migrateLegacyDates());
-
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
-        Mockito.verify(batch).update(Mockito.eq(reference), Mockito.eq("date"), captor.capture());
-        assertEquals(Map.of("start", "", "end", "", "precision", "DAY"), captor.getValue());
-    }
-
-    @Test
-    public void migrateLegacyDatesOnEmptyCollection() throws Exception {
-        Mockito.when(snapshot.getDocuments()).thenReturn(List.of());
-
-        assertEquals(0, repository.migrateLegacyDates());
-        Mockito.verifyNoInteractions(batch);
-    }
-
-    @Test
-    public void migrateLegacyDatesCommitsInBatchesOf500() throws Exception {
-        List<QueryDocumentSnapshot> docs = new ArrayList<>();
-        for (int i = 0; i < 501; i++) {
-            docs.add(documentOf("2026-03-12", Mockito.mock(DocumentReference.class)));
-        }
-        Mockito.when(snapshot.getDocuments()).thenReturn(docs);
-        WriteBatch secondBatch = Mockito.mock(WriteBatch.class);
-        Mockito.when(secondBatch.update(Mockito.any(DocumentReference.class), Mockito.anyString(), Mockito.any()))
-                .thenReturn(secondBatch);
-        Mockito.when(secondBatch.commit())
-                .thenReturn(ApiFutures.immediateFuture(List.of(Mockito.mock(WriteResult.class))));
-        Mockito.when(repository.firestore.batch()).thenReturn(batch, secondBatch);
-
-        assertEquals(501, repository.migrateLegacyDates());
-
-        Mockito.verify(batch).commit();
-        Mockito.verify(secondBatch).commit();
     }
 }

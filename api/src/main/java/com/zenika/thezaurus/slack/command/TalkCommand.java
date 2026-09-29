@@ -19,6 +19,7 @@ import com.slack.api.model.view.View;
 import com.slack.api.model.view.ViewState;
 import com.zenika.thezaurus.model.Conference;
 import com.zenika.thezaurus.model.ConferencePeriod;
+import com.zenika.thezaurus.model.Office;
 import com.zenika.thezaurus.model.Talk;
 import com.zenika.thezaurus.model.TalkStatus;
 import com.zenika.thezaurus.model.User;
@@ -134,16 +135,9 @@ public class TalkCommand implements SlackCommand {
         return input(i -> i.blockId(Field.OFFICE.blockId)
                 .element(staticSelect(s -> s.actionId(Field.OFFICE.actionId)
                         .placeholder(plainText("Choisir une agence"))
-                        .options(asOptions(
-                                option(plainText("Paris"), "Paris"),
-                                option(plainText("Nantes"), "Nantes"),
-                                option(plainText("Rennes"), "Rennes"),
-                                option(plainText("Bordeaux"), "Bordeaux"),
-                                option(plainText("Lyon"), "Lyon"),
-                                option(plainText("Lille"), "Lille"),
-                                option(plainText("Grenoble"), "Grenoble"),
-                                option(plainText("Singapour"), "Singapour"),
-                                option(plainText("Montréal"), "Montréal")))))
+                        .options(Arrays.stream(Office.values())
+                                .map(office -> option(plainText(office.label()), office.value()))
+                                .toList())))
                 .label(plainText("Agence")));
     }
 

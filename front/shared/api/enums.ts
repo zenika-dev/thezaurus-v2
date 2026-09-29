@@ -24,8 +24,14 @@ export type DatePrecision = (typeof DatePrecision)[number];
 export const MonthLabel = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"] as const;
 export type MonthLabel = (typeof MonthLabel)[number];
 
+export const Office = ["paris", "nantes", "rennes", "bordeaux", "lyon", "lille", "grenoble", "singapour", "montreal"] as const;
+export type Office = (typeof Office)[number];
+
 export const Role = ["ADMIN", "DT", "CONSULTANT"] as const;
 export type Role = (typeof Role)[number];
+
+export const TalkFormat = ["quicky", "conference", "workshop"] as const;
+export type TalkFormat = (typeof TalkFormat)[number];
 
 export const TalkStatus = ["DRAFT", "PLANNED", "SUBMITTED", "ACCEPTED", "REJECTED", "DONE"] as const;
 export type TalkStatus = (typeof TalkStatus)[number];

@@ -1,355 +1,106 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Button from "@mui/material/Button";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import Switch from "@mui/material/Switch";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import Divider from "@mui/material/Divider";
-import Select, { type SelectChangeEvent } from "@mui/material/Select";
-import TextField from "@mui/material/TextField";
-import InputAdornment from "@mui/material/InputAdornment";
-import IconButton from "@mui/material/IconButton";
-import CircularProgress from "@mui/material/CircularProgress";
-import {
-  Lock, Globe, X, Users, MapPin, Mic, Calendar, Bot,
-  Link as LinkIcon, Play as PlayIcon, ExternalLink as ExternalLinkIcon,
-} from "lucide-react";
-import { TalkStatus } from "@/shared/api";
-import type { BackendTalkReviewResponse } from "@/shared/api";
-import type { TalkData } from "@/entities/talk";
-import { agencyLabels, reviewTalkAction, talkStatusConfig, SpeakerAutocomplete } from "@/entities/talk";
-import { SpeakerChip } from "@/entities/user";
-import { isValidUrl } from "@/shared/lib";
-import { StatusTag } from "./TalkTags";
+import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { Alert, Button } from "@mui/material";
+import dayjs from "dayjs";
+import { type BackendTalkReviewResponse } from "@/shared/api";
+import { type TalkData, talkFormSchema, reviewTalkAction } from "@/entities/talk";
 import { TalkAssistantDialog } from "./TalkAssistantDialog";
+import { TalkFormDialog } from "./TalkFormDialog";
+import { TalkReadOnlyDialog } from "./TalkReadOnlyDialog";
 
 interface TalkDetailsDialogProps {
   talk: TalkData | null;
   open: boolean;
   onClose: () => void;
-  onUpdate: (talk: TalkData) => void;
-  onDelete: (id: string) => void;
+  onUpdate: (talk: TalkData) => Promise<TalkData>;
+  onDelete: (id: string) => Promise<void>;
 }
 
-export function TalkDetailsDialog({ talk, open, onClose, onUpdate, onDelete }: TalkDetailsDialogProps) {
-  const [slides, setSlides] = useState(talk?.slides ?? "");
-  const [replay, setReplay] = useState(talk?.replay ?? "");
-  const [audience, setAudience] = useState(talk?.audience != null ? String(talk.audience) : "");
-  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+function mayEdit(talk: TalkData, email?: string | null, roles: readonly string[] = []) {
+  return roles.includes("ADMIN") || roles.includes("DT") ||
+    (roles.includes("CONSULTANT") && Boolean(email?.trim()) && talk.speakers.some(
+      speaker => speaker.email?.trim().toLowerCase() === email?.trim().toLowerCase()));
+}
+
+export function TalkDetailsDialog(props: TalkDetailsDialogProps) {
+  if (!props.open || !props.talk) return null;
+  return <TalkEditor key={props.talk.id} {...props} talk={props.talk} />;
+}
+
+function TalkEditor({ talk, onClose, onUpdate, onDelete }: Omit<TalkDetailsDialogProps, "talk"> & { talk: TalkData }) {
+  const { data: session } = useSession();
+  const [saved, setSaved] = useState(talk);
+  const [draft, setDraft] = useState(talk);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState("");
+  const [pending, setPending] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiResult, setAiResult] = useState<BackendTalkReviewResponse | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [isEditingSpeakers, setIsEditingSpeakers] = useState(false);
-
-  useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
-    setSlides(talk?.slides ?? "");
-    setReplay(talk?.replay ?? "");
-    setAudience(talk?.audience != null ? String(talk.audience) : "");
-    setIsEditingSpeakers(false);
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [talk?.id, talk?.slides, talk?.replay, talk?.audience]);
-
-  if (!talk) return null;
-
-  const handleStatusChange = (event: SelectChangeEvent) =>
-    onUpdate({ ...talk, status: event.target.value as TalkStatus });
-
-  const handleVisibilityToggle = (event: React.ChangeEvent<HTMLInputElement>) =>
-    onUpdate({ ...talk, visibility: event.target.checked ? "PUBLIC" : "PRIVATE" });
-
-  const handleDelete = () => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce talk ?")) {
-      onDelete(talk.id);
-      onClose();
-    }
+  const [aiResult, setAiResult] = useState<BackendTalkReviewResponse | null>(null);
+  const roles = session?.user?.roles ?? [];
+  const editable = mayEdit(saved, session?.user?.email, roles) && mayEdit(talk, session?.user?.email, roles);
+  const losesAccess = editable && !mayEdit(draft, session?.user?.email, roles);
+  const disabled = !editable || pending;
+  const change = <K extends keyof TalkData>(field: K, value: TalkData[K]) => {
+    if (disabled) return;
+    setDraft(current => ({ ...current, [field]: value }));
+    setSuccess("");
   };
-
-  const handleTriggerAiReview = async () => {
-    setAiDialogOpen(true);
-    setAiLoading(true);
-    setAiError(null);
+  const save = async () => {
+    if (disabled) return;
+    const normalizeLink = (value?: string) => (value ?? "").trim().replace(/^https?:/i, scheme => scheme.toLowerCase());
+    const payload = { ...draft, slides: normalizeLink(draft.slides), replay: normalizeLink(draft.replay) };
+    const result = talkFormSchema.safeParse({ ...payload, conference: payload.conference?.name ?? "" });
+    const issues: Record<string, string> = {};
+    if (!result.success) for (const issue of result.error.issues) issues[String(issue.path[0])] = issue.message;
+    for (const field of ["slides", "replay"] as const) {
+      if (payload[field] && !/^https?:\/\/[^\s]+$/.test(payload[field])) issues[field] = "Une URL HTTP ou HTTPS est requise";
+    }
+    if (draft.audience != null && (!Number.isInteger(draft.audience) || draft.audience < 0)) issues.audience = "Indiquez un entier positif ou zéro";
+    if (draft.date && !dayjs(draft.date).isValid()) issues.date = "Indiquez une date valide";
+    setErrors(issues);
+    if (Object.keys(issues).length) return;
+    setPending(true); setError(null);
     try {
-      const res = await reviewTalkAction({
-        title: talk.title,
-        abstract: talk.description,
-      });
-      setAiResult(res);
-    } catch (err: unknown) {
-      setAiError(err instanceof Error ? err.message : "Erreur de communication avec l'assistant IA.");
-    } finally {
-      setAiLoading(false);
-    }
+      const updated = await onUpdate(payload);
+      setSaved(updated); setDraft(updated);
+      setSuccess(losesAccess ? "Modifications enregistrées. Vous ne faites plus partie des speakers : ce talk est maintenant en lecture seule." : "Modifications enregistrées.");
+      onClose();
+    } catch { setError("Enregistrement impossible. Vos modifications sont conservées ; vous pouvez réessayer."); }
+    finally { setPending(false); }
   };
-
-  // TalkAssistantDialog utilise "abstract" pour renseigner le champ "description"
-  const handleApplyAiSuggestions = (suggestedTitle: string, suggestedDescription: string) => {
-    onUpdate({
-      ...talk,
-      title: suggestedTitle,
-      description: suggestedDescription,
-    });
+  const remove = async () => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce talk ?")) return;
+    setPending(true); setError(null);
+    try { await onDelete(saved.id); onClose(); }
+    catch { setError("La suppression a échoué. Vous pouvez réessayer."); setPending(false); }
   };
-
-  const handleSaveDetails = () => {
-    const trimmedAudience = audience.trim();
-    const parsedAudience = trimmedAudience === "" ? null : parseInt(trimmedAudience, 10);
-    const validAudience = parsedAudience !== null && !isNaN(parsedAudience) && parsedAudience >= 0 ? parsedAudience : null;
-
-    if (
-      slides !== (talk.slides ?? "") ||
-      replay !== (talk.replay ?? "") ||
-      validAudience !== (talk.audience ?? null)
-    ) {
-      onUpdate({
-        ...talk,
-        slides,
-        replay,
-        audience: validAudience,
-      });
-    }
+  const review = async () => {
+    setAiOpen(true); setAiLoading(true); setAiError(null);
+    try { setAiResult(await reviewTalkAction({ title: draft.title, abstract: draft.description })); }
+    catch { setAiError("L’assistant est indisponible. Réessayez plus tard."); }
+    finally { setAiLoading(false); }
   };
+  if (!editable) return <TalkReadOnlyDialog talk={saved} onClose={onClose} success={success} />;
 
-  return (
-    <>
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-        <DialogTitle className="font-semibold! pb-2! flex! justify-between! items-center! tracking-[-0.75px]!">
-          {talk.title}
-          <div className="flex items-center gap-2 tracking-normal">
-            <StatusTag status={talk.status} />
-            <IconButton onClick={onClose} size="small"><X size={20} /></IconButton>
-          </div>
-        </DialogTitle>
-
-        <DialogContent className="pb-2!">
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-text-muted">Détails du talk</p>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleTriggerAiReview}
-              disabled={aiLoading}
-              startIcon={
-                aiLoading ? (
-                  <CircularProgress size={16} className="text-purple-600" />
-                ) : (
-                  <Bot size={16} className="text-purple-600 dark:text-purple-400" />
-                )
-              }
-              className="normal-case text-xs border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/50"
-            >
-              {aiLoading ? "Relire avec l'IA..." : "Relire avec l'IA"}
-            </Button>
-          </div>
-
-          <div className="flex flex-col gap-4 mt-1">
-            {talk.description && (
-              <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
-                <p className="text-xs font-semibold text-text-muted mb-1">Abstract actuel :</p>
-                <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap">{talk.description}</p>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-4 col-span-2">
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Users size={14} className="text-text-muted shrink-0" />
-                      <span className="text-xs font-semibold text-text-muted">Intervenants :</span>
-                    </div>
-                    <Button
-                      size="small"
-                      variant="text"
-                      onClick={() => setIsEditingSpeakers((prev) => !prev)}
-                      className="text-xs! py-0! px-1.5! min-w-0! normal-case! text-primary!"
-                    >
-                      {isEditingSpeakers ? "Fermer" : "Modifier"}
-                    </Button>
-                  </div>
-                  {isEditingSpeakers ? (
-                    <div className="mt-1">
-                      <SpeakerAutocomplete
-                        size="small"
-                        value={talk.speakers?.map((speaker) => ({ name: speaker.name, email: speaker.email ?? "" })) ?? []}
-                        onChange={(newSpeakers) => {
-                          onUpdate({
-                            ...talk,
-                            speakers: newSpeakers.map((speaker) => ({
-                              name: speaker.name,
-                              email: speaker.email?.trim() || undefined,
-                            })),
-                          });
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-1.5 pl-5">
-                      {talk.speakers && talk.speakers.length > 0 ? (
-                        talk.speakers.map((speaker, index) => (
-                          <SpeakerChip
-                            key={index}
-                            name={speaker.name}
-                            email={speaker.email}
-                            size="small"
-                          />
-                        ))
-                      ) : (
-                        <span className="text-sm text-text-muted">—</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-2">
-                  <Mic size={14} className="text-text-muted shrink-0" />
-                  <span className="text-sm">{talk.conference?.name || "—"}</span>
-                </div>
-              </div>
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-2">
-                  <MapPin size={14} className="text-text-muted shrink-0" />
-                  <span className="text-sm">{agencyLabels[talk.office] || talk.office}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar size={14} className="text-text-muted shrink-0" />
-                  <span className="text-sm">{talk.date || "—"}</span>
-                </div>
-              </div>
-            </div>
-
-            <Divider />
-
-            <div>
-              <p className="text-sm text-text-muted mb-2">Changer le statut</p>
-              <FormControl fullWidth>
-                <Select value={talk.status} onChange={handleStatusChange} size="small">
-                  {TalkStatus.map((s) => (
-                    <MenuItem key={s} value={s}>{talkStatusConfig[s].label}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </div>
-
-            <Divider />
-
-            <div className="flex justify-between items-center">
-              <div>
-                <div className="flex gap-1.5 items-center">
-                  {talk.visibility === "PUBLIC" ? <Globe size={16} /> : <Lock size={16} />}
-                  <span className="text-sm font-medium text-text">
-                    {talk.visibility === "PUBLIC" ? "Visibilité externe" : "Visibilité interne"}
-                  </span>
-                </div>
-                <span className="text-xs text-text-muted block mt-0.5">
-                  {talk.visibility === "PUBLIC" ? "Visible publiquement." : "Réservé en interne."}
-                </span>
-              </div>
-              <Switch checked={talk.visibility === "PUBLIC"} onChange={handleVisibilityToggle} />
-            </div>
-
-            {(talk.status === "ACCEPTED" || talk.status === "DONE") && (
-              <>
-                <Divider />
-                <div>
-                  <p className="text-sm text-text-muted mb-4">Liens et restitution</p>
-                  <div className="flex flex-col gap-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <TextField
-                        label="Slides" placeholder="https://..." value={slides} fullWidth size="small"
-                        onChange={(e) => setSlides(e.target.value)}
-                        onBlur={handleSaveDetails}
-                        onKeyDown={(e) => { if (e.key === "Enter") { handleSaveDetails(); (e.target as HTMLInputElement).blur(); } }}
-                        slotProps={{
-                          input: {
-                            startAdornment: <InputAdornment position="start"><LinkIcon size={16} /></InputAdornment>,
-                            endAdornment: slides && isValidUrl(slides) ? (
-                              <InputAdornment position="end">
-                                <IconButton size="small" component="a" href={slides} target="_blank" rel="noopener noreferrer" className="text-primary! p-0.5!">
-                                  <ExternalLinkIcon size={14} />
-                                </IconButton>
-                              </InputAdornment>
-                            ) : null,
-                          },
-                        }}
-                      />
-                      <TextField
-                        label="Replay" placeholder="https://..." value={replay} fullWidth size="small"
-                        onChange={(e) => setReplay(e.target.value)}
-                        onBlur={handleSaveDetails}
-                        onKeyDown={(e) => { if (e.key === "Enter") { handleSaveDetails(); (e.target as HTMLInputElement).blur(); } }}
-                        slotProps={{
-                          input: {
-                            startAdornment: <InputAdornment position="start"><PlayIcon size={16} /></InputAdornment>,
-                            endAdornment: replay && isValidUrl(replay) ? (
-                              <InputAdornment position="end">
-                                <IconButton size="small" component="a" href={replay} target="_blank" rel="noopener noreferrer" className="text-primary! p-0.5!">
-                                  <ExternalLinkIcon size={14} />
-                                </IconButton>
-                              </InputAdornment>
-                            ) : null,
-                          },
-                        }}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <TextField
-                        label="Audience"
-                        placeholder="Ex : 150"
-                        type="number"
-                        value={audience}
-                        fullWidth
-                        size="small"
-                        onChange={(e) => setAudience(e.target.value)}
-                        onBlur={handleSaveDetails}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handleSaveDetails();
-                            (e.target as HTMLInputElement).blur();
-                          }
-                        }}
-                        slotProps={{
-                          htmlInput: { min: 0, step: 1 },
-                          input: {
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <Users size={16} />
-                              </InputAdornment>
-                            ),
-                          },
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </DialogContent>
-
-        <DialogActions className="px-6! pb-6! pt-5! justify-between!">
-          <Button variant="contained" onClick={handleDelete}>Supprimer</Button>
-          <Button variant="outlined" onClick={onClose}>Fermer</Button>
-        </DialogActions>
-      </Dialog>
-
-      <TalkAssistantDialog
-        open={aiDialogOpen}
-        loading={aiLoading}
-        error={aiError}
-        title={talk.title}
-        abstract={talk.description}
-        assistantReviewResult={aiResult}
-        onClose={() => setAiDialogOpen(false)}
-        onApply={handleApplyAiSuggestions}
-      />
-    </>
-  );
+  return <>
+    <TalkFormDialog open title={saved.title} description="Consultez les informations du talk."
+      value={draft} onChange={change} onClose={onClose} onSubmit={save} onReview={review}
+      assistantLoading={aiLoading} pending={pending} disabled={disabled} errors={errors} existingTalk
+      submitLabel={pending ? "Enregistrement…" : "Enregistrer"}
+      feedback={<>
+        {error && <Alert severity="error">{error}</Alert>}
+        {success && <Alert severity="success">{success}</Alert>}
+      </>}
+      speakerWarning={losesAccess && <Alert severity="warning">Après enregistrement, vous ne pourrez plus modifier ce talk car vous vous êtes retiré des speakers.</Alert>}
+      secondaryActions={roles.includes("ADMIN") && <Button color="error" disabled={pending} onClick={remove}>Supprimer</Button>} />
+    {editable && <TalkAssistantDialog open={aiOpen} loading={aiLoading} error={aiError} title={draft.title} abstract={draft.description}
+      assistantReviewResult={aiResult} onClose={() => setAiOpen(false)} onApply={(title, description) => {
+        setDraft(current => ({ ...current, title, description })); setAiOpen(false); setSuccess("");
+      }} />}
+  </>;
 }

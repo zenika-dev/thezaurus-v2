@@ -3,7 +3,6 @@
 import { Suspense, useState } from "react";
 import Button from "@mui/material/Button";
 import { Plus } from "lucide-react";
-import type { TalkData } from "@/entities/talk";
 import dynamic from "next/dynamic";
 import { useTalksMutations } from "@/features/talks/model/useTalksMutations";
 import { DataErrorBoundary } from "@/shared/ui";
@@ -19,10 +18,7 @@ export function TalkDashboard() {
   const [open, setOpen] = useState(false);
   const { createTalk } = useTalksMutations();
 
-  const handleSubmit = async (talk: TalkData) => {
-    try { await createTalk(talk); }
-    catch { alert("Erreur lors de la création du talk"); }
-  };
+  const handleSubmit = createTalk;
 
   return (
     <div className="p-8">

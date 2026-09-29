@@ -10,6 +10,7 @@ export interface SpeakerChipProps {
   name: string;
   email?: string | null;
   onDelete?: (event: React.MouseEvent) => void;
+  disabled?: boolean;
   size?: "small" | "medium";
   className?: string;
 }
@@ -18,6 +19,7 @@ export function SpeakerChip({
   name,
   email,
   onDelete,
+  disabled = false,
   size = "small",
   className,
 }: SpeakerChipProps) {
@@ -32,6 +34,7 @@ export function SpeakerChip({
         size={size}
         className={className}
         onDelete={onDelete}
+        disabled={disabled}
         avatar={
           <Avatar
             sx={{

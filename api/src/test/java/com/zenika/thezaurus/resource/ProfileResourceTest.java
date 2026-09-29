@@ -23,6 +23,64 @@ public class ProfileResourceTest {
     @InjectMock
     UserRepository userRepository;
 
+    @Test
+    @TestSecurity(
+            user = "jane@zenika.com",
+            roles = {Role.Names.CONSULTANT})
+    public void userCanChooseTheirOwnOffice() throws Exception {
+        Mockito.when(userRepository.findByEmail("jane@zenika.com")).thenReturn(jane("U123", true, false));
+        given().contentType(ContentType.JSON)
+                .body("{\"office\":\"nantes\"}")
+                .when()
+                .put("/api/me/profile/office")
+                .then()
+                .statusCode(200)
+                .body("office", is("nantes"));
+    }
+
+    @Test
+    @TestSecurity(
+            user = "jane@zenika.com",
+            roles = {Role.Names.CONSULTANT})
+    public void userCanClearTheirOfficeWithTheExistingEmptyValue() throws Exception {
+        Mockito.when(userRepository.findByEmail("jane@zenika.com")).thenReturn(jane(null, false, false));
+        given().contentType(ContentType.JSON)
+                .body("{\"office\":\"\"}")
+                .when()
+                .put("/api/me/profile/office")
+                .then()
+                .statusCode(200)
+                .body("office", is(nullValue()));
+        Mockito.verify(userRepository).updateOffice("jane@zenika.com", "");
+    }
+
+    @Test
+    @TestSecurity(
+            user = "jane@zenika.com",
+            roles = {Role.Names.CONSULTANT})
+    public void invalidOfficeIsRejected() {
+        given().contentType(ContentType.JSON)
+                .body("{\"office\":\"unknown\"}")
+                .when()
+                .put("/api/me/profile/office")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @TestSecurity(
+            user = "jane@zenika.com",
+            roles = {Role.Names.CONSULTANT})
+    public void profileReturnsOfficeForTalkPrefill() throws Exception {
+        Mockito.when(userRepository.findByEmail("jane@zenika.com"))
+                .thenReturn(User.builder()
+                        .name("Jane")
+                        .email("jane@zenika.com")
+                        .office("nantes")
+                        .build());
+        given().when().get("/api/me/profile").then().statusCode(200).body("office", is("nantes"));
+    }
+
     private User jane(String slackUserId, boolean emailEnabled, boolean slackEnabled) {
         return User.builder()
                 .name("Jane Doe")

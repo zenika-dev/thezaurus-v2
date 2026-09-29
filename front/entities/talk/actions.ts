@@ -11,9 +11,10 @@ export async function createTalkAction(talk: TalkData): Promise<TalkData> {
   return created;
 }
 
-export async function updateTalkAction(talk: TalkData): Promise<void> {
-  await talkApi.updateTalk(talk);
+export async function updateTalkAction(talk: TalkData): Promise<TalkData> {
+  const updated = await talkApi.updateTalk(talk);
   revalidatePath("/talks");
+  return updated;
 }
 
 export async function deleteTalkAction(id: string): Promise<void> {

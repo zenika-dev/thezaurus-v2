@@ -175,6 +175,7 @@ export function SpeakerAutocomplete({
                             email={email}
                             size={size === "small" ? "small" : "medium"}
                             onDelete={itemProps.onDelete}
+                            disabled={disabled}
                         />
                     );
                 })

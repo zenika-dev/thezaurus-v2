@@ -35,7 +35,6 @@ services:
 
   front:
     build:
-      context: ./front
       target: dev
     container_name: thezaurus-front
     ports:

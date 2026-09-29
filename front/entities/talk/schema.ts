@@ -2,14 +2,14 @@ import { z } from "zod";
 import { Visibility } from "@/shared/api";
 
 export const speakerSchema = z.object({
-  name: z.string().min(1, "Le nom est requis"),
+  name: z.string().trim().min(1, "Le nom est requis"),
   email: z.email("Email invalide").optional().or(z.literal("")),
 });
 
 export type SpeakerFormData = z.infer<typeof speakerSchema>;
 
 export const talkFormSchema = z.object({
-  title:       z.string().min(1, "Le titre est requis"),
+  title:       z.string().trim().min(1, "Le titre est requis"),
   speakers:    z.array(speakerSchema)
     .min(1, "Au moins un intervenant est requis")
     .refine(
@@ -27,9 +27,9 @@ export const talkFormSchema = z.object({
       },
       { message: "Un intervenant ne peut pas être ajouté en double" }
     ),
-  office:      z.string().min(1, "L'agence est requise"),
-  description: z.string().min(1, "L'abstract est requis"),
-  format:      z.string().min(1, "Le format est requis"),
+  office:      z.string().trim().min(1, "L'agence est requise"),
+  description: z.string().trim().min(1, "L'abstract est requis"),
+  format:      z.string().trim().min(1, "Le format est requis"),
   visibility:  z.enum(Visibility),
   language:    z.string(),
   conference:  z.string(),

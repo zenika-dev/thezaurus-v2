@@ -3,6 +3,7 @@ package com.zenika.thezaurus.resource;
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.repository.UserRepository;
+import com.zenika.thezaurus.service.CurrentUserService;
 import com.zenika.thezaurus.slack.SlackUserResolver;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
@@ -32,6 +33,9 @@ public class UserController {
     UserRepository userRepository;
 
     @Inject
+    CurrentUserService currentUser;
+
+    @Inject
     SlackUserResolver slackUserResolver;
 
     public record CurrentUserView(String email, Set<String> roles) {}
@@ -51,15 +55,17 @@ public class UserController {
 
         String email = identity.getPrincipal().getName();
 
-        User user = userRepository.findByEmail(email);
-        if (user != null && (user.slackUserId() == null || user.slackUserId().isBlank())) {
-            try {
-                slackUserResolver.resolveAndPersistAsync(email);
-            } catch (Exception exception) {
-                // Enrichissement, jamais un prérequis : la connexion doit aboutir quoi qu'il arrive.
-                logger.warnf(exception, "Rattachement Slack non déclenché pour %s", email);
-            }
-        }
+        currentUser
+                .getUser()
+                .filter(user -> user.slackUserId() == null || user.slackUserId().isBlank())
+                .ifPresent(user -> {
+                    try {
+                        slackUserResolver.resolveAndPersistAsync(user.email());
+                    } catch (Exception exception) {
+                        // L'enrichissement Slack ne doit pas bloquer la connexion.
+                        logger.warnf(exception, "Rattachement Slack non déclenché pour %s", user.email());
+                    }
+                });
 
         return RestResponse.ok(new CurrentUserView(email, identity.getRoles()));
     }

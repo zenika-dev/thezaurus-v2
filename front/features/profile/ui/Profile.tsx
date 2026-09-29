@@ -16,9 +16,6 @@ export function Profile() {
           <h1 className="text-[34px] leading-[1.235] font-bold text-text m-0 tracking-[0.25px]">
             Mon profil
           </h1>
-          <p className="text-[14px] leading-[1.43] text-text-muted m-0 tracking-[0.15px]">
-            Tes informations personnelles et tes préférences de notification.
-          </p>
         </div>
         <Button
           variant="contained"

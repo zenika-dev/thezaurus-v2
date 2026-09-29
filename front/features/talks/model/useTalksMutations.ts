@@ -29,16 +29,9 @@ export function useTalksMutations() {
 
   const updateTalk = useMutation({
     mutationFn: (talk: TalkData) => updateTalkAction(talk),
-    onMutate: async (updated) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<TalkData[]>(queryKey);
+    onSuccess: (updated) => {
       queryClient.setQueryData<TalkData[]>(queryKey, (old = []) =>
-        old.map((t) => (t.id === updated.id ? updated : t))
-      );
-      return { previous };
-    },
-    onError: (_err, _talk, ctx) => {
-      queryClient.setQueryData(queryKey, ctx?.previous);
+        old.map(talk => talk.id === updated.id ? updated : talk));
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey });

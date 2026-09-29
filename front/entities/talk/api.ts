@@ -58,7 +58,7 @@ export const talkApi = {
       body: JSON.stringify(toPayload(talk)),
     });
     if (!res.ok) throw new Error("Failed to update talk");
-    return talk;
+    return mapBackendToFrontend(await res.json());
   },
   deleteTalk: async (id: string): Promise<void> => {
     const res = await apiFetch(`/talks/${id}`, { method: "DELETE" });
