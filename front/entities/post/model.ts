@@ -1,4 +1,4 @@
-import type { BlogPostStatus } from "@/shared/api";
+import type { BlogPostStatus, BackendUser } from "@/shared/api";
 
 /**
  * Forme du contrat, à deux nuances : les champs sont totaux (le contrat les déclare optionnels),
@@ -7,18 +7,13 @@ import type { BlogPostStatus } from "@/shared/api";
 export interface BlogPostData {
   id: string;
   title: string;
-  writers: string[];
+  writers: BackendUser[];
   creationDate: string;
   publicationDate?: string;
   tags: string[];
   link?: string;
   googleDocDraftLink?: string;
   status: BlogPostStatus;
-}
-
-/** Le formulaire n'expose qu'un auteur ; remplace le principal sans écraser les suivants. */
-export function withPrimaryWriter(writers: string[], name: string): string[] {
-  return [name, ...writers.slice(1)];
 }
 
 export const blogPostTags: Record<string, string> = {
