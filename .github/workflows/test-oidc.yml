@@ -17,3 +17,7 @@ jobs:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
           token_format: access_token
+      - name: Show token info
+        run: |
+          curl -s -d "access_token=${{ steps.auth.outputs.access_token }}" \
+            https://oauth2.googleapis.com/tokeninfo | jq '{email, expires_in, scope}'
