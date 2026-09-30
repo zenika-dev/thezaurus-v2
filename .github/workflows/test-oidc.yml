@@ -12,12 +12,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: google-github-actions/auth@v2
+      - id: auth
+        uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
           token_format: access_token
+
       - name: Show token info
+        env:
+          TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
-          curl -s -d "access_token=${{ steps.auth.outputs.access_token }}" \
+          curl -s -d "access_token=${TOKEN}" \
             https://oauth2.googleapis.com/tokeninfo | jq '{email, expires_in, scope}'
