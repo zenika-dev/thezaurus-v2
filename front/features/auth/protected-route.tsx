@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import type { Role } from "@/shared/api";
 import { LandingPage } from "./landing-page";
+import { AuthError } from "./types";
 
 function ProtectedRouteContent({
   children,
@@ -17,15 +18,25 @@ function ProtectedRouteContent({
   const searchParams = useSearchParams();
   const authError = searchParams.get("error");
 
+  const isSessionExpired = session?.error === AuthError.REFRESH_ACCESS_TOKEN_ERROR;
+
+  useEffect(() => {
+    if (isSessionExpired) {
+      signOut({ redirect: false });
+    }
+  }, [isSessionExpired]);
+
   if (status === "loading") {
     return <div className="p-4 text-center">Chargement de la session...</div>;
   }
 
-  if (status === "unauthenticated" || !session?.user) {
+  if (status === "unauthenticated" || !session?.user || isSessionExpired) {
     return (
       <LandingPage
         error={
-          authError
+          isSessionExpired
+            ? "Votre session a expiré. Merci de vous reconnecter."
+            : authError
             ? "Une erreur est survenue lors de la connexion. Merci de réessayer."
             : null
         }

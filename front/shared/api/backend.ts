@@ -9,9 +9,20 @@ const API_BASE = process.env.API_URL ?? "http://localhost:8080";
  *   /api/backend, qui attache ces mêmes headers côté serveur — le navigateur n'a
  *   jamais besoin de connaître l'URL interne de l'API ni de porter un token.
  */
+let isHandling401 = false;
+
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   if (typeof window !== "undefined") {
-    return fetch(`/api/backend${path}`, init);
+    const res = await fetch(`/api/backend${path}`, init);
+    if (res.status === 401 && !isHandling401) {
+      isHandling401 = true;
+      import("next-auth/react").then(({ signOut }) => {
+        signOut({ callbackUrl: "/" }).finally(() => {
+          isHandling401 = false;
+        });
+      });
+    }
+    return res;
   }
 
   // Imports dynamiques : next/headers est interdit dans le bundle client, et ce module
