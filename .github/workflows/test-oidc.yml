@@ -14,10 +14,4 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
-
-      - uses: google-github-actions/setup-gcloud@v2
-
-      - name: Vérifier l'identité
-        run: |
-          gcloud auth list
-          gcloud auth print-access-token > /dev/null && echo "Token obtenu ✅"
+          token_format: access_token
