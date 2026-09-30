@@ -28,7 +28,7 @@ public class BlogPostResourceTest {
     @Test
     public void testList() throws Exception {
         Mockito.when(service.findAll())
-                .thenReturn(Collections.singletonList(new BlogPost("1", "Titre", "Description")));
+                .thenReturn(Collections.singletonList(new BlogPost("1", "Titre", "https://blog.zenika.com/article")));
 
         given().when()
                 .get("/blog-posts")
@@ -48,11 +48,11 @@ public class BlogPostResourceTest {
 
     @Test
     public void testCreate() throws Exception {
-        BlogPost input = new BlogPost(null, "New Post", "Desc");
+        BlogPost input = new BlogPost(null, "New Post", "https://blog.zenika.com/article");
         input.setWriters(Collections.singletonList(User.builder().name("Alice").build()));
         input.setStatus(BlogPostStatus.DRAFT);
         input.setTags(Collections.singletonList("java"));
-        BlogPost created = new BlogPost("new-id", "New Post", "Desc");
+        BlogPost created = new BlogPost("new-id", "New Post", "https://blog.zenika.com/article");
 
         Mockito.when(service.create(Mockito.any(BlogPost.class))).thenReturn(created);
 

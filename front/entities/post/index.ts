@@ -1,4 +1,5 @@
 export type { BlogPostData } from "./model";
+export { blogPostToday } from "./lib/today";
 export { blogPostFormSchema } from "./schema";
 export type { BlogPostFormData } from "./schema";
 export { blogPostTags, blogPostStatusConfig } from "./model";

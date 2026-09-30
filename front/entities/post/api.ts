@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { apiFetch, type BackendBlogPost } from "@/shared/api";
+import { apiFetch, BlogPostStatus, type BackendBlogPost } from "@/shared/api";
 import type { BlogPostData } from "./model";
 
 dayjs.extend(customParseFormat);
@@ -26,9 +26,10 @@ function toLocalDateTime(dateStr: string | undefined): string | null {
  * Le back accepte `null` pour les dates absentes, ce que le schéma généré ne décrit pas : les
  * champs Java n'ont pas d'annotation `@Schema` et ressortent simplement optionnels.
  */
-type BackendBlogPostPayload = Omit<BackendBlogPost, "creationDate" | "publicationDate"> & {
+type BackendBlogPostPayload = Omit<BackendBlogPost, "creationDate" | "publicationDate" | "actualPublicationDate"> & {
   creationDate: string | null;
   publicationDate: string | null;
+  actualPublicationDate: string | null;
 };
 
 /**
@@ -43,7 +44,9 @@ export function mapBackendToFrontend(p: BackendBlogPost): BlogPostData {
     tags: p.tags ?? [],
     creationDate: toFrontendDate(p.creationDate),
     publicationDate: toFrontendDate(p.publicationDate),
-    status: p.status ?? "IDEA",
+    actualPublicationDate: toFrontendDate(p.actualPublicationDate),
+    office: p.office ?? "",
+    status: p.status ?? BlogPostStatus.IDEA,
     link: p.link ?? "",
     googleDocDraftLink: p.googleDocDraftLink ?? "",
   };
@@ -54,6 +57,8 @@ export function mapFrontendToBackend(p: BlogPostData): BackendBlogPostPayload {
     ...p,
     creationDate: toLocalDateTime(p.creationDate),
     publicationDate: toLocalDateTime(p.publicationDate),
+    actualPublicationDate: toLocalDateTime(p.actualPublicationDate),
+    office: p.office || undefined,
   };
 }
 

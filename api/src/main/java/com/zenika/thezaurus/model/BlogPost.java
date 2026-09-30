@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import java.util.List;
 
 public class BlogPost {
@@ -17,13 +18,19 @@ public class BlogPost {
 
     private String creationDate;
     private String publicationDate;
+    private String actualPublicationDate;
+
+    private Office office;
+
+    @Pattern(regexp = "^$|https?://[^\\s]+", message = "Une URL HTTP ou HTTPS est requise")
     private String link;
+
+    @Pattern(regexp = "^$|https?://[^\\s]+", message = "Une URL HTTP ou HTTPS est requise")
     private String googleDocDraftLink;
 
     @NotNull
     private BlogPostStatus status;
 
-    @NotEmpty
     private List<String> tags;
 
     public BlogPost() {}
@@ -72,6 +79,22 @@ public class BlogPost {
 
     public void setPublicationDate(String publicationDate) {
         this.publicationDate = publicationDate;
+    }
+
+    public String getActualPublicationDate() {
+        return actualPublicationDate;
+    }
+
+    public void setActualPublicationDate(String actualPublicationDate) {
+        this.actualPublicationDate = actualPublicationDate;
+    }
+
+    public Office getOffice() {
+        return office;
+    }
+
+    public void setOffice(Office office) {
+        this.office = office;
     }
 
     public String getLink() {

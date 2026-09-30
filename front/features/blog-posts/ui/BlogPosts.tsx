@@ -3,7 +3,6 @@
 import { Suspense, useState } from "react";
 import Button from "@mui/material/Button";
 import { PenLine } from "lucide-react";
-import type { BlogPostData } from "@/entities/post";
 import dynamic from "next/dynamic";
 import { usePostsMutations } from "@/features/blog-posts/model/usePostsMutations";
 import { DataErrorBoundary } from "@/shared/ui";
@@ -19,10 +18,6 @@ export function BlogPosts() {
   const [open, setOpen] = useState(false);
   const { createPost } = usePostsMutations();
 
-  const handleSubmit = async (post: BlogPostData) => {
-    try { await createPost(post); }
-    catch { alert("Erreur lors de la création du post"); }
-  };
 
   return (
     <div className="p-8">
@@ -49,7 +44,7 @@ export function BlogPosts() {
         </DataErrorBoundary>
       </Suspense>
 
-      <CreateBlogPostDialog open={open} onClose={() => setOpen(false)} onSubmit={handleSubmit} />
+      <CreateBlogPostDialog open={open} onClose={() => setOpen(false)} onSubmit={createPost} />
     </div>
   );
 }
