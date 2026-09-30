@@ -67,10 +67,11 @@ if (enums.length === 0) {
 }
 
 const enumDeclarations = enums
-  .map(
-    ([name, s]) =>
-      `export const ${name} = [${s.enum.map((v) => JSON.stringify(v)).join(", ")}] as const;\nexport type ${name} = (typeof ${name})[number];`
-  )
+  .map(([name, s]) => {
+    const values = s.enum.map((v) => JSON.stringify(v)).join(", ");
+    const entries = s.enum.map((v) => `${JSON.stringify(v)}: ${JSON.stringify(v)}`).join(", ");
+    return `export const ${name} = Object.assign([${values}] as const, { ${entries} } as const);\nexport type ${name} = (typeof ${name})[number];`;
+  })
   .join("\n\n");
 
 const enumContent = `${GENERATED_HEADER}

@@ -7,10 +7,10 @@ import { ContributionFilters } from "@/shared/ui/ContributionFilters";
 import { isContributor } from "@/entities/user/lib/isContributor";
 import { SpeakerChip } from "@/entities/user";
 import { blogPostStatusConfig } from "@/entities/post";
-import type { BlogPostData } from "@/entities/post";
 import dynamic from "next/dynamic";
 import { usePosts } from "@/features/blog-posts/model";
 import { StatusTag } from "./BlogPostTags";
+import { BlogPostWorkflowHelp } from "./BlogPostWorkflowHelp";
 
 const BlogPostDetailsDialog = dynamic(
   () => import("./BlogPostDetailsDialog").then((m) => ({ default: m.BlogPostDetailsDialog })),
@@ -30,23 +30,17 @@ export function BlogPostsList() {
     (!personalOnly || isContributor(post.writers, session?.user?.email)),
   );
 
-  const handleUpdate = async (updated: BlogPostData) => {
-    try { await updatePost(updated); }
-    catch { alert("Erreur lors de la mise à jour du post"); }
-  };
-
-  const handleDelete = async (id: string) => {
-    try { await deletePost(id); }
-    catch { alert("Erreur lors de la suppression du post"); }
-  };
 
   return (
     <>
+      <div className="flex items-start gap-2 flex-wrap">
       <ContributionFilters
         statuses={BlogPostStatus} labels={blogPostStatusConfig}
         status={statusFilter} onStatusChange={setStatusFilter}
         personalLabel="Mes articles" personalOnly={personalOnly} onPersonalChange={setPersonalOnly}
       />
+      <BlogPostWorkflowHelp />
+      </div>
       <div className="flex flex-col gap-2">
         {filteredPosts.map((post) => (
           <div
@@ -88,8 +82,8 @@ export function BlogPostsList() {
         post={selectedPost}
         open={!!selectedPostId}
         onClose={() => setSelectedPostId(null)}
-        onUpdate={handleUpdate}
-        onDelete={handleDelete}
+        onUpdate={updatePost}
+        onDelete={deletePost}
       />
     </>
   );

@@ -2,7 +2,7 @@
 
 import { Alert, MenuItem, TextField } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { agencyLabels } from "@/entities/talk";
+import { agencyLabels } from "@/shared/lib/offices";
 import { updateOfficeAction } from "@/entities/user/actions";
 import type { UserProfile } from "@/entities/user";
 import { Office, queryKeys } from "@/shared/api";
@@ -35,7 +35,7 @@ export function GeneralPreferencesSection({ profile }: { profile: UserProfile })
           const office = Office.find((office) => office === event.target.value) ?? "";
           if (office !== profile.office) mutation.mutate(office);
         }}
-        helperText="Cette agence sera proposée à la création de vos prochains talks."
+        helperText="Cette agence sera proposée à la création de vos prochains talks et articles."
       >
         <MenuItem value="">Non renseignée</MenuItem>
         {Object.entries(agencyLabels).map(([value, label]) => (
