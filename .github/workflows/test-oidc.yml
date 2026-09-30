@@ -1,0 +1,23 @@
+name: Test OIDC
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Vérifier l'identité
+        run: |
+          gcloud auth list
+          gcloud auth print-access-token > /dev/null && echo "Token obtenu ✅"
