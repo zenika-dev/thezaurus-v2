@@ -9,32 +9,32 @@
 // Le pendant runtime de `schema.d.ts` : les mêmes enums sous forme de valeurs utilisables à
 // l'exécution (options de formulaire, `z.enum`). Les types sont dans `contract.ts`.
 
-export const BlogPostStatus = ["IDEA", "DRAFT", "REVIEW", "PUBLISHED"] as const;
+export const BlogPostStatus = Object.assign(["IDEA", "DRAFT", "REVIEW", "READY_TO_PUBLISH", "PUBLISHED"] as const, { "IDEA": "IDEA", "DRAFT": "DRAFT", "REVIEW": "REVIEW", "READY_TO_PUBLISH": "READY_TO_PUBLISH", "PUBLISHED": "PUBLISHED" } as const);
 export type BlogPostStatus = (typeof BlogPostStatus)[number];
 
-export const ConferenceReach = ["Locale", "Régionale", "Nationale"] as const;
+export const ConferenceReach = Object.assign(["Locale", "Régionale", "Nationale"] as const, { "Locale": "Locale", "Régionale": "Régionale", "Nationale": "Nationale" } as const);
 export type ConferenceReach = (typeof ConferenceReach)[number];
 
-export const ConferenceType = ["Marketing / business", "Technique stratégique", "Technique généraliste", "Technique", "Hors scope"] as const;
+export const ConferenceType = Object.assign(["Marketing / business", "Technique stratégique", "Technique généraliste", "Technique", "Hors scope"] as const, { "Marketing / business": "Marketing / business", "Technique stratégique": "Technique stratégique", "Technique généraliste": "Technique généraliste", "Technique": "Technique", "Hors scope": "Hors scope" } as const);
 export type ConferenceType = (typeof ConferenceType)[number];
 
-export const DatePrecision = ["DAY", "MONTH"] as const;
+export const DatePrecision = Object.assign(["DAY", "MONTH"] as const, { "DAY": "DAY", "MONTH": "MONTH" } as const);
 export type DatePrecision = (typeof DatePrecision)[number];
 
-export const MonthLabel = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"] as const;
+export const MonthLabel = Object.assign(["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"] as const, { "Jan": "Jan", "Fév": "Fév", "Mar": "Mar", "Avr": "Avr", "Mai": "Mai", "Juin": "Juin", "Juil": "Juil", "Août": "Août", "Sep": "Sep", "Oct": "Oct", "Nov": "Nov", "Déc": "Déc" } as const);
 export type MonthLabel = (typeof MonthLabel)[number];
 
-export const Office = ["paris", "nantes", "rennes", "bordeaux", "lyon", "lille", "grenoble", "singapour", "montreal"] as const;
+export const Office = Object.assign(["paris", "nantes", "rennes", "bordeaux", "lyon", "lille", "grenoble", "singapour", "montreal"] as const, { "paris": "paris", "nantes": "nantes", "rennes": "rennes", "bordeaux": "bordeaux", "lyon": "lyon", "lille": "lille", "grenoble": "grenoble", "singapour": "singapour", "montreal": "montreal" } as const);
 export type Office = (typeof Office)[number];
 
-export const Role = ["ADMIN", "DT", "CONSULTANT"] as const;
+export const Role = Object.assign(["ADMIN", "DT", "CONSULTANT"] as const, { "ADMIN": "ADMIN", "DT": "DT", "CONSULTANT": "CONSULTANT" } as const);
 export type Role = (typeof Role)[number];
 
-export const TalkFormat = ["quicky", "conference", "workshop"] as const;
+export const TalkFormat = Object.assign(["quicky", "conference", "workshop"] as const, { "quicky": "quicky", "conference": "conference", "workshop": "workshop" } as const);
 export type TalkFormat = (typeof TalkFormat)[number];
 
-export const TalkStatus = ["DRAFT", "PLANNED", "SUBMITTED", "ACCEPTED", "REJECTED", "DONE"] as const;
+export const TalkStatus = Object.assign(["DRAFT", "PLANNED", "SUBMITTED", "ACCEPTED", "REJECTED", "DONE"] as const, { "DRAFT": "DRAFT", "PLANNED": "PLANNED", "SUBMITTED": "SUBMITTED", "ACCEPTED": "ACCEPTED", "REJECTED": "REJECTED", "DONE": "DONE" } as const);
 export type TalkStatus = (typeof TalkStatus)[number];
 
-export const Visibility = ["PUBLIC", "PRIVATE"] as const;
+export const Visibility = Object.assign(["PUBLIC", "PRIVATE"] as const, { "PUBLIC": "PUBLIC", "PRIVATE": "PRIVATE" } as const);
 export type Visibility = (typeof Visibility)[number];

@@ -1,4 +1,4 @@
-import type { BlogPostStatus } from "@/shared/api";
+import type { BlogPostStatus, BackendUser, Office } from "@/shared/api";
 
 /**
  * Forme du contrat, à deux nuances : les champs sont totaux (le contrat les déclare optionnels),
@@ -7,18 +7,15 @@ import type { BlogPostStatus } from "@/shared/api";
 export interface BlogPostData {
   id: string;
   title: string;
-  writers: string[];
+  writers: BackendUser[];
   creationDate: string;
+  office?: Office | "";
   publicationDate?: string;
+  actualPublicationDate?: string;
   tags: string[];
   link?: string;
   googleDocDraftLink?: string;
   status: BlogPostStatus;
-}
-
-/** Le formulaire n'expose qu'un auteur ; remplace le principal sans écraser les suivants. */
-export function withPrimaryWriter(writers: string[], name: string): string[] {
-  return [name, ...writers.slice(1)];
 }
 
 export const blogPostTags: Record<string, string> = {
@@ -43,8 +40,9 @@ export const blogPostTags: Record<string, string> = {
  * `BlogPostStatus` côté Java fait échouer la compilation ici tant qu'elle n'a pas de libellé.
  */
 export const blogPostStatusConfig: Record<BlogPostStatus, { label: string; text: string; bg: string; darkText: string; darkBg: string }> = {
-  DRAFT:     { label: "Draft",     text: "#000000", bg: "#F7F7F7", darkText: "#FFFFFF", darkBg: "#5E5E5E" },
-  IDEA:      { label: "Idea",      text: "#9A0530", bg: "#FFEDD4", darkText: "#FFDD58", darkBg: "#7E2A0C" },
-  REVIEW:    { label: "Review",    text: "#0132D1", bg: "#DBEAFE", darkText: "#94E5FF", darkBg: "#1C398E" },
-  PUBLISHED: { label: "Published", text: "#245E12", bg: "#DCFCE7", darkText: "#47FFB4", darkBg: "#0D542B" },
+  IDEA:      { label: "Idée",      text: "#9A0530", bg: "#FFEDD4", darkText: "#FFDD58", darkBg: "#7E2A0C" },
+  DRAFT:     { label: "En rédaction", text: "#000000", bg: "#F7F7F7", darkText: "#FFFFFF", darkBg: "#5E5E5E" },
+  REVIEW:    { label: "En relecture", text: "#0132D1", bg: "#DBEAFE", darkText: "#94E5FF", darkBg: "#1C398E" },
+  READY_TO_PUBLISH: { label: "Prêt à publier", text: "#681AC1", bg: "#F3E8FF", darkText: "#FFB9FF", darkBg: "#59168B" },
+  PUBLISHED: { label: "Publié", text: "#245E12", bg: "#DCFCE7", darkText: "#47FFB4", darkBg: "#0D542B" },
 };

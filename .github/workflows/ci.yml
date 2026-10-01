@@ -90,6 +90,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Tests frontend
+        run: npm test
+
       # `next build` fait aussi le type-check TypeScript.
       - name: Build
         run: npm run build

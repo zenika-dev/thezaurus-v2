@@ -1,4 +1,5 @@
-import { Office, TalkFormat, TalkStatus, Visibility } from "@/shared/api";
+import { TalkFormat, TalkStatus, Visibility } from "@/shared/api";
+export { agencyLabels } from "@/shared/lib/offices";
 import type {
   BackendConference,
   BackendTalkReviewRequest,
@@ -35,10 +36,6 @@ export interface ApiErrorResponse {
 }
 
 // Les valeurs viennent du contrat généré ; seule la présentation du libellé est locale.
-export const agencyLabels: Record<string, string> = Object.fromEntries(
-  Office.map(office => [office, office === "montreal" ? "Montréal" : office.charAt(0).toUpperCase() + office.slice(1)]),
-);
-
 export const visibilityLabels: Record<Visibility, string> = {
   PRIVATE: "Interne",
   PUBLIC:  "Externe",

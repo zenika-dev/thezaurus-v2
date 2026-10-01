@@ -1472,16 +1472,18 @@ export interface components {
         BlogPost: {
             id?: string;
             title: string;
-            writers: string[];
+            writers: components["schemas"]["User"][];
             creationDate?: string;
             publicationDate?: string;
+            actualPublicationDate?: string;
+            office?: components["schemas"]["Office"];
             link?: string;
             googleDocDraftLink?: string;
             status: components["schemas"]["BlogPostStatus"];
-            tags: string[];
+            tags?: string[];
         };
         /** @enum {string} */
-        BlogPostStatus: "IDEA" | "DRAFT" | "REVIEW" | "PUBLISHED";
+        BlogPostStatus: "IDEA" | "DRAFT" | "REVIEW" | "READY_TO_PUBLISH" | "PUBLISHED";
         CityCount: {
             city: string;
             /** Format: int32 */
