@@ -42,8 +42,48 @@ public record Talk(
 
         @Pattern(regexp = "^$|https?://[^\\s]+", message = "Une URL HTTP ou HTTPS est requise")
         String replay,
+        @Min(0) Integer audience,
+        Boolean feedbackReminderSent) {
 
-        @Min(0) Integer audience) {
+    public Talk {
+        // Firestore passes null for fields missing from legacy documents, including record components.
+        feedbackReminderSent = Boolean.TRUE.equals(feedbackReminderSent);
+    }
+
+    public Talk(
+            String id,
+            String title,
+            String description,
+            List<User> speakers,
+            String office,
+            Conference conference,
+            TalkStatus status,
+            Visibility visibility,
+            String format,
+            String date,
+            String language,
+            String notes,
+            String slides,
+            String replay,
+            Integer audience) {
+        this(
+                id,
+                title,
+                description,
+                speakers,
+                office,
+                conference,
+                status,
+                visibility,
+                format,
+                date,
+                language,
+                notes,
+                slides,
+                replay,
+                audience,
+                false);
+    }
 
     public boolean canBeEditedBy(String email, boolean privileged) {
         return privileged
@@ -120,7 +160,28 @@ public record Talk(
                 notes,
                 slides,
                 replay,
-                audience);
+                audience,
+                feedbackReminderSent);
+    }
+
+    public Talk withFeedbackReminderSent(boolean sent) {
+        return new Talk(
+                id,
+                title,
+                description,
+                speakers,
+                office,
+                conference,
+                status,
+                visibility,
+                format,
+                date,
+                language,
+                notes,
+                slides,
+                replay,
+                audience,
+                sent);
     }
 
     public Talk withConference(Conference conference) {
@@ -139,6 +200,7 @@ public record Talk(
                 notes,
                 slides,
                 replay,
-                audience);
+                audience,
+                feedbackReminderSent);
     }
 }

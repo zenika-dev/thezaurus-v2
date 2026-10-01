@@ -2,6 +2,7 @@ package com.zenika.thezaurus.repository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.api.core.ApiFutures;
@@ -11,16 +12,116 @@ import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
+import com.google.cloud.firestore.Transaction;
 import com.zenika.thezaurus.model.Conference;
 import com.zenika.thezaurus.model.Talk;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 public class TalkRepositoryTest {
+
+    @Test
+    void markingReminderSentOnlyUpdatesTheMarker() throws Exception {
+        DocumentReference document = Mockito.mock(DocumentReference.class);
+        Mockito.when(collection.document("talk-1")).thenReturn(document);
+        Mockito.when(document.update("feedbackReminderSent", true)).thenReturn(ApiFutures.immediateFuture(null));
+
+        repository.markFeedbackReminderSent("talk-1");
+
+        Mockito.verify(document).update("feedbackReminderSent", true);
+        Mockito.verify(document, Mockito.never()).set(Mockito.any(Talk.class));
+    }
+
+    @Test
+    void creatingATalkIgnoresTheClientReminderMarker() throws Exception {
+        DocumentReference document = Mockito.mock(DocumentReference.class);
+        Mockito.when(collection.document("talk-1")).thenReturn(document);
+        Transaction transaction = Mockito.mock(Transaction.class);
+        Mockito.when(repository.firestore.runTransaction(Mockito.any(Transaction.Function.class)))
+                .thenAnswer(invocation -> {
+                    Transaction.Function<?> callback = invocation.getArgument(0);
+                    return ApiFutures.immediateFuture(callback.updateCallback(transaction));
+                });
+        Talk requested = new Talk(
+                "talk-1",
+                "Talk",
+                "Description",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                true);
+
+        Talk created = repository.create(requested);
+
+        assertEquals(false, created.feedbackReminderSent());
+        Mockito.verify(transaction).create(Mockito.eq(document), Mockito.any(Object.class));
+    }
+
+    @Test
+    void creatingAnExistingTalkNeverOverwritesItsReminderMarker() {
+        DocumentReference document = Mockito.mock(DocumentReference.class);
+        Mockito.when(collection.document("talk-1")).thenReturn(document);
+        Transaction transaction = Mockito.mock(Transaction.class);
+        Mockito.when(transaction.create(Mockito.any(), Mockito.any()))
+                .thenThrow(new IllegalStateException("Document already exists"));
+        Mockito.when(repository.firestore.runTransaction(Mockito.any(Transaction.Function.class)))
+                .thenAnswer(invocation -> {
+                    Transaction.Function<?> callback = invocation.getArgument(0);
+                    return ApiFutures.immediateFuture(callback.updateCallback(transaction));
+                });
+
+        assertThrows(ExecutionException.class, () -> repository.create(new Talk("talk-1", "Talk", "Description")));
+
+        Mockito.verify(document, Mockito.never()).set(Mockito.any(Talk.class));
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(booleans = {true, false})
+    void editingATalkPreservesTheStoredReminderMarker(Boolean stored) throws Exception {
+        DocumentReference document = Mockito.mock(DocumentReference.class);
+        DocumentSnapshot current = Mockito.mock(DocumentSnapshot.class);
+        Transaction transaction = Mockito.mock(Transaction.class);
+        Mockito.when(collection.document("talk-1")).thenReturn(document);
+        Mockito.when(current.exists()).thenReturn(true);
+        Mockito.when(current.getBoolean("feedbackReminderSent")).thenReturn(stored);
+        Mockito.when(current.toObject(Talk.class)).thenReturn(new Talk("talk-1", "Old talk", "Description"));
+        Mockito.when(transaction.get(document)).thenReturn(ApiFutures.immediateFuture(current));
+        Mockito.when(repository.firestore.runTransaction(Mockito.any(Transaction.Function.class)))
+                .thenAnswer(invocation -> {
+                    Transaction.Function<?> callback = invocation.getArgument(0);
+                    return ApiFutures.immediateFuture(callback.updateCallback(transaction));
+                });
+        Talk requested = new Talk("ignored-id", "Edited talk", "Description")
+                .withFeedbackReminderSent(!Boolean.TRUE.equals(stored));
+
+        Talk updated = repository.update("talk-1", requested, talk -> true);
+
+        assertEquals(Boolean.TRUE.equals(stored), updated.feedbackReminderSent());
+        assertEquals("talk-1", updated.id());
+        assertEquals("Edited talk", updated.title());
+        var ordered = Mockito.inOrder(transaction);
+        ordered.verify(transaction).get(document);
+        ordered.verify(transaction).set(Mockito.eq(document), Mockito.any(Object.class));
+        Mockito.verify(document, Mockito.never()).set(Mockito.any(Talk.class));
+    }
 
     private TalkRepository repository;
     private CollectionReference collection;

@@ -96,4 +96,10 @@ Le déploiement en production s'effectue sur **Google Cloud Run** via `gcloud ru
 
 ---
 
+## Rappels après un talk
+
+Le job quotidien utilise le modèle de message administrable et reste désactivé
+tant que son activation et le compte SMTP ne sont pas configurés dans les properties.
+Voir le [guide des rappels](docs/FeedbackReminders.md) pour la configuration et les conditions d’exécution.
+
 Made with ❤️ by Zenika

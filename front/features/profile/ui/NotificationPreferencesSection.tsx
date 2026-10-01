@@ -12,7 +12,7 @@ interface NotificationPreferencesSectionProps {
 const SLACK_NOT_LINKED =
   "L'intégration Slack est désactivée ou ton compte n'a pas été rattaché.";
 
-/** Sauvegarde automatique. Aucune notification n'est envoyée à ce stade : l'envoi reste à écrire. */
+/** Sauvegarde automatique des préférences, appliquées aux rappels de talks par email. */
 export function NotificationPreferencesSection({ profile }: NotificationPreferencesSectionProps) {
   const { updateNotificationPreferences } = useProfileMutations();
   const preferences = profile.notificationPreferences;
@@ -33,8 +33,8 @@ export function NotificationPreferencesSection({ profile }: NotificationPreferen
         Notifications
       </h2>
       <p className="text-[14px] leading-[1.43] text-text-muted m-0 mb-4">
-        Choisis par quels canaux tu veux être joint·e. Aucune notification n&apos;est envoyée pour
-        le moment : ces préférences seront appliquées dès que les envois existeront.
+        Active les notifications par mail pour recevoir les rappels lorsque le replay ou
+        l&apos;audience de tes talks manque. Les notifications Slack ne sont pas encore envoyées.
       </p>
 
       <div className="flex flex-col gap-2">
