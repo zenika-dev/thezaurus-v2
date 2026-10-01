@@ -45,6 +45,8 @@ jobs:
   #     - uses: ./.github/actions/gcp-docker-login
   #       with:
   #         region: ${{ vars.GCP_REGION }}
+  #         workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+  #         service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
   #     - name: Déployer l'API
   #       run: echo "deploy ${{ needs.build-api.outputs.image }}"
   #     - name: Déployer le front
