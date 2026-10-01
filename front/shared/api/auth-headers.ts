@@ -1,4 +1,15 @@
 import { decode } from "next-auth/jwt";
+import { requestGoogleTokenRefresh } from "@/features/auth";
+
+async function refreshGoogleIdToken(refreshToken: string): Promise<string | null> {
+  try {
+    const refreshed = await requestGoogleTokenRefresh(refreshToken);
+    return refreshed?.idToken ?? null;
+  } catch (err) {
+    console.error("Échec du rafraîchissement id_token dans buildAuthHeaders:", err);
+    return null;
+  }
+}
 
 /**
  * Construit les headers d'authentification à propager vers l'API Quarkus. Deux chemins,
@@ -31,7 +42,25 @@ export async function buildAuthHeaders(
     token: sessionCookie,
     secret: process.env.NEXTAUTH_SECRET as string,
   });
-  return typeof token?.idToken === "string"
-    ? { Authorization: `Bearer ${token.idToken}` }
+
+  if (!token) {
+    return {};
+  }
+
+  let idToken = token.idToken;
+
+  if (
+    token.expiresAt &&
+    Date.now() >= (token.expiresAt - 60) * 1000 &&
+    typeof token.refreshToken === "string"
+  ) {
+    const refreshedIdToken = await refreshGoogleIdToken(token.refreshToken);
+    if (refreshedIdToken) {
+      idToken = refreshedIdToken;
+    }
+  }
+
+  return typeof idToken === "string"
+    ? { Authorization: `Bearer ${idToken}` }
     : {};
 }
