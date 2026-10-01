@@ -1,0 +1,31 @@
+name: (interne) Version
+
+# Version dérivée de la date du commit (UTC), pas de la date du run : rejouer
+# ce workflow sur le même commit produit toujours la même version.
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: "Version au format AAAA.MM.JJ-<sha court>"
+        value: ${{ jobs.version.outputs.version }}
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Calculer la version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.compute.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Calculer la version
+        id: compute
+        run: |
+          DATE=$(git log -1 --date=format-local:'%Y.%m.%d' --format=%cd)
+          SHA=$(git rev-parse --short=7 HEAD)
+          echo "version=${DATE}-${SHA}" >> "$GITHUB_OUTPUT"
+        env:
+          TZ: UTC
