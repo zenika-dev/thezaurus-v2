@@ -3,7 +3,7 @@ name: Release
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/connect-to-gcp]
   workflow_dispatch: {}
 
 permissions:
