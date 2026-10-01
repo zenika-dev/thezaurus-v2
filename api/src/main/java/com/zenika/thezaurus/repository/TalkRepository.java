@@ -132,6 +132,7 @@ public class TalkRepository {
     }
 
     public Talk create(Talk talk) throws ExecutionException, InterruptedException {
+        talk = talk.withFeedbackReminderSent(false);
         if (talk.id() == null || talk.id().isEmpty()) {
             talk = talk.withId(UUID.randomUUID().toString());
         }
@@ -147,11 +148,13 @@ public class TalkRepository {
             throws ExecutionException, InterruptedException {
         DocumentReference reference = firestore.collection(getCollectionName()).document(talk.id());
         return FirestoreTransactions.run(firestore, transaction -> {
+            Boolean reminderSent = talk.feedbackReminderSent();
             if (canEdit != null) {
                 DocumentSnapshot stored = transaction.get(reference).get();
                 if (!stored.exists()) throw new WebApplicationException("Talk introuvable", 404);
                 if (!canEdit.test(stored.toObject(Talk.class)))
                     throw new WebApplicationException("Modification non autorisée", 403);
+                reminderSent = Boolean.TRUE.equals(stored.getBoolean("feedbackReminderSent"));
             }
             Conference selected = talk.conference();
             Map<String, String> storedConference = null;
@@ -180,6 +183,7 @@ public class TalkRepository {
             @SuppressWarnings("unchecked")
             Map<String, Object> payload = new HashMap<>((Map<String, Object>) CustomClassMapper.serialize(talk));
             payload.put("conference", storedConference);
+            payload.put("feedbackReminderSent", reminderSent);
             // Slack historically placed the presentation date inside the embedded conference.
             if ((talk.date() == null || talk.date().isBlank())
                     && selected != null
@@ -190,7 +194,7 @@ public class TalkRepository {
             }
             if (canEdit == null) transaction.create(reference, payload);
             else transaction.set(reference, payload);
-            return talk.withConference(current).withDate((String) payload.get("date"));
+            return talk.withConference(current).withDate((String) payload.get("date")).withFeedbackReminderSent(Boolean.TRUE.equals(reminderSent));
         });
     }
 
@@ -241,5 +245,13 @@ public class TalkRepository {
             if (changed) migrated++;
         }
         return migrated;
+    }
+
+    public void markFeedbackReminderSent(String id) throws ExecutionException, InterruptedException {
+        firestore
+                .collection(getCollectionName())
+                .document(id)
+                .update("feedbackReminderSent", true)
+                .get();
     }
 }

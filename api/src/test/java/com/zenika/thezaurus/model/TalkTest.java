@@ -12,6 +12,21 @@ import org.junit.jupiter.api.Test;
 public class TalkTest {
 
     @Test
+    void legacyDocumentsHaveNoSentReminder() {
+        assertEquals(false, deserialize(null).feedbackReminderSent());
+    }
+
+    @Test
+    void changingIdentityOrConferenceKeepsTheSentReminder() {
+        Talk talk = CustomClassMapper.convertToCustomClass(
+                Map.of("title", "Talk", "feedbackReminderSent", true), Talk.class, null);
+
+        assertEquals(true, talk.withId("42").feedbackReminderSent());
+        assertEquals(
+                true, talk.withConference(new Conference(null, "Devoxx", null)).feedbackReminderSent());
+    }
+
+    @Test
     public void testWithIdKeepsOtherFields() {
         Talk talk = new Talk(
                 "Titre",

@@ -10,6 +10,10 @@ thezaurus-*.json
 .env.local
 .env.*.local
 
+# Local Quarkus configuration, including SMTP credentials
+/config/application.properties
+/api/config/application.properties
+
 # Build outputs
 target/
 build/
