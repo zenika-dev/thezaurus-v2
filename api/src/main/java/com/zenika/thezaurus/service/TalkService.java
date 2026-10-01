@@ -1,6 +1,7 @@
 package com.zenika.thezaurus.service;
 
 import com.zenika.thezaurus.model.Talk;
+import com.zenika.thezaurus.model.TemplateContextPage;
 import com.zenika.thezaurus.repository.TalkRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -15,6 +16,10 @@ public class TalkService {
 
     public List<Talk> findAll() throws ExecutionException, InterruptedException {
         return repository.findAll();
+    }
+
+    public TemplateContextPage findContextOptions(String cursor) throws ExecutionException, InterruptedException {
+        return repository.findContextOptions(cursor);
     }
 
     public Talk findById(String id) throws ExecutionException, InterruptedException {

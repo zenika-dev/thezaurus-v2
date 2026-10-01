@@ -41,6 +41,33 @@ public class TalkRepositoryTest {
     }
 
     // --- Lecture défensive : un document illisible n'interrompt pas la liste --------------------
+    @Test
+    public void contextPageUsesProjectionLimitAndStableCursor() throws Exception {
+        var query = Mockito.mock(com.google.cloud.firestore.Query.class, Mockito.RETURNS_SELF);
+        Mockito.when(collection.select("title", "date")).thenReturn(query);
+        Mockito.when(query.get()).thenReturn(ApiFutures.immediateFuture(snapshot));
+        var documents = java.util.stream.IntStream.range(0, 51)
+                .mapToObj(index -> {
+                    var document = Mockito.mock(QueryDocumentSnapshot.class);
+                    Mockito.when(document.getId()).thenReturn("id-" + index);
+                    Mockito.when(document.get("title")).thenReturn("Talk " + index);
+                    Mockito.when(document.get("date")).thenReturn("2026-09-22");
+                    return document;
+                })
+                .toList();
+        Mockito.when(snapshot.getDocuments()).thenReturn(documents);
+        var page = repository.findContextOptions("previous");
+        assertEquals(50, page.options().size());
+        assertEquals("id-49", page.nextCursor());
+        assertEquals("Talk 0 — 2026-09-22", page.options().getFirst().label());
+        Mockito.verify(query).orderBy(com.google.cloud.firestore.FieldPath.documentId());
+        Mockito.verify(query).startAfter("previous");
+        Mockito.verify(query).limit(51);
+        Mockito.verify(collection, Mockito.never()).get();
+        Mockito.when(snapshot.getDocuments()).thenReturn(documents.subList(0, 1));
+        assertNull(repository.findContextOptions(null).nextCursor());
+    }
+
     // Une conférence embarquée dans un talk peut comporter des données mal formées : la
     // désérialisation du talk est ignorée sans faire échouer la lecture des autres éléments.
 

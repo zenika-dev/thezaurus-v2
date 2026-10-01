@@ -11,6 +11,7 @@ services:
       - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
       - FIRESTORE_DATABASE_ID=${FIRESTORE_DATABASE_ID}
       - FIRESTORE_COLLECTION_PREFIX=${FIRESTORE_COLLECTION_PREFIX}
+      - THEZAURUS_PUBLIC_URL=${THEZAURUS_PUBLIC_URL:-${NEXTAUTH_PUBLIC_URL:-http://localhost:3000}}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - QUARKUS_PROFILE=prod
       # Auth token (Google Sign-In) par défaut, ici et en dev. Sur Cloud Run, exportez ces 4

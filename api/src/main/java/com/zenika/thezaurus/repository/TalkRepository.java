@@ -3,10 +3,14 @@ package com.zenika.thezaurus.repository;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.FieldPath;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.Talk;
+import com.zenika.thezaurus.model.TemplateContextOption;
+import com.zenika.thezaurus.model.TemplateContextPage;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -59,6 +63,31 @@ public class TalkRepository {
             return null;
         }
         return toTalkOrNull(document);
+    }
+
+    /** Read only preview labels, with a stable document-ID cursor and bounded Firestore reads. */
+    public TemplateContextPage findContextOptions(String cursor) throws ExecutionException, InterruptedException {
+        int pageSize = 50;
+        Query query = firestore
+                .collection(getCollectionName())
+                .select("title", "date")
+                .orderBy(FieldPath.documentId())
+                .limit(pageSize + 1);
+        if (cursor != null) query = query.startAfter(cursor);
+        var documents = query.get().get().getDocuments();
+        var options = documents.stream()
+                .limit(pageSize)
+                .map(document -> {
+                    Object title = document.get("title");
+                    Object date = document.get("date");
+                    String label = title instanceof String value && !value.isBlank() ? value : document.getId();
+                    if (date instanceof String value && !value.isBlank()) label += " — " + value;
+                    return new TemplateContextOption(document.getId(), label);
+                })
+                .toList();
+        return new TemplateContextPage(
+                options,
+                documents.size() > pageSize ? documents.get(pageSize - 1).getId() : null);
     }
 
     /**
