@@ -1,0 +1,51 @@
+name: Release
+
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  version:
+    uses: ./.github/workflows/_version.yml
+
+  build-api:
+    needs: version
+    uses: ./.github/workflows/_build-api.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      version: ${{ needs.version.outputs.version }}
+
+  build-front:
+    needs: version
+    uses: ./.github/workflows/_build-front.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      version: ${{ needs.version.outputs.version }}
+
+  # deploy:
+  #   needs: [build-api, build-front]
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     id-token: write
+  #   steps:
+  #     - uses: ./.github/actions/gcp-docker-login
+  #       with:
+  #         region: ${{ vars.GCP_REGION }}
+  #     - name: Déployer l'API
+  #       run: echo "deploy ${{ needs.build-api.outputs.image }}"
+  #     - name: Déployer le front
+  #       run: echo "deploy ${{ needs.build-front.outputs.image }}"
