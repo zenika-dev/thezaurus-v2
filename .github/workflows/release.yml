@@ -1,36 +1,51 @@
 name: Release
 
+
 on:
+  push:
+    branches: [main]
   workflow_dispatch: {}
 
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: release-main
   cancel-in-progress: false
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
+  version:
+    uses: ./.github/workflows/_version.yml
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+  build-api:
+    needs: version
+    uses: ./.github/workflows/_build-api.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      version: ${{ needs.version.outputs.version }}
 
-      - name: Install release tooling
-        run: npm ci
+  build-front:
+    needs: version
+    uses: ./.github/workflows/_build-front.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      version: ${{ needs.version.outputs.version }}
 
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+  # deploy:
+  #   needs: [build-api, build-front]
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     id-token: write
+  #   steps:
+  #     - uses: ./.github/actions/gcp-docker-login
+  #       with:
+  #         region: ${{ vars.GCP_REGION }}
+  #     - name: Déployer l'API
+  #       run: echo "deploy ${{ needs.build-api.outputs.image }}"
+  #     - name: Déployer le front
+  #       run: echo "deploy ${{ needs.build-front.outputs.image }}"

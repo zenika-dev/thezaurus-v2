@@ -1,0 +1,23 @@
+name: Authentification GCP + Docker
+description: >-
+  Authentifie le runner sur GCP via Workload Identity Federation et configure
+  Docker pour pousser vers Artifact Registry.
+
+inputs:
+  region:
+    description: Région Artifact Registry (ex. europe-west9)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+        service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+    - uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configurer Docker pour Artifact Registry
+      shell: bash
+      run: gcloud auth configure-docker "${{ inputs.region }}-docker.pkg.dev" --quiet
