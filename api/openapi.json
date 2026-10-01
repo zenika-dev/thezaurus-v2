@@ -1754,6 +1754,9 @@
             "type" : "integer",
             "format" : "int32",
             "minimum" : 0
+          },
+          "feedbackReminderSent" : {
+            "type" : "boolean"
           }
         },
         "required" : [ "title", "description", "speakers", "office", "status", "visibility", "format" ]
