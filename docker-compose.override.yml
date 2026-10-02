@@ -1,4 +1,20 @@
 services:
+  # Boîte SMTP locale : tous les emails restent consultables dans Mailpit.
+  mailpit:
+    image: axllent/mailpit:v1.27.4
+    container_name: thezaurus-mailpit
+    ports:
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
+    environment:
+      MP_SMTP_AUTH: "${SMTP_USERNAME:-thezaurus}:${SMTP_PASSWORD:-thezaurus-local}"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   # Émulateur Firestore local (absent quand on lance docker-compose.yml seul, en mode prod)
   # Firebase Emulator Suite (firebase-tools) plutôt que le nu `gcloud emulators` :
   # expose en plus l'Emulator UI officielle (http://localhost:4000) pour parcourir les données.
@@ -22,8 +38,22 @@ services:
     environment:
       - QUARKUS_PROFILE=dev
       - FIRESTORE_HOST_OVERRIDE=firestore:9000
+      - SMTP_HOST=${SMTP_HOST:-mailpit}
+      - SMTP_PORT=${SMTP_PORT:-1025}
+      - SMTP_FROM=${SMTP_FROM:-thezaurus@local.test}
+      - SMTP_USERNAME=${SMTP_USERNAME:-thezaurus}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-thezaurus-local}
+      - SMTP_LOGIN=${SMTP_LOGIN:-REQUIRED}
+      - SMTP_TLS=${SMTP_TLS:-false}
+      - SMTP_START_TLS=${SMTP_START_TLS:-DISABLED}
+      - SMTP_MOCK=${SMTP_MOCK:-false}
+      - FEEDBACK_REMINDER_ENABLED=${FEEDBACK_REMINDER_ENABLED:-true}
+      - FEEDBACK_REMINDER_CRON=${FEEDBACK_REMINDER_CRON:-0 0 9 * * ?}
+      - FEEDBACK_REMINDER_TIME_ZONE=${FEEDBACK_REMINDER_TIME_ZONE:-Europe/Paris}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-dummy-client-id}
     depends_on:
+      mailpit:
+        condition: service_healthy
       firestore:
         condition: service_healthy
     healthcheck:
