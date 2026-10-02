@@ -23,7 +23,31 @@ mis à `true`. Les prochaines exécutions ignorent le talk, même s’il est ens
 édité. Les anciens documents sans ce champ sont considérés comme non relancés.
 Un échec d’envoi laisse le talk éligible pour le lendemain et n’arrête pas les suivants.
 
-## Configuration dans les properties
+## SMTP local avec Docker Compose
+
+`docker compose up -d --build` démarre aussi Mailpit. Les emails sont capturés
+dans son interface : [http://localhost:8025](http://localhost:8025).
+Le compte SMTP de test est `thezaurus` / `thezaurus-local` ; il est défini dans
+`.env` et `.env-template` par `SMTP_USERNAME` et `SMTP_PASSWORD`.
+Mailpit et l’API reçoivent les mêmes identifiants depuis ce fichier.
+
+Dans Docker, l’API se connecte à `SMTP_HOST=mailpit`, `SMTP_PORT=1025`.
+Depuis la machine hôte, le serveur est accessible sur `localhost:1025`.
+`MAILPIT_UI_PORT` et `MAILPIT_SMTP_PORT` changent les ports publiés sur la machine,
+sans changer le port SMTP interne. Les ports Mailpit sont limités à `127.0.0.1`.
+L’authentification SMTP locale est sans TLS ; aucun relais externe n’est configuré.
+
+L’override transmet explicitement les variables du `.env` à l’API. Les properties
+du profil `dev` les lisent, notamment `SMTP_MOCK=false`, qui active la livraison
+à Mailpit au lieu de la simulation Quarkus. `FEEDBACK_REMINDER_ENABLED=true`
+active les rappels, à 09:00 Paris selon `FEEDBACK_REMINDER_CRON` et
+`FEEDBACK_REMINDER_TIME_ZONE`. Le modèle administrable et les préférences email
+restent nécessaires. Les messages Mailpit sont éphémères lors d’une recréation.
+
+Après modification de `.env`, lancer `docker compose up -d api mailpit` pour
+recréer les conteneurs concernés ; un simple `restart` ne recharge pas leurs variables.
+
+## Configuration hors Docker Compose local
 
 Les rappels sont désactivés par défaut. Renseigner les propriétés SMTP dans
 `api/src/main/resources/application.properties`, ou dans un fichier externe
@@ -46,8 +70,8 @@ quarkus.mailer.tls=false
 quarkus.mailer.start-tls=REQUIRED
 ```
 
-En profils `dev` et `test`, `quarkus.mailer.mock=true` simule l’envoi. Aucun
-serveur SMTP n’est contacté. Le scheduler est désactivé en test ; les tests
+Hors Compose, le profil `dev` simule l’envoi par défaut (`SMTP_MOCK=true`).
+Le profil `test` conserve toujours `quarkus.mailer.mock=true`. Le scheduler est désactivé en test ; les tests
 déclenchent le service explicitement. Une simulation réussie marque le talk
 dans la base de développement : utiliser une base isolée.
 
