@@ -4,5 +4,6 @@ public enum BlogPostStatus {
     IDEA,
     DRAFT,
     REVIEW,
+    READY_TO_PUBLISH,
     PUBLISHED
 }

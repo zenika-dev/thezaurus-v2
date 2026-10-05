@@ -1088,11 +1088,19 @@
           "publicationDate" : {
             "type" : "string"
           },
-          "link" : {
+          "actualPublicationDate" : {
             "type" : "string"
           },
+          "office" : {
+            "$ref" : "#/components/schemas/Office"
+          },
+          "link" : {
+            "type" : "string",
+            "pattern" : "^$|https?://[^\\s]+"
+          },
           "googleDocDraftLink" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "^$|https?://[^\\s]+"
           },
           "status" : {
             "$ref" : "#/components/schemas/BlogPostStatus"
@@ -1101,15 +1109,14 @@
             "type" : "array",
             "items" : {
               "type" : "string"
-            },
-            "minItems" : 1
+            }
           }
         },
-        "required" : [ "title", "writers", "status", "tags" ]
+        "required" : [ "title", "writers", "status" ]
       },
       "BlogPostStatus" : {
         "type" : "string",
-        "enum" : [ "IDEA", "DRAFT", "REVIEW", "PUBLISHED" ]
+        "enum" : [ "IDEA", "DRAFT", "REVIEW", "READY_TO_PUBLISH", "PUBLISHED" ]
       },
       "CityCount" : {
         "type" : "object",
