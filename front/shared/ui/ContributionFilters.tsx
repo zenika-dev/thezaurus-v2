@@ -1,0 +1,67 @@
+"use client";
+
+import { Funnel } from "lucide-react";
+
+function FilterButton({ label, active, onClick }: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={`inline-flex items-center gap-1 px-3 py-1 rounded-2xl text-xs font-sans border cursor-pointer transition-colors ${
+        active ? "bg-primary text-white border-primary" : "bg-surface-hover text-text border-transparent hover:bg-border-strong"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+interface ContributionFiltersProps<S extends string> {
+  statuses: readonly S[];
+  labels: Record<S, { label: string }>;
+  status: S | "All";
+  onStatusChange: (status: S | "All") => void;
+  personalLabel: string;
+  personalOnly: boolean;
+  onPersonalChange: (enabled: boolean) => void;
+}
+
+export function ContributionFilters<S extends string>({
+  statuses, labels, status, onStatusChange, personalLabel, personalOnly, onPersonalChange,
+}: ContributionFiltersProps<S>) {
+  return (
+    <div className="flex items-center gap-6 flex-wrap mb-6">
+      <FilterButton
+        active={personalOnly}
+        onClick={() => onPersonalChange(!personalOnly)}
+        label={personalLabel}
+      />
+      <div className="flex items-center gap-2 flex-wrap" role="group" aria-label="Statut">
+        <Funnel size={14} className="text-text-muted shrink-0" />
+        <span className="text-xs text-text-muted mr-2">Statut :</span>
+        {(["All", ...statuses] as const).map((value) => (
+          <FilterButton
+            key={value}
+            active={status === value}
+            onClick={() => onStatusChange(value)}
+            label={value === "All" ? "Tous" : labels[value].label}
+          />
+        ))}
+      </div>
+      {(status !== "All" || personalOnly) && (
+        <button
+          type="button"
+          onClick={() => { onStatusChange("All"); onPersonalChange(false); }}
+          className="text-xs cursor-pointer text-primary border border-primary/20 px-3 py-1 rounded-2xl bg-primary/10 hover:bg-primary/20"
+        >
+          Réinitialiser
+        </button>
+      )}
+    </div>
+  );
+}
