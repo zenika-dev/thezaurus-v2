@@ -2,9 +2,9 @@
 
 Le job vérifie chaque jour à 09:00 (`Europe/Paris`) les talks `ACCEPTED` ou `DONE`
 dont le replay ou l’audience manque. Une audience de zéro est renseignée.
-Il utilise la date du talk ou, à défaut, la fin de la période de conférence.
-La date doit être strictement antérieure au jour courant ; une date absente,
-invalide ou une période inversée est ignorée.
+Il utilise uniquement la date propre du talk (`date`).
+La date doit être strictement antérieure au jour courant ; une date absente
+ou invalide est ignorée.
 
 L’email est collectif : son sujet, son corps HTML et ses destinataires potentiels
 sont produits par le même moteur que la prévisualisation administrateur (PR 138).
@@ -47,27 +47,46 @@ restent nécessaires. Les messages Mailpit sont éphémères lors d’une recré
 Après modification de `.env`, lancer `docker compose up -d api mailpit` pour
 recréer les conteneurs concernés ; un simple `restart` ne recharge pas leurs variables.
 
-## Configuration hors Docker Compose local
+## Configuration en production et hors Docker Compose
 
-Les rappels sont désactivés par défaut. Renseigner les propriétés SMTP dans
-`api/src/main/resources/application.properties`, ou dans un fichier externe
-`config/application.properties` relatif au répertoire de lancement de l’API.
-Conserver les identifiants réels dans le fichier externe non versionné.
+Les rappels sont désactivés par défaut. Vous pouvez renseigner la configuration soit via les variables d'environnement (`.env` ou variables système dans votre orchestration), soit via un fichier `config/application.properties` non versionné relatif au répertoire de lancement de l'API.
+
+### Via variables d'environnement (recommandé en conteneur / Cloud Run)
+
+```bash
+FEEDBACK_REMINDER_ENABLED=true
+FEEDBACK_REMINDER_CRON="0 0 9 * * ?"
+FEEDBACK_REMINDER_TIME_ZONE=Europe/Paris
+THEZAURUS_PUBLIC_URL=https://thezaurus.zenika.com
+
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_FROM=thezaurus@zenika.com
+SMTP_USERNAME=apikey
+SMTP_PASSWORD=votre-token-secret
+SMTP_LOGIN=REQUIRED
+SMTP_START_TLS=REQUIRED
+SMTP_TLS=false
+SMTP_MOCK=false
+```
+
+### Via properties Quarkus (`config/application.properties`)
 
 ```properties
 thezaurus.feedback-reminder.enabled=true
 thezaurus.feedback-reminder.cron=0 0 9 * * ?
 thezaurus.feedback-reminder.time-zone=Europe/Paris
-thezaurus.public-url=https://thezaurus.example.com
+thezaurus.public-url=https://thezaurus.zenika.com
 
-quarkus.mailer.host=smtp.example.com
+quarkus.mailer.host=smtp.sendgrid.net
 quarkus.mailer.port=587
-quarkus.mailer.from=thezaurus@example.com
-quarkus.mailer.username=thezaurus@example.com
-quarkus.mailer.password=REPLACE_LOCALLY
+quarkus.mailer.from=thezaurus@zenika.com
+quarkus.mailer.username=apikey
+quarkus.mailer.password=votre-token-secret
 quarkus.mailer.login=REQUIRED
 quarkus.mailer.tls=false
 quarkus.mailer.start-tls=REQUIRED
+quarkus.mailer.mock=false
 ```
 
 Hors Compose, le profil `dev` simule l’envoi par défaut (`SMTP_MOCK=true`).
