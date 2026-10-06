@@ -40,6 +40,20 @@ cp .env-template .env
 | `SLACK_BOT_TOKEN` | — | api | Bot User OAuth Token (`xoxb-...`). Absent = bot désactivé. Voir [SlackBot.md](./SlackBot.md). |
 | `SLACK_SIGNING_SECRET` | — | api | Vérification de l'origine des requêtes Slack. |
 | `SLACK_APP_TOKEN` | — | api | Token app-level (`xapp-...`), si utilisé. |
+| **SMTP & Rappels post-talk (`api`)** | | | |
+| `FEEDBACK_REMINDER_ENABLED` | — | api | Active le job quotidien d'envoi de rappels (`true`/`false`, défaut: `false`). Voir [FeedbackReminders.md](./FeedbackReminders.md). |
+| `FEEDBACK_REMINDER_CRON` | — | api | Expression cron pour les rappels (défaut : `0 0 9 * * ?` à 09:00). |
+| `FEEDBACK_REMINDER_TIME_ZONE` | — | api | Fuseau horaire du cron (défaut : `Europe/Paris`). |
+| `THEZAURUS_PUBLIC_URL` | — | api | URL publique contractuelle utilisée pour composer les liens dans les emails de rappel. Si omise, repli sur `NEXTAUTH_PUBLIC_URL` puis `NEXTAUTH_URL`. |
+| `SMTP_HOST` | si rappels actifs | api | Hôte du serveur SMTP (ex: `mailpit` en dev, `smtp.sendgrid.net` en prod). |
+| `SMTP_PORT` | si rappels actifs | api | Port SMTP (ex: `1025` pour Mailpit, `587` pour STARTTLS). |
+| `SMTP_FROM` | si rappels actifs | api | Adresse email d'expédition (ex: `thezaurus@zenika.com`). |
+| `SMTP_USERNAME` | — | api | Utilisateur SMTP pour l'authentification. |
+| `SMTP_PASSWORD` | — | api | Mot de passe / token SMTP. |
+| `SMTP_LOGIN` | — | api | Mode de login SMTP (`NONE`, `REQUIRED`, `OPTIONAL`). |
+| `SMTP_START_TLS` | — | api | STARTTLS (`DISABLED`, `REQUIRED`, `OPTIONAL`). |
+| `SMTP_TLS` | — | api | TLS direct (`true`/`false`). |
+| `SMTP_MOCK` | — | api | `false` = envoi réel via SMTP ; `true` = simulation en mémoire (défaut hors Compose : `true` en dev). |
 | **Agent Talk / Reasoning Engine** | | | |
 | `REASONING_ENGINE_URL` | — | api | URL du Reasoning Engine Vertex AI pour l'agent IA. |
 | **Déploiement Cloud Run** | | | |
@@ -89,6 +103,7 @@ Une fois la stack démarrée, les services suivants sont accessibles :
 | **API Backend** | [http://localhost:8080](http://localhost:8080) | API REST Quarkus |
 | **Swagger UI** | [http://localhost:8080/q/swagger-ui/](http://localhost:8080/q/swagger-ui/) | Documentation interactive OpenAPI |
 | **Emulator UI (Firebase)** | [http://localhost:4000/firestore/local-dev/data](http://localhost:4000/firestore/local-dev/data) | Console visuelle Firestore (mode dev uniquement) |
+| **Mailpit (Emails locaux)** | [http://localhost:8025](http://localhost:8025) | Interface de visualisation des emails envoyés (mode dev uniquement) |
 | **Émulateur Firestore** | `http://localhost:9000` | Port gRPC / REST de l'émulateur (mode dev uniquement) |
 
 ### Inspection des données de l'émulateur (mode dev)
