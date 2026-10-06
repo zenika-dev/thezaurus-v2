@@ -78,7 +78,7 @@ public class TalkFeedbackReminderService {
             return;
         }
         LocalDate today = LocalDate.now(ZoneId.of(timeZone));
-        for (Talk talk : talks.findAll()) {
+        for (Talk talk : talks.findFeedbackReminderCandidates(today)) {
             if (!eligible(talk, today)) continue;
             try {
                 var message = renderer.render(template.subject(), template.bodyHtml(), talk);
@@ -109,16 +109,11 @@ public class TalkFeedbackReminderService {
         if (talk.feedbackReminderSent()
                 || (talk.status() != TalkStatus.ACCEPTED && talk.status() != TalkStatus.DONE)
                 || (talk.replay() != null && !talk.replay().isBlank() && talk.audience() != null)) return false;
+        if (talk.date() == null || talk.date().isBlank()) {
+            return false;
+        }
         try {
-            if (talk.date() != null && !talk.date().isBlank()) {
-                return LocalDate.parse(talk.date().trim()).isBefore(today);
-            }
-            if (talk.conference() == null || talk.conference().getDate() == null) return false;
-            var period = talk.conference().getDate();
-            if (period.getStart() == null || period.getEnd() == null) return false;
-            LocalDate start = LocalDate.parse(period.getStart().trim());
-            LocalDate end = LocalDate.parse(period.getEnd().trim());
-            return !start.isAfter(end) && end.isBefore(today);
+            return LocalDate.parse(talk.date().trim()).isBefore(today);
         } catch (DateTimeParseException ignored) {
             return false;
         }
