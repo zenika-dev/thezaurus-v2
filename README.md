@@ -66,6 +66,7 @@ L'API Quarkus gère les entités principales dans Firestore :
    - **API Backend** : [http://localhost:8080](http://localhost:8080)
    - **Swagger UI** : [http://localhost:8080/q/swagger-ui/](http://localhost:8080/q/swagger-ui/)
    - **Firebase Emulator UI** : [http://localhost:4000/firestore/local-dev/data](http://localhost:4000/firestore/local-dev/data)
+   - **Mailpit (emails locaux)** : [http://localhost:8025](http://localhost:8025)
 
 ---
 
@@ -83,6 +84,10 @@ Pour approfondir, consultez les guides disponibles dans le dossier [`docs/`](doc
   - Configuration de l'application Slack depuis le manifest
   - Exposition locale avec ngrok
   - Commandes slash (`/talk`)
+- 📧 **[Guide des rappels post-talk](docs/FeedbackReminders.md)** :
+  - Configuration SMTP (local Mailpit et production)
+  - Job quotidien et conditions d'envoi
+  - Modèles de messages administrables
 - 🚢 **[Guide de déploiement Cloud Run](docs/Deploiement.md)** :
   - Architecture multi-conteneurs Cloud Run (Ingress & Backend)
   - Prérequis et variables d'environnement de production

@@ -3,19 +3,28 @@ package com.zenika.thezaurus.repository;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.FieldPath;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.Query;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
+import com.google.cloud.firestore.WriteBatch;
 import com.google.cloud.firestore.WriteResult;
 import com.google.cloud.firestore.encoding.CustomClassMapper;
 import com.zenika.thezaurus.model.Conference;
 import com.zenika.thezaurus.model.Talk;
+import com.zenika.thezaurus.model.TalkStatus;
+import com.zenika.thezaurus.model.TemplateContextOption;
+import com.zenika.thezaurus.model.TemplateContextPage;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -36,6 +45,7 @@ public class TalkRepository {
     Optional<String> collectionPrefix;
 
     private static final String BASE_COLLECTION_NAME = "talks";
+    private static final int BATCH_SIZE = 500;
 
     private String getCollectionName() {
         if (collectionPrefix == null
@@ -89,6 +99,31 @@ public class TalkRepository {
                         : new Conference(null, talk.conference().getName(), null));
     }
 
+    /** Read only preview labels, with a stable document-ID cursor and bounded Firestore reads. */
+    public TemplateContextPage findContextOptions(String cursor) throws ExecutionException, InterruptedException {
+        int pageSize = 50;
+        Query query = firestore
+                .collection(getCollectionName())
+                .select("title", "date")
+                .orderBy(FieldPath.documentId())
+                .limit(pageSize + 1);
+        if (cursor != null) query = query.startAfter(cursor);
+        var documents = query.get().get().getDocuments();
+        var options = documents.stream()
+                .limit(pageSize)
+                .map(document -> {
+                    Object title = document.get("title");
+                    Object date = document.get("date");
+                    String label = title instanceof String value && !value.isBlank() ? value : document.getId();
+                    if (date instanceof String value && !value.isBlank()) label += " — " + value;
+                    return new TemplateContextOption(document.getId(), label);
+                })
+                .toList();
+        return new TemplateContextPage(
+                options,
+                documents.size() > pageSize ? documents.get(pageSize - 1).getId() : null);
+    }
+
     /**
      * Tente de désérialiser le document en {@link Talk}. Si le document est corrompu ou
      * comporte des données imbriquées invalides, il est ignoré pour éviter de bloquer la liste.
@@ -103,6 +138,7 @@ public class TalkRepository {
     }
 
     public Talk create(Talk talk) throws ExecutionException, InterruptedException {
+        talk = talk.withFeedbackReminderSent(false);
         if (talk.id() == null || talk.id().isEmpty()) {
             talk = talk.withId(UUID.randomUUID().toString());
         }
@@ -118,11 +154,13 @@ public class TalkRepository {
             throws ExecutionException, InterruptedException {
         DocumentReference reference = firestore.collection(getCollectionName()).document(talk.id());
         return FirestoreTransactions.run(firestore, transaction -> {
+            Boolean reminderSent = talk.feedbackReminderSent();
             if (canEdit != null) {
                 DocumentSnapshot stored = transaction.get(reference).get();
                 if (!stored.exists()) throw new WebApplicationException("Talk introuvable", 404);
                 if (!canEdit.test(stored.toObject(Talk.class)))
                     throw new WebApplicationException("Modification non autorisée", 403);
+                reminderSent = Boolean.TRUE.equals(stored.getBoolean("feedbackReminderSent"));
             }
             Conference selected = talk.conference();
             Map<String, String> storedConference = null;
@@ -151,6 +189,7 @@ public class TalkRepository {
             @SuppressWarnings("unchecked")
             Map<String, Object> payload = new HashMap<>((Map<String, Object>) CustomClassMapper.serialize(talk));
             payload.put("conference", storedConference);
+            payload.put("feedbackReminderSent", reminderSent);
             // Slack historically placed the presentation date inside the embedded conference.
             if ((talk.date() == null || talk.date().isBlank())
                     && selected != null
@@ -161,7 +200,9 @@ public class TalkRepository {
             }
             if (canEdit == null) transaction.create(reference, payload);
             else transaction.set(reference, payload);
-            return talk.withConference(current).withDate((String) payload.get("date"));
+            return talk.withConference(current)
+                    .withDate((String) payload.get("date"))
+                    .withFeedbackReminderSent(Boolean.TRUE.equals(reminderSent));
         });
     }
 
@@ -210,6 +251,50 @@ public class TalkRepository {
                 return true;
             });
             if (changed) migrated++;
+        }
+        return migrated;
+    }
+
+    public void markFeedbackReminderSent(String id) throws ExecutionException, InterruptedException {
+        firestore
+                .collection(getCollectionName())
+                .document(id)
+                .update("feedbackReminderSent", true)
+                .get();
+    }
+
+    public List<Talk> findFeedbackReminderCandidates(LocalDate today) throws ExecutionException, InterruptedException {
+        Query query = firestore
+                .collection(getCollectionName())
+                .whereEqualTo("feedbackReminderSent", false)
+                .whereIn("status", List.of(TalkStatus.ACCEPTED.name(), TalkStatus.DONE.name()))
+                .whereLessThan("date", today.toString());
+        QuerySnapshot querySnapshot = query.get().get();
+        return querySnapshot.getDocuments().stream()
+                .map(this::toTalkOrNull)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    public int migrateFeedbackReminderSent() throws ExecutionException, InterruptedException {
+        QuerySnapshot snapshot = firestore.collection(getCollectionName()).get().get();
+        int migrated = 0;
+        WriteBatch batch = firestore.batch();
+        int pending = 0;
+        for (QueryDocumentSnapshot doc : snapshot.getDocuments()) {
+            if (doc.contains("feedbackReminderSent") && doc.get("feedbackReminderSent") != null) {
+                continue;
+            }
+            batch.update(doc.getReference(), "feedbackReminderSent", false);
+            migrated++;
+            if (++pending == BATCH_SIZE) {
+                batch.commit().get();
+                batch = firestore.batch();
+                pending = 0;
+            }
+        }
+        if (pending > 0) {
+            batch.commit().get();
         }
         return migrated;
     }

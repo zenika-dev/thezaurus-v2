@@ -37,6 +37,14 @@ public class LegacyDataMigration {
             return;
         }
         int migratedTalks = talkRepository.migrateLegacyConferences();
-        if (migratedTalks > 0) logger.infov("Migration des conférences de talks : {0} talk(s)", migratedTalks);
+        if (migratedTalks > 0) {
+            logger.infov("Migration des conférences de talks : {0} talk(s)", migratedTalks);
+        }
+        int migratedReminders = talkRepository.migrateFeedbackReminderSent();
+        if (migratedReminders > 0) {
+            logger.infov(
+                    "Migration feedback reminder : {0} talk(s) initialisé(s) avec feedbackReminderSent=false",
+                    migratedReminders);
+        }
     }
 }

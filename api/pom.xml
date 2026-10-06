@@ -42,6 +42,23 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mailer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus.qute</groupId>
+            <artifactId>qute-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.23.2</version>
+        </dependency>
+        <dependency>
             <groupId>com.slack.api</groupId>
             <artifactId>bolt</artifactId>
             <version>${slack-sdk.version}</version>

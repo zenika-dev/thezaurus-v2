@@ -1,15 +1,21 @@
 import { defineConfig } from "vitest/config";
 import path from "path";
+import { fileURLToPath } from "node:url";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@": path.resolve(import.meta.dirname ?? ".", "./"),
+      "mui-tiptap": fileURLToPath(new URL("./node_modules/mui-tiptap/dist/esm/index.js", import.meta.url)),
+    },
+  },
+  oxc: { jsx: { runtime: "automatic" } },
   test: {
     environment: "jsdom",
     globals: true,
     setupFiles: ["./tests/setup.ts"],
-  },
-  resolve: {
-    alias: {
-      "@": path.resolve(import.meta.dirname ?? ".", "./"),
-    },
+    restoreMocks: true,
+    // Use the browser module so Tiptap and its controls share one ProseMirror instance.
+    server: { deps: { inline: ["mui-tiptap"] } },
   },
 });
