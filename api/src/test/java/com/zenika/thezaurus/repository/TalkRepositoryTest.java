@@ -22,7 +22,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,7 +75,7 @@ public class TalkRepositoryTest {
         Talk created = repository.create(requested);
 
         assertEquals(false, created.feedbackReminderSent());
-        Mockito.verify(transaction).create(Mockito.eq(document), Mockito.any(Object.class));
+        Mockito.verify(transaction).create(Mockito.eq(document), Mockito.any(java.util.Map.class));
     }
 
     @Test
@@ -92,7 +91,7 @@ public class TalkRepositoryTest {
                     return ApiFutures.immediateFuture(callback.updateCallback(transaction));
                 });
 
-        assertThrows(ExecutionException.class, () -> repository.create(new Talk("talk-1", "Talk", "Description")));
+        assertThrows(IllegalStateException.class, () -> repository.create(new Talk("talk-1", "Talk", "Description")));
 
         Mockito.verify(document, Mockito.never()).set(Mockito.any(Talk.class));
     }
@@ -124,7 +123,7 @@ public class TalkRepositoryTest {
         assertEquals("Edited talk", updated.title());
         var ordered = Mockito.inOrder(transaction);
         ordered.verify(transaction).get(document);
-        ordered.verify(transaction).set(Mockito.eq(document), Mockito.any(Object.class));
+        ordered.verify(transaction).set(Mockito.eq(document), Mockito.any(java.util.Map.class));
         Mockito.verify(document, Mockito.never()).set(Mockito.any(Talk.class));
     }
 

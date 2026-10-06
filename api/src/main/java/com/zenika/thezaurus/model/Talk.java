@@ -42,6 +42,7 @@ public record Talk(
 
         @Pattern(regexp = "^$|https?://[^\\s]+", message = "Une URL HTTP ou HTTPS est requise")
         String replay,
+
         @Min(0) Integer audience,
         Boolean feedbackReminderSent) {
 

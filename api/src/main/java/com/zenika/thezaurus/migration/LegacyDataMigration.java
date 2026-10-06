@@ -1,6 +1,5 @@
 package com.zenika.thezaurus.migration;
 
-import com.zenika.thezaurus.repository.ConferenceRepository;
 import com.zenika.thezaurus.repository.TalkRepository;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -24,9 +23,6 @@ public class LegacyDataMigration {
     Logger logger;
 
     @Inject
-    ConferenceRepository conferenceRepository;
-
-    @Inject
     TalkRepository talkRepository;
 
     /**
@@ -43,12 +39,6 @@ public class LegacyDataMigration {
         int migratedTalks = talkRepository.migrateLegacyConferences();
         if (migratedTalks > 0) {
             logger.infov("Migration des conférences de talks : {0} talk(s)", migratedTalks);
-        }
-        int migratedConferenceDates = conferenceRepository.migrateLegacyDates();
-        if (migratedConferenceDates > 0) {
-            logger.infov(
-                    "Migration dates de conférences : {0} conférence(s) réécrite(s) au format ConferencePeriod",
-                    migratedConferenceDates);
         }
         int migratedReminders = talkRepository.migrateFeedbackReminderSent();
         if (migratedReminders > 0) {
