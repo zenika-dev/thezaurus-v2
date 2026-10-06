@@ -15,8 +15,28 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - QUARKUS_PROFILE=prod
       - QUARKUS_HTTP_PORT=8080
+      # Auth token (Google Sign-In) par défaut, ici et en dev. Sur Cloud Run, exportez ces 4
+      # variables (voir README) avant `gcloud run compose up` pour basculer sur IAP : la
+      # syntaxe sans "=" ne les transmet au conteneur que si elles existent réellement dans
+      # l'environnement de déploiement, sinon application.properties garde ses défauts OAuth.
+      - MP_JWT_VERIFY_PUBLICKEY_LOCATION
+      - MP_JWT_VERIFY_ISSUER
+      - MP_JWT_VERIFY_AUDIENCES
+      - MP_JWT_TOKEN_HEADER
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
       - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET:-}
+      - FEEDBACK_REMINDER_ENABLED=${FEEDBACK_REMINDER_ENABLED:-false}
+      - FEEDBACK_REMINDER_CRON=${FEEDBACK_REMINDER_CRON:-0 0 9 * * ?}
+      - FEEDBACK_REMINDER_TIME_ZONE=${FEEDBACK_REMINDER_TIME_ZONE:-Europe/Paris}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_LOGIN=${SMTP_LOGIN:-REQUIRED}
+      - SMTP_TLS=${SMTP_TLS:-false}
+      - SMTP_START_TLS=${SMTP_START_TLS:-REQUIRED}
+      - SMTP_MOCK=${SMTP_MOCK:-false}
       - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
     volumes:
       - ${GCLOUD_ADC:-${HOME}/.config/gcloud/application_default_credentials.json}:/tmp/credentials.json:ro
