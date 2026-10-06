@@ -229,7 +229,7 @@ class TalkFeedbackReminderServiceTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("ineligibleTalks")
     void ignoresTalksThatDoNotNeedAReminder(String reason, Talk talk) throws Exception {
-        when(talks.findAll()).thenReturn(List.of(talk));
+        when(talks.findFeedbackReminderCandidates(any())).thenReturn(List.of(talk));
 
         service.sendReminders();
 
@@ -244,18 +244,18 @@ class TalkFeedbackReminderServiceTest {
                 "Sujet|",
                 "Sujet|<p><br></p>",
                 "Sujet|{unknown}",
-                "{#if hasDate}Sujet{/if}|<p>Bonjour</p>",
-                "Sujet|{#if hasDate}<p>Date</p>{/if}"
+                "{#if hasConference}Sujet{/if}|<p>Bonjour</p>",
+                "Sujet|{#if hasConference}<p>Date</p>{/if}"
             },
             delimiter = '|')
     void doesNotSendOrMarkWhenTheTemplateIsEmptyInvalidOrRendersEmpty(String subject, String body) throws Exception {
         when(templates.get())
                 .thenReturn(new ReminderTemplateView(subject == null ? "" : subject, body == null ? "" : body, 1));
-        when(talks.findAll())
+        when(talks.findFeedbackReminderCandidates(any()))
                 .thenReturn(List.of(candidate(
                         TalkStatus.DONE,
+                        LocalDate.now().minusDays(1).toString(),
                         null,
-                        ConferencePeriod.singleDay(LocalDate.now().minusDays(1).toString()),
                         null,
                         null,
                         List.of(User.builder()
@@ -271,16 +271,16 @@ class TalkFeedbackReminderServiceTest {
     }
 
     @Test
-    void sendsForAPastConferenceWhenTheTalkDateIsAbsentAndOnlyAudienceIsMissing() throws Exception {
+    void sendsWhenOnlyAudienceIsMissing() throws Exception {
         Talk talk = candidate(
                 TalkStatus.DONE,
+                "2020-01-15",
                 null,
-                ConferencePeriod.fromLegacyString("2020-01"),
                 "https://example.com/replay",
                 null,
                 List.of(User.builder().name("Alice").email("alice@example.com").build()),
                 false);
-        when(talks.findAll()).thenReturn(List.of(talk));
+        when(talks.findFeedbackReminderCandidates(any())).thenReturn(List.of(talk));
 
         service.sendReminders();
 
@@ -295,7 +295,7 @@ class TalkFeedbackReminderServiceTest {
     void failedSmtpDeliveryIsRetriedLaterAndDoesNotBlockOtherTalks() throws Exception {
         Talk failed = pastTalk();
         Talk next = pastTalk().withId("talk-2");
-        when(talks.findAll()).thenReturn(List.of(failed, next));
+        when(talks.findFeedbackReminderCandidates(any())).thenReturn(List.of(failed, next));
         doThrow(new IllegalStateException("SMTP unavailable"))
                 .doNothing()
                 .when(mailer)
@@ -305,7 +305,8 @@ class TalkFeedbackReminderServiceTest {
 
         verify(talks, never()).markFeedbackReminderSent("talk-1");
         verify(talks).markFeedbackReminderSent("talk-2");
-        when(talks.findAll()).thenReturn(List.of(failed, next.withFeedbackReminderSent(true)));
+        when(talks.findFeedbackReminderCandidates(any()))
+                .thenReturn(List.of(failed, next.withFeedbackReminderSent(true)));
         service.sendReminders();
         verify(mailer, times(3)).send(any(Mail.class));
         verify(talks).markFeedbackReminderSent("talk-1");
@@ -314,7 +315,8 @@ class TalkFeedbackReminderServiceTest {
 
     @Test
     void persistenceFailureDoesNotBlockOtherTalks() throws Exception {
-        when(talks.findAll()).thenReturn(List.of(pastTalk(), pastTalk().withId("talk-2")));
+        when(talks.findFeedbackReminderCandidates(any()))
+                .thenReturn(List.of(pastTalk(), pastTalk().withId("talk-2")));
         doThrow(new java.util.concurrent.ExecutionException(new IllegalStateException("Firestore unavailable")))
                 .when(talks)
                 .markFeedbackReminderSent("talk-1");
@@ -327,7 +329,8 @@ class TalkFeedbackReminderServiceTest {
 
     @Test
     void interruptionStopsTheBatchAndPreservesTheInterruptFlag() throws Exception {
-        when(talks.findAll()).thenReturn(List.of(pastTalk(), pastTalk().withId("talk-2")));
+        when(talks.findFeedbackReminderCandidates(any()))
+                .thenReturn(List.of(pastTalk(), pastTalk().withId("talk-2")));
         doThrow(new InterruptedException("Stopping")).when(talks).markFeedbackReminderSent("talk-1");
         try {
             assertDoesNotThrow(() -> service.sendReminders());
@@ -341,7 +344,7 @@ class TalkFeedbackReminderServiceTest {
 
     @Test
     void collectiveDeliveryUsesCurrentEmailPreferencesRatherThanTheEmbeddedSpeaker() throws Exception {
-        when(talks.findAll()).thenReturn(List.of(pastTalk()));
+        when(talks.findFeedbackReminderCandidates(any())).thenReturn(List.of(pastTalk()));
         when(users.findByEmail("bob@example.com"))
                 .thenReturn(User.builder()
                         .email("bob@example.com")
@@ -360,7 +363,7 @@ class TalkFeedbackReminderServiceTest {
     @NullSource
     @ValueSource(booleans = false)
     void noEmailOptInLeavesTheTalkUnsent(Boolean preference) throws Exception {
-        when(talks.findAll()).thenReturn(List.of(pastTalk()));
+        when(talks.findFeedbackReminderCandidates(any())).thenReturn(List.of(pastTalk()));
         when(users.findByEmail(anyString()))
                 .thenReturn(User.builder().emailNotificationsEnabled(preference).build());
 
@@ -372,7 +375,7 @@ class TalkFeedbackReminderServiceTest {
 
     @Test
     void unknownUsersAreNotOptedInAndMayReceiveTheReminderAfterOptingIn() throws Exception {
-        when(talks.findAll()).thenReturn(List.of(pastTalk()));
+        when(talks.findFeedbackReminderCandidates(any())).thenReturn(List.of(pastTalk()));
         when(users.findByEmail(anyString())).thenReturn(null);
         service.sendReminders();
         verifyNoInteractions(mailer);
@@ -387,7 +390,7 @@ class TalkFeedbackReminderServiceTest {
 
     @Test
     void sendsOneCollectiveEmailUsingTheConfiguredTemplateThenPersistsTheReminder() throws Exception {
-        when(talks.findAll()).thenReturn(List.of(pastTalk()));
+        when(talks.findFeedbackReminderCandidates(any())).thenReturn(List.of(pastTalk()));
         doAnswer(invocation -> {
                     Mail mail = invocation.getArgument(0);
                     assertEquals(List.of("alice@example.com", "bob@example.com"), mail.getTo());

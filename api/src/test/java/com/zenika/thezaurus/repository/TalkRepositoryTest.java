@@ -13,8 +13,13 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.Transaction;
+import com.google.cloud.firestore.WriteBatch;
+import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.Conference;
 import com.zenika.thezaurus.model.Talk;
+import com.zenika.thezaurus.model.TalkStatus;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -292,5 +297,102 @@ public class TalkRepositoryTest {
         Mockito.when(collection.document("broken-id")).thenReturn(docRef);
 
         assertNull(repository.findById("broken-id"));
+    }
+
+    @Test
+    public void findFeedbackReminderCandidatesQueriesOnlyUnsentAcceptedOrDoneTalks() throws Exception {
+        var query = Mockito.mock(com.google.cloud.firestore.Query.class);
+        var statusQuery = Mockito.mock(com.google.cloud.firestore.Query.class);
+        var dateQuery = Mockito.mock(com.google.cloud.firestore.Query.class);
+        LocalDate today = LocalDate.of(2026, 10, 5);
+        Mockito.when(collection.whereEqualTo("feedbackReminderSent", false)).thenReturn(query);
+        Mockito.when(query.whereIn("status", List.of(TalkStatus.ACCEPTED.name(), TalkStatus.DONE.name())))
+                .thenReturn(statusQuery);
+        Mockito.when(statusQuery.whereLessThan("date", "2026-10-05")).thenReturn(dateQuery);
+        Mockito.when(dateQuery.get()).thenReturn(ApiFutures.immediateFuture(snapshot));
+
+        Talk valid = new Talk("cand-1", "Titre", "Description");
+        QueryDocumentSnapshot doc = Mockito.mock(QueryDocumentSnapshot.class);
+        Mockito.when(doc.toObject(Talk.class)).thenReturn(valid);
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(doc));
+
+        List<Talk> candidates = repository.findFeedbackReminderCandidates(today);
+
+        assertEquals(List.of(valid), candidates);
+        Mockito.verify(collection).whereEqualTo("feedbackReminderSent", false);
+        Mockito.verify(query).whereIn("status", List.of(TalkStatus.ACCEPTED.name(), TalkStatus.DONE.name()));
+        Mockito.verify(statusQuery).whereLessThan("date", "2026-10-05");
+    }
+
+    @Test
+    public void migrateFeedbackReminderSentSetsFalseOnDocumentsWithoutTheMarker() throws Exception {
+        WriteBatch batch = Mockito.mock(WriteBatch.class);
+        Mockito.when(repository.firestore.batch()).thenReturn(batch);
+        Mockito.when(batch.commit()).thenReturn(ApiFutures.immediateFuture(List.of(Mockito.mock(WriteResult.class))));
+
+        DocumentReference refMissing = Mockito.mock(DocumentReference.class);
+        QueryDocumentSnapshot docMissing = Mockito.mock(QueryDocumentSnapshot.class);
+        Mockito.when(docMissing.contains("feedbackReminderSent")).thenReturn(false);
+        Mockito.when(docMissing.getReference()).thenReturn(refMissing);
+
+        DocumentReference refNull = Mockito.mock(DocumentReference.class);
+        QueryDocumentSnapshot docNull = Mockito.mock(QueryDocumentSnapshot.class);
+        Mockito.when(docNull.contains("feedbackReminderSent")).thenReturn(true);
+        Mockito.when(docNull.get("feedbackReminderSent")).thenReturn(null);
+        Mockito.when(docNull.getReference()).thenReturn(refNull);
+
+        QueryDocumentSnapshot docFalse = Mockito.mock(QueryDocumentSnapshot.class);
+        Mockito.when(docFalse.contains("feedbackReminderSent")).thenReturn(true);
+        Mockito.when(docFalse.get("feedbackReminderSent")).thenReturn(false);
+
+        QueryDocumentSnapshot docTrue = Mockito.mock(QueryDocumentSnapshot.class);
+        Mockito.when(docTrue.contains("feedbackReminderSent")).thenReturn(true);
+        Mockito.when(docTrue.get("feedbackReminderSent")).thenReturn(true);
+
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(docMissing, docNull, docFalse, docTrue));
+
+        int migrated = repository.migrateFeedbackReminderSent();
+
+        assertEquals(2, migrated);
+        Mockito.verify(batch).update(refMissing, "feedbackReminderSent", false);
+        Mockito.verify(batch).update(refNull, "feedbackReminderSent", false);
+        Mockito.verify(batch).commit();
+    }
+
+    @Test
+    public void migrateFeedbackReminderSentCommitsInBatchesOf500() throws Exception {
+        WriteBatch batch1 = Mockito.mock(WriteBatch.class);
+        WriteBatch batch2 = Mockito.mock(WriteBatch.class);
+        Mockito.when(repository.firestore.batch()).thenReturn(batch1, batch2);
+        Mockito.when(batch1.commit()).thenReturn(ApiFutures.immediateFuture(List.of(Mockito.mock(WriteResult.class))));
+        Mockito.when(batch2.commit()).thenReturn(ApiFutures.immediateFuture(List.of(Mockito.mock(WriteResult.class))));
+
+        List<QueryDocumentSnapshot> docs = new ArrayList<>();
+        for (int i = 0; i < 501; i++) {
+            QueryDocumentSnapshot doc = Mockito.mock(QueryDocumentSnapshot.class);
+            DocumentReference ref = Mockito.mock(DocumentReference.class);
+            Mockito.when(doc.contains("feedbackReminderSent")).thenReturn(false);
+            Mockito.when(doc.getReference()).thenReturn(ref);
+            docs.add(doc);
+        }
+        Mockito.when(snapshot.getDocuments()).thenReturn(docs);
+
+        int migrated = repository.migrateFeedbackReminderSent();
+
+        assertEquals(501, migrated);
+        Mockito.verify(batch1).commit();
+        Mockito.verify(batch2).commit();
+    }
+
+    @Test
+    public void migrateFeedbackReminderSentOnEmptyCollection() throws Exception {
+        WriteBatch batch = Mockito.mock(WriteBatch.class);
+        Mockito.when(repository.firestore.batch()).thenReturn(batch);
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of());
+
+        int migrated = repository.migrateFeedbackReminderSent();
+
+        assertEquals(0, migrated);
+        Mockito.verifyNoInteractions(batch);
     }
 }

@@ -6,18 +6,23 @@ import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.FieldPath;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.Query;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
+import com.google.cloud.firestore.WriteBatch;
 import com.google.cloud.firestore.WriteResult;
 import com.google.cloud.firestore.encoding.CustomClassMapper;
 import com.zenika.thezaurus.model.Conference;
 import com.zenika.thezaurus.model.Talk;
+import com.zenika.thezaurus.model.TalkStatus;
 import com.zenika.thezaurus.model.TemplateContextOption;
 import com.zenika.thezaurus.model.TemplateContextPage;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,6 +45,7 @@ public class TalkRepository {
     Optional<String> collectionPrefix;
 
     private static final String BASE_COLLECTION_NAME = "talks";
+    private static final int BATCH_SIZE = 500;
 
     private String getCollectionName() {
         if (collectionPrefix == null
@@ -253,5 +259,41 @@ public class TalkRepository {
                 .document(id)
                 .update("feedbackReminderSent", true)
                 .get();
+    }
+
+    public List<Talk> findFeedbackReminderCandidates(LocalDate today) throws ExecutionException, InterruptedException {
+        Query query = firestore
+                .collection(getCollectionName())
+                .whereEqualTo("feedbackReminderSent", false)
+                .whereIn("status", List.of(TalkStatus.ACCEPTED.name(), TalkStatus.DONE.name()))
+                .whereLessThan("date", today.toString());
+        QuerySnapshot querySnapshot = query.get().get();
+        return querySnapshot.getDocuments().stream()
+                .map(this::toTalkOrNull)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    public int migrateFeedbackReminderSent() throws ExecutionException, InterruptedException {
+        QuerySnapshot snapshot = firestore.collection(getCollectionName()).get().get();
+        int migrated = 0;
+        WriteBatch batch = firestore.batch();
+        int pending = 0;
+        for (QueryDocumentSnapshot doc : snapshot.getDocuments()) {
+            if (doc.contains("feedbackReminderSent") && doc.get("feedbackReminderSent") != null) {
+                continue;
+            }
+            batch.update(doc.getReference(), "feedbackReminderSent", false);
+            migrated++;
+            if (++pending == BATCH_SIZE) {
+                batch.commit().get();
+                batch = firestore.batch();
+                pending = 0;
+            }
+        }
+        if (pending > 0) {
+            batch.commit().get();
+        }
+        return migrated;
     }
 }

@@ -69,7 +69,7 @@ class TalkFeedbackReminderDeliveryTest {
                 .thenReturn(User.builder().emailNotificationsEnabled(true).build());
         when(templates.get())
                 .thenReturn(new ReminderTemplateView("Rappel {talkTitle}", "<p>Bonjour {speakers}</p>", 1));
-        when(talks.findAll())
+        when(talks.findFeedbackReminderCandidates(any()))
                 .thenReturn(List.of(new Talk(
                         "talk-1",
                         "Java",
