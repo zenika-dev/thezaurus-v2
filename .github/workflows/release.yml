@@ -42,14 +42,14 @@ jobs:
 
   # Images référencées par digest (immuables) : ce qui est déployé est exactement
   # ce qui a été construit, même si un tag est réécrit entre-temps.
-#  deploy-production:
-#    needs: [ci, version, build-api, build-front]
-#    uses: ./.github/workflows/_deploy.yml
-#    permissions:
-#      contents: read
-#      id-token: write
-#    with:
-#      environment: production
-#      version: ${{ needs.version.outputs.version }}
-#      api_image: ${{ needs.build-api.outputs.image }}
-#      front_image: ${{ needs.build-front.outputs.image }}
+  deploy-production:
+    needs: [ci, version, build-api, build-front]
+    uses: ./.github/workflows/_deploy.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: production
+      version: ${{ needs.version.outputs.version }}
+      api_image: ${{ needs.build-api.outputs.image }}
+      front_image: ${{ needs.build-front.outputs.image }}

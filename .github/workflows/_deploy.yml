@@ -109,7 +109,7 @@ jobs:
                   app-version: "${VERSION_LABEL}"
                 annotations:
                   autoscaling.knative.dev/minScale: "0"
-                  autoscaling.knative.dev/maxScale: "5"
+                  autoscaling.knative.dev/maxScale: "1"
                   # Le JVM démarre plus vite avec du CPU supplémentaire pendant le boot
                   run.googleapis.com/startup-cpu-boost: "true"
                   # Le front ne démarre qu'une fois l'API prête (startupProbe de l'api)
@@ -168,17 +168,16 @@ jobs:
                       # Vide = valeur par défaut d'application.properties
                       - name: REASONING_ENGINE_URL
                         value: "${REASONING_ENGINE_URL}"
-                      # Slack (optionnel) : créer les secrets avant de décommenter
-                      # - name: SLACK_BOT_TOKEN
-                      #   valueFrom:
-                      #     secretKeyRef:
-                      #       name: thezaurus-slack-bot-token
-                      #       key: latest
-                      # - name: SLACK_SIGNING_SECRET
-                      #   valueFrom:
-                      #     secretKeyRef:
-                      #       name: thezaurus-slack-signing-secret
-                      #       key: latest
+                      - name: SLACK_BOT_TOKEN
+                        valueFrom:
+                          secretKeyRef:
+                            name: thezaurus-slack-bot-token
+                            key: latest
+                      - name: SLACK_SIGNING_SECRET
+                        valueFrom:
+                          secretKeyRef:
+                            name: thezaurus-slack-signing-secret
+                            key: latest
                     resources:
                       limits:
                         cpu: "1"
