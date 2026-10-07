@@ -1,0 +1,260 @@
+name: (interne) Deploy Cloud Run
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: Environnement GitHub cible (porte les vars et les règles d'approbation)
+        required: true
+        type: string
+      version:
+        description: Version déployée (ex. 2026.09.30-abc1234)
+        required: true
+        type: string
+      api_image:
+        description: Image API par digest
+        required: true
+        type: string
+      front_image:
+        description: Image front par digest
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: Cloud Run (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    # L'environnement GitHub apporte : approbation manuelle, restriction de branches,
+    # vars spécifiques (projet, base Firestore, URL...) et historique des déploiements.
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ steps.deploy.outputs.url }}
+    # Jamais deux déploiements simultanés sur le même environnement, et jamais d'annulation
+    # en plein vol (un déploiement interrompu laisse le service dans un état incertain).
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+    steps:
+      # Échoue tout de suite si l'environnement GitHub est incomplet, plutôt que de
+      # déployer un service avec une variable vide.
+      - name: Vérifier la configuration de l'environnement
+        env:
+          REQUIRED: >-
+            GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
+            GCP_REGION=${{ vars.GCP_REGION }}
+            CLOUD_RUN_SERVICE=${{ vars.CLOUD_RUN_SERVICE }}
+            RUNTIME_SERVICE_ACCOUNT=${{ vars.RUNTIME_SERVICE_ACCOUNT }}
+            NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}
+            GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
+            FIRESTORE_DATABASE_ID=${{ vars.FIRESTORE_DATABASE_ID }}
+        run: |
+          MISSING=0
+          for pair in $REQUIRED; do
+            if [ -z "${pair#*=}" ]; then
+              echo "::error::Variable '${pair%%=*}' manquante dans l'environnement ${{ inputs.environment }}"
+              MISSING=1
+            fi
+          done
+          exit $MISSING
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      # Service Cloud Run multi-conteneurs (front ingress + api sidecar), défini ici et appliqué
+      # avec `gcloud run services replace` : ce bloc est la source de vérité de la config de prod.
+      # Toute modification manuelle dans la console sera écrasée au déploiement suivant.
+      - name: Rendre le manifeste Cloud Run
+        env:
+          VERSION: ${{ inputs.version }}
+          API_IMAGE: ${{ inputs.api_image }}
+          FRONT_IMAGE: ${{ inputs.front_image }}
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          RUNTIME_SERVICE_ACCOUNT: ${{ vars.RUNTIME_SERVICE_ACCOUNT }}
+          NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          FIRESTORE_DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID }}
+          FIRESTORE_COLLECTION_PREFIX: ${{ vars.FIRESTORE_COLLECTION_PREFIX }}
+          REASONING_ENGINE_URL: ${{ vars.REASONING_ENGINE_URL }}
+        run: |
+          # Une valeur de label n'accepte ni points ni majuscules
+          export VERSION_LABEL=$(echo "$VERSION" | tr '.' '-' | tr '[:upper:]' '[:lower:]')
+          # Heredoc non interprété par le shell, puis envsubst avec une liste explicite :
+          # seules ces variables sont substituées
+          envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE}
+                    ${GCP_PROJECT_ID} ${RUNTIME_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
+                    ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${REASONING_ENGINE_URL}' \
+            > service.rendered.yaml <<'MANIFEST'
+          apiVersion: serving.knative.dev/v1
+          kind: Service
+          metadata:
+            name: "${SERVICE_NAME}"
+            labels:
+              cloud.googleapis.com/location: "${GCP_REGION}"
+            annotations:
+              run.googleapis.com/ingress: all
+          spec:
+            template:
+              metadata:
+                labels:
+                  app-version: "${VERSION_LABEL}"
+                annotations:
+                  autoscaling.knative.dev/minScale: "0"
+                  autoscaling.knative.dev/maxScale: "5"
+                  # Le JVM démarre plus vite avec du CPU supplémentaire pendant le boot
+                  run.googleapis.com/startup-cpu-boost: "true"
+                  # Le front ne démarre qu'une fois l'API prête (startupProbe de l'api)
+                  run.googleapis.com/container-dependencies: '{"front":["api"]}'
+              spec:
+                # Identité runtime dédiée, distincte du compte de service de la CI
+                serviceAccountName: "${RUNTIME_SERVICE_ACCOUNT}"
+                containerConcurrency: 80
+                timeoutSeconds: 300
+                containers:
+                  - name: front
+                    image: "${FRONT_IMAGE}"
+                    ports:
+                      - name: http1
+                        containerPort: 3000
+                    env:
+                      - name: API_URL
+                        value: http://localhost:8080
+                      - name: NEXTAUTH_URL
+                        value: "${NEXTAUTH_URL}"
+                      - name: GOOGLE_CLIENT_ID
+                        value: "${GOOGLE_CLIENT_ID}"
+                      - name: GOOGLE_CLIENT_SECRET
+                        valueFrom:
+                          secretKeyRef:
+                            name: thezaurus-google-client-secret
+                            key: latest
+                      - name: NEXTAUTH_SECRET
+                        valueFrom:
+                          secretKeyRef:
+                            name: thezaurus-nextauth-secret
+                            key: latest
+                    resources:
+                      limits:
+                        cpu: "1"
+                        memory: 512Mi
+                    startupProbe:
+                      tcpSocket:
+                        port: 3000
+                      periodSeconds: 5
+                      failureThreshold: 12
+
+                  - name: api
+                    image: "${API_IMAGE}"
+                    env:
+                      - name: QUARKUS_HTTP_PORT
+                        value: "8080"
+                      - name: GOOGLE_CLOUD_PROJECT_ID
+                        value: "${GCP_PROJECT_ID}"
+                      - name: FIRESTORE_DATABASE_ID
+                        value: "${FIRESTORE_DATABASE_ID}"
+                      - name: FIRESTORE_COLLECTION_PREFIX
+                        value: "${FIRESTORE_COLLECTION_PREFIX}"
+                      - name: GOOGLE_CLIENT_ID
+                        value: "${GOOGLE_CLIENT_ID}"
+                      # Vide = valeur par défaut d'application.properties
+                      - name: REASONING_ENGINE_URL
+                        value: "${REASONING_ENGINE_URL}"
+                      # Slack (optionnel) : créer les secrets avant de décommenter
+                      # - name: SLACK_BOT_TOKEN
+                      #   valueFrom:
+                      #     secretKeyRef:
+                      #       name: thezaurus-slack-bot-token
+                      #       key: latest
+                      # - name: SLACK_SIGNING_SECRET
+                      #   valueFrom:
+                      #     secretKeyRef:
+                      #       name: thezaurus-slack-signing-secret
+                      #       key: latest
+                    resources:
+                      limits:
+                        cpu: "1"
+                        memory: 1Gi
+                    # Endpoints fournis par quarkus-smallrye-health
+                    startupProbe:
+                      httpGet:
+                        path: /q/health/ready
+                        port: 8080
+                      periodSeconds: 5
+                      failureThreshold: 24
+                    livenessProbe:
+                      httpGet:
+                        path: /q/health/live
+                        port: 8080
+                      periodSeconds: 30
+            traffic:
+              - percent: 100
+                latestRevision: true
+          MANIFEST
+          cat service.rendered.yaml
+
+      # Mémorise la révision qui sert actuellement le trafic, pour pouvoir y revenir
+      # (pas latestReadyRevisionName : après un rollback, ce n'est pas elle qui sert)
+      - name: Révision actuelle
+        id: previous
+        run: |
+          REV=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --format='value(status.traffic[0].revisionName)' 2>/dev/null || true)
+          echo "revision=${REV}" >> "$GITHUB_OUTPUT"
+          echo "Révision actuelle : ${REV:-aucune (premier déploiement)}"
+
+      # `replace` attend que la nouvelle révision soit prête. Si ses startupProbes
+      # échouent, Cloud Run ne lui envoie aucun trafic : l'ancienne révision continue de servir.
+      - name: Déployer
+        id: deploy
+        run: |
+          gcloud run services replace service.rendered.yaml \
+            --region "$GCP_REGION" --project "${{ vars.GCP_PROJECT_ID }}"
+          URL=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" \
+            --project "${{ vars.GCP_PROJECT_ID }}" --format='value(status.url)')
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
+
+      # Vérifie de bout en bout que le front répond et que NextAuth est configuré
+      - name: Smoke test
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          for i in $(seq 1 10); do
+            if curl -sSf -o /dev/null "${URL}/api/auth/providers"; then
+              echo "OK : ${URL}"
+              exit 0
+            fi
+            echo "Tentative ${i}/10 échouée, nouvel essai dans 6s"
+            sleep 6
+          done
+          echo "::error::Smoke test KO sur ${URL}"
+          exit 1
+
+      - name: Rollback vers la révision précédente
+        if: failure() && steps.previous.outputs.revision != ''
+        run: |
+          gcloud run services update-traffic "$SERVICE_NAME" \
+            --region "$GCP_REGION" --project "${{ vars.GCP_PROJECT_ID }}" \
+            --to-revisions="${{ steps.previous.outputs.revision }}=100"
+          echo "::warning::Trafic remis sur ${{ steps.previous.outputs.revision }}"
+
+      - name: Résumé
+        if: always()
+        run: |
+          {
+            echo "### Déploiement ${{ inputs.environment }} — ${{ inputs.version }}"
+            echo "- URL : ${{ steps.deploy.outputs.url }}"
+            echo "- API : \`${{ inputs.api_image }}\`"
+            echo "- Front : \`${{ inputs.front_image }}\`"
+            echo "- Révision précédente : ${{ steps.previous.outputs.revision || 'aucune' }}"
+            echo "- Statut : ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"

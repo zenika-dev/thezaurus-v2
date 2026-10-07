@@ -43,15 +43,14 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # Compilé dans son Dockerfile multi-stage (contexte = racine du repo)
+      # Compilé dans son Dockerfile multi-stage (contexte = racine du repo).
+      # Aucune config d'environnement n'est figée dans l'image (GOOGLE_CLIENT_ID est lu
+      # au runtime) : la même image peut être promue d'un environnement à l'autre.
       - name: Build et push du front
         if: steps.check.outputs.exists != 'true'
-        env:
-          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
         run: |
           docker build -t "${IMAGE}:${{ inputs.version }}" \
-            -f front/Dockerfile --target runner \
-            --build-arg GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}" .
+            -f front/Dockerfile --target runner .
           docker push "${IMAGE}:${{ inputs.version }}"
 
       - name: Récupérer le digest

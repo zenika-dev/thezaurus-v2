@@ -43,19 +43,8 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Setup JDK 21
-        if: steps.check.outputs.exists != 'true'
-        uses: actions/setup-java@v6
-        with:
-          java-version: "21"
-          distribution: temurin
-          cache: maven
-
-      - name: Compiler l'API Quarkus
-        if: steps.check.outputs.exists != 'true'
-        working-directory: api
-        run: ./mvnw -B package
-        
+      # Dockerfile multi-stage : la compilation Maven se fait dans l'image,
+      # les tests ont déjà tourné dans le job CI.
       - name: Build et push de l'API
         if: steps.check.outputs.exists != 'true'
         run: |

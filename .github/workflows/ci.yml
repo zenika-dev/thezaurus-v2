@@ -1,9 +1,10 @@
 name: CI
 
+# Sur main, c'est release.yml qui appelle ce workflow (workflow_call) : les tests
+# conditionnent le déploiement et ne tournent pas deux fois par commit.
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_call:
   workflow_dispatch:
 
 # Une seule exécution par branche/PR : les runs obsolètes sont annulés,
