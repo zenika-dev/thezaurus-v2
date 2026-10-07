@@ -79,6 +79,7 @@ jobs:
           API_IMAGE: ${{ inputs.api_image }}
           FRONT_IMAGE: ${{ inputs.front_image }}
           GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          WIF_SERVICE_ACCOUNT: ${{ vars.WIF_SERVICE_ACCOUNT }}
           NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
           FIRESTORE_DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID }}
@@ -90,7 +91,7 @@ jobs:
           # Heredoc non interprété par le shell, puis envsubst avec une liste explicite :
           # seules ces variables sont substituées
           envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE}
-                    ${GCP_PROJECT_ID} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
+                    ${GCP_PROJECT_ID} ${WIF_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
                     ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${REASONING_ENGINE_URL}' \
             > service.rendered.yaml <<'MANIFEST'
           apiVersion: serving.knative.dev/v1
@@ -114,8 +115,8 @@ jobs:
                   # Le front ne démarre qu'une fois l'API prête (startupProbe de l'api)
                   run.googleapis.com/container-dependencies: '{"front":["api"]}'
               spec:
-                # Pas de serviceAccountName : Cloud Run utilise le compte de service Compute
-                # par défaut du projet (<numéro-projet>-compute@developer.gserviceaccount.com)
+                # Même compte de service que la CI (WIF_SERVICE_ACCOUNT)
+                serviceAccountName: "${WIF_SERVICE_ACCOUNT}"
                 containerConcurrency: 80
                 timeoutSeconds: 300
                 containers:
