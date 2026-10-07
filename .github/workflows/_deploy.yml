@@ -49,7 +49,7 @@ jobs:
             GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
             GCP_REGION=${{ vars.GCP_REGION }}
             CLOUD_RUN_SERVICE=${{ vars.CLOUD_RUN_SERVICE }}
-            RUNTIME_SERVICE_ACCOUNT=${{ vars.RUNTIME_SERVICE_ACCOUNT }}
+            WIF_SERVICE_ACCOUNT=${{ vars.WIF_SERVICE_ACCOUNT }}
             NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}
             GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
             FIRESTORE_DATABASE_ID=${{ vars.FIRESTORE_DATABASE_ID }}
@@ -79,7 +79,6 @@ jobs:
           API_IMAGE: ${{ inputs.api_image }}
           FRONT_IMAGE: ${{ inputs.front_image }}
           GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          RUNTIME_SERVICE_ACCOUNT: ${{ vars.RUNTIME_SERVICE_ACCOUNT }}
           NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
           FIRESTORE_DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID }}
@@ -91,7 +90,7 @@ jobs:
           # Heredoc non interprété par le shell, puis envsubst avec une liste explicite :
           # seules ces variables sont substituées
           envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE}
-                    ${GCP_PROJECT_ID} ${RUNTIME_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
+                    ${GCP_PROJECT_ID} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
                     ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${REASONING_ENGINE_URL}' \
             > service.rendered.yaml <<'MANIFEST'
           apiVersion: serving.knative.dev/v1
@@ -115,8 +114,8 @@ jobs:
                   # Le front ne démarre qu'une fois l'API prête (startupProbe de l'api)
                   run.googleapis.com/container-dependencies: '{"front":["api"]}'
               spec:
-                # Identité runtime dédiée, distincte du compte de service de la CI
-                serviceAccountName: "${RUNTIME_SERVICE_ACCOUNT}"
+                # Pas de serviceAccountName : Cloud Run utilise le compte de service Compute
+                # par défaut du projet (<numéro-projet>-compute@developer.gserviceaccount.com)
                 containerConcurrency: 80
                 timeoutSeconds: 300
                 containers:
