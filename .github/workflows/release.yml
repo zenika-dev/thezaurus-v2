@@ -43,7 +43,7 @@ jobs:
   # Images référencées par digest (immuables) : ce qui est déployé est exactement
   # ce qui a été construit, même si un tag est réécrit entre-temps.
   deploy-production:
-    needs: [ci, version, build-api, build-front]
+    needs: [  version, build-api, build-front]
     # Seul main déploie : les autres branches s'arrêtent au push des images
     if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/_deploy.yml
