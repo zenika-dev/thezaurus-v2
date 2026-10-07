@@ -1,4 +1,4 @@
-name: (interne) Build API
+name: (interne) Image Front
 
 on:
   workflow_call:
@@ -14,13 +14,13 @@ on:
 
 jobs:
   build:
-    name: API (Quarkus)
+    name: Front (Next.js)
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     env:
-      IMAGE: ${{ vars.GCP_REGISTRY }}/api
+      IMAGE: ${{ vars.GCP_REGISTRY }}/front
     outputs:
       image: ${{ steps.digest.outputs.image }}
     steps:
@@ -43,13 +43,14 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # Dockerfile multi-stage : la compilation Maven se fait dans l'image,
-      # les tests ont déjà tourné dans le job CI.
-      - name: Build et push de l'API
+      # Compilé dans son Dockerfile multi-stage (contexte = racine du repo).
+      # Aucune config d'environnement n'est figée dans l'image (GOOGLE_CLIENT_ID est lu
+      # au runtime) : la même image peut être promue d'un environnement à l'autre.
+      - name: Build et push du front
         if: steps.check.outputs.exists != 'true'
         run: |
           docker build -t "${IMAGE}:${{ inputs.version }}" \
-            -f api/src/main/docker/Dockerfile.jvm ./api
+            -f front/Dockerfile --target runner .
           docker push "${IMAGE}:${{ inputs.version }}"
 
       - name: Récupérer le digest
@@ -58,4 +59,4 @@ jobs:
           DIGEST=$(gcloud artifacts docker images describe "${IMAGE}:${{ inputs.version }}" \
             --format='value(image_summary.digest)')
           echo "image=${IMAGE}@${DIGEST}" >> "$GITHUB_OUTPUT"
-          echo "api → ${DIGEST}"
+          echo "front → ${DIGEST}"
