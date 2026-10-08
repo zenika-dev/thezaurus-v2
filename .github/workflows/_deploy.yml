@@ -28,7 +28,7 @@ jobs:
     # vars spécifiques (projet, base Firestore, URL...) et historique des déploiements.
     environment:
       name: ${{ inputs.environment }}
-      url: ${{ steps.deploy.outputs.url }}
+      url: ${{ vars.NEXTAUTH_URL }}
     # Jamais deux déploiements simultanés sur le même environnement, et jamais d'annulation
     # en plein vol (un déploiement interrompu laisse le service dans un état incertain).
     concurrency:
@@ -248,7 +248,7 @@ jobs:
         run: |
           {
             echo "### Déploiement ${{ inputs.environment }} — ${{ inputs.version }}"
-            echo "- URL : ${{ steps.deploy.outputs.url }}"
+            echo "- URL : ${{ vars.NEXTAUTH_URL }}"
             echo "- API : \`${{ inputs.api_image }}\`"
             echo "- Front : \`${{ inputs.front_image }}\`"
             echo "- Révision précédente : ${{ steps.previous.outputs.revision || 'aucune' }}"
