@@ -24,6 +24,7 @@ jobs:
   deploy:
     name: Cloud Run (${{ inputs.environment }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     # L'environnement GitHub apporte : approbation manuelle, restriction de branches,
     # vars spécifiques (projet, base Firestore, URL...) et historique des déploiements.
     environment:
@@ -40,6 +41,8 @@ jobs:
     env:
       SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE }}
       GCP_REGION: ${{ vars.GCP_REGION }}
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      TARGET_ENV: ${{ inputs.environment }}
     steps:
       # Échoue tout de suite si l'environnement GitHub est incomplet, plutôt que de
       # déployer un service avec une variable vide.
@@ -50,6 +53,7 @@ jobs:
             GCP_REGION=${{ vars.GCP_REGION }}
             CLOUD_RUN_SERVICE=${{ vars.CLOUD_RUN_SERVICE }}
             WIF_SERVICE_ACCOUNT=${{ vars.WIF_SERVICE_ACCOUNT }}
+            RUNTIME_SERVICE_ACCOUNT=${{ vars.RUNTIME_SERVICE_ACCOUNT }}
             NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}
             GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
             FIRESTORE_DATABASE_ID=${{ vars.FIRESTORE_DATABASE_ID }}
@@ -58,7 +62,7 @@ jobs:
           MISSING=0
           for pair in $REQUIRED; do
             if [ -z "${pair#*=}" ]; then
-              echo "::error::Variable '${pair%%=*}' manquante dans l'environnement ${{ inputs.environment }}"
+              echo "::error::Variable '${pair%%=*}' manquante dans l'environnement ${TARGET_ENV}"
               MISSING=1
             fi
           done
@@ -79,19 +83,19 @@ jobs:
           VERSION: ${{ inputs.version }}
           API_IMAGE: ${{ inputs.api_image }}
           FRONT_IMAGE: ${{ inputs.front_image }}
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          WIF_SERVICE_ACCOUNT: ${{ vars.WIF_SERVICE_ACCOUNT }}
+          RUNTIME_SERVICE_ACCOUNT: ${{ vars.RUNTIME_SERVICE_ACCOUNT }}
           NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
           FIRESTORE_DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID }}
           FIRESTORE_COLLECTION_PREFIX: ${{ vars.FIRESTORE_COLLECTION_PREFIX }}
         run: |
           # Une valeur de label n'accepte ni points ni majuscules
-          export VERSION_LABEL=$(echo "$VERSION" | tr '.' '-' | tr '[:upper:]' '[:lower:]')
+          VERSION_LABEL=$(echo "$VERSION" | tr '.' '-' | tr '[:upper:]' '[:lower:]')
+          export VERSION_LABEL
           # Heredoc non interprété par le shell, puis envsubst avec une liste explicite :
           # seules ces variables sont substituées
           envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE}
-                    ${GCP_PROJECT_ID} ${WIF_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
+                    ${GCP_PROJECT_ID} ${RUNTIME_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
                     ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX}' \
             > service.rendered.yaml <<'MANIFEST'
           apiVersion: serving.knative.dev/v1
@@ -115,8 +119,9 @@ jobs:
                   # Le front ne démarre qu'une fois l'API prête (startupProbe de l'api)
                   run.googleapis.com/container-dependencies: '{"front":["api"]}'
               spec:
-                # Même compte de service que la CI (WIF_SERVICE_ACCOUNT)
-                serviceAccountName: "${WIF_SERVICE_ACCOUNT}"
+                # Identité de l'application, distincte du compte de la CI (WIF_SERVICE_ACCOUNT) :
+                # Firestore, Secret Manager et Vertex AI uniquement, aucun droit de déploiement.
+                serviceAccountName: "${RUNTIME_SERVICE_ACCOUNT}"
                 containerConcurrency: 80
                 timeoutSeconds: 300
                 containers:
@@ -203,7 +208,7 @@ jobs:
         id: previous
         run: |
           REV=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" \
-            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --project "$GCP_PROJECT_ID" \
             --format='value(status.traffic[0].revisionName)' 2>/dev/null || true)
           echo "revision=${REV}" >> "$GITHUB_OUTPUT"
           echo "Révision actuelle : ${REV:-aucune (premier déploiement)}"
@@ -214,9 +219,9 @@ jobs:
         id: deploy
         run: |
           gcloud run services replace service.rendered.yaml \
-            --region "$GCP_REGION" --project "${{ vars.GCP_PROJECT_ID }}"
+            --region "$GCP_REGION" --project "$GCP_PROJECT_ID"
           URL=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" \
-            --project "${{ vars.GCP_PROJECT_ID }}" --format='value(status.url)')
+            --project "$GCP_PROJECT_ID" --format='value(status.url)')
           echo "url=${URL}" >> "$GITHUB_OUTPUT"
 
       # Vérifie de bout en bout que le front répond et que NextAuth est configuré
@@ -237,20 +242,29 @@ jobs:
 
       - name: Rollback vers la révision précédente
         if: failure() && steps.previous.outputs.revision != ''
+        env:
+          PREVIOUS_REVISION: ${{ steps.previous.outputs.revision }}
         run: |
           gcloud run services update-traffic "$SERVICE_NAME" \
-            --region "$GCP_REGION" --project "${{ vars.GCP_PROJECT_ID }}" \
-            --to-revisions="${{ steps.previous.outputs.revision }}=100"
-          echo "::warning::Trafic remis sur ${{ steps.previous.outputs.revision }}"
+            --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+            --to-revisions="${PREVIOUS_REVISION}=100"
+          echo "::warning::Trafic remis sur ${PREVIOUS_REVISION}"
 
       - name: Résumé
         if: always()
+        env:
+          VERSION: ${{ inputs.version }}
+          NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
+          API_IMAGE: ${{ inputs.api_image }}
+          FRONT_IMAGE: ${{ inputs.front_image }}
+          PREVIOUS_REVISION: ${{ steps.previous.outputs.revision || 'aucune' }}
+          JOB_STATUS: ${{ job.status }}
         run: |
           {
-            echo "### Déploiement ${{ inputs.environment }} — ${{ inputs.version }}"
-            echo "- URL : ${{ vars.NEXTAUTH_URL }}"
-            echo "- API : \`${{ inputs.api_image }}\`"
-            echo "- Front : \`${{ inputs.front_image }}\`"
-            echo "- Révision précédente : ${{ steps.previous.outputs.revision || 'aucune' }}"
-            echo "- Statut : ${{ job.status }}"
+            echo "### Déploiement ${TARGET_ENV} — ${VERSION}"
+            echo "- URL : ${NEXTAUTH_URL}"
+            echo "- API : \`${API_IMAGE}\`"
+            echo "- Front : \`${FRONT_IMAGE}\`"
+            echo "- Révision précédente : ${PREVIOUS_REVISION}"
+            echo "- Statut : ${JOB_STATUS}"
           } >> "$GITHUB_STEP_SUMMARY"

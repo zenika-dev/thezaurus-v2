@@ -16,10 +16,12 @@ jobs:
   build:
     name: Front (Next.js)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       id-token: write
     env:
+      VERSION: ${{ inputs.version }}
       IMAGE: ${{ vars.GCP_REGISTRY }}/front
     outputs:
       image: ${{ steps.digest.outputs.image }}
@@ -36,9 +38,9 @@ jobs:
       - name: Vérifier si l'image existe déjà
         id: check
         run: |
-          if gcloud artifacts docker images describe "${IMAGE}:${{ inputs.version }}" >/dev/null 2>&1; then
+          if gcloud artifacts docker images describe "${IMAGE}:${VERSION}" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "${IMAGE}:${{ inputs.version }} existe déjà, pas de rebuild"
+            echo "${IMAGE}:${VERSION} existe déjà, pas de rebuild"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
@@ -49,14 +51,14 @@ jobs:
       - name: Build et push du front
         if: steps.check.outputs.exists != 'true'
         run: |
-          docker build -t "${IMAGE}:${{ inputs.version }}" \
+          docker build -t "${IMAGE}:${VERSION}" \
             -f front/Dockerfile --target runner .
-          docker push "${IMAGE}:${{ inputs.version }}"
+          docker push "${IMAGE}:${VERSION}"
 
       - name: Récupérer le digest
         id: digest
         run: |
-          DIGEST=$(gcloud artifacts docker images describe "${IMAGE}:${{ inputs.version }}" \
+          DIGEST=$(gcloud artifacts docker images describe "${IMAGE}:${VERSION}" \
             --format='value(image_summary.digest)')
           echo "image=${IMAGE}@${DIGEST}" >> "$GITHUB_OUTPUT"
           echo "front → ${DIGEST}"

@@ -21,8 +21,11 @@ jobs:
   check:
     name: Compare front/.nvmrc au calendrier Node
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Controle et alerte
         shell: bash
@@ -31,7 +34,7 @@ jobs:
           TODAY: ${{ inputs.today }}
         run: |
           MAJOR=$(tr -dc '0-9' < front/.nvmrc)
-          curl -sSf https://endoflife.date/api/nodejs.json -o cycles.json
+          curl -sSf --retry 3 --retry-all-errors https://endoflife.date/api/nodejs.json -o cycles.json
 
           SUMMARY=$(jq -r \
             --arg major "$MAJOR" \

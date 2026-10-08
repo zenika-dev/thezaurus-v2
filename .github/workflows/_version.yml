@@ -16,10 +16,13 @@ jobs:
   version:
     name: Calculer la version
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       version: ${{ steps.compute.outputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Calculer la version
         id: compute
