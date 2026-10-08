@@ -84,7 +84,6 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
           FIRESTORE_DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID }}
           FIRESTORE_COLLECTION_PREFIX: ${{ vars.FIRESTORE_COLLECTION_PREFIX }}
-          REASONING_ENGINE_URL: ${{ vars.REASONING_ENGINE_URL }}
         run: |
           # Une valeur de label n'accepte ni points ni majuscules
           export VERSION_LABEL=$(echo "$VERSION" | tr '.' '-' | tr '[:upper:]' '[:lower:]')
@@ -92,7 +91,7 @@ jobs:
           # seules ces variables sont substituées
           envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE}
                     ${GCP_PROJECT_ID} ${WIF_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
-                    ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${REASONING_ENGINE_URL}' \
+                    ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX}' \
             > service.rendered.yaml <<'MANIFEST'
           apiVersion: serving.knative.dev/v1
           kind: Service
@@ -165,9 +164,6 @@ jobs:
                         value: "${FIRESTORE_COLLECTION_PREFIX}"
                       - name: GOOGLE_CLIENT_ID
                         value: "${GOOGLE_CLIENT_ID}"
-                      # Vide = valeur par défaut d'application.properties
-                      - name: REASONING_ENGINE_URL
-                        value: "${REASONING_ENGINE_URL}"
                       - name: SLACK_BOT_TOKEN
                         valueFrom:
                           secretKeyRef:
