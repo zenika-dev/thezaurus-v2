@@ -4,8 +4,8 @@ name: Release
 # Une image n'est construite (et poussée) que si les tests du même commit sont verts.
 on:
   push:
-    # TODO: retirer feat/connect-to-gcp avant de merger (branche de mise au point)
-    branches: [main, feat/connect-to-gcp]
+     
+    branches: [main ]
   workflow_dispatch: {}
 
 permissions:
