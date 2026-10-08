@@ -53,6 +53,7 @@ jobs:
             NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}
             GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
             FIRESTORE_DATABASE_ID=${{ vars.FIRESTORE_DATABASE_ID }}
+            FIRESTORE_COLLECTION_PREFIX=${{ vars.FIRESTORE_COLLECTION_PREFIX }}
         run: |
           MISSING=0
           for pair in $REQUIRED; do
