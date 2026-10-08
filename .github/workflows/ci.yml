@@ -38,6 +38,17 @@ jobs:
       - name: Build & tests
         run: ./mvnw -B -ntp verify
 
+      # Résumé des tests Surefire dans le job summary (équivalent du rapport Vitest côté front).
+      - name: Résumé des tests API
+        if: ${{ !cancelled() }}
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: api/target/surefire-reports/TEST-*.xml
+          check_name: API test report
+          # Pas de check run créé : évite d'avoir besoin de la permission checks: write
+          annotate_only: true
+          detailed_summary: true
+
       # `verify` régénère target/openapi/openapi.json depuis les annotations JAX-RS.
       # La copie versionnée (api/openapi.json) doit être strictement identique.
       - name: Vérification de la synchronisation du contrat OpenAPI
