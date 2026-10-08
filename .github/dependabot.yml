@@ -38,9 +38,11 @@ updates:
         update-types:
           - "minor"
           - "patch"
-  # Maintient à jour les actions utilisées par .github/workflows/ci.yml
+  # Maintient à jour les actions (épinglées par SHA) des workflows et des actions composites
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: "weekly"
     groups:
