@@ -9,10 +9,9 @@ interface NotificationPreferencesSectionProps {
   profile: UserProfile;
 }
 
-const SLACK_NOT_LINKED =
-  "L'intégration Slack est désactivée ou ton compte n'a pas été rattaché.";
+const SLACK_DISABLED = "L'intégration Slack est désactivée sur cet environnement.";
 
-/** Sauvegarde automatique des préférences, appliquées aux rappels de talks par email. */
+/** Sauvegarde automatique des préférences, appliquées aux rappels de talks par email et Slack. */
 export function NotificationPreferencesSection({ profile }: NotificationPreferencesSectionProps) {
   const { updateNotificationPreferences } = useProfileMutations();
   const preferences = profile.notificationPreferences;
@@ -33,8 +32,8 @@ export function NotificationPreferencesSection({ profile }: NotificationPreferen
         Notifications
       </h2>
       <p className="text-[14px] leading-[1.43] text-text-muted m-0 mb-4">
-        Active les notifications par mail pour recevoir les rappels lorsque le replay ou
-        l&apos;audience de tes talks manque. Les notifications Slack ne sont pas encore envoyées.
+        Active les notifications par mail ou sur Slack pour recevoir les rappels lorsque le replay ou
+        l&apos;audience de tes talks manque.
       </p>
 
       <div className="flex flex-col gap-2">
@@ -53,17 +52,17 @@ export function NotificationPreferencesSection({ profile }: NotificationPreferen
           <FormControlLabel
             control={
               <Switch
-                checked={preferences.slack && profile.slackLinked}
-                disabled={!profile.slackLinked}
+                checked={preferences.slack && profile.slackAvailable}
+                disabled={!profile.slackAvailable}
                 onChange={(e) => toggle("slack", e.target.checked)}
                 slotProps={{ input: { "aria-describedby": "profile-notifications-error" } }}
               />
             }
             label="Me notifier sur Slack"
           />
-          {!profile.slackLinked && (
+          {!profile.slackAvailable && (
             <p className="text-[13px] leading-[1.4] text-text-muted m-0 ml-[46px]">
-              {SLACK_NOT_LINKED} Le rattachement est retenté à chaque connexion.
+              {SLACK_DISABLED}
             </p>
           )}
         </div>

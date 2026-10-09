@@ -24,6 +24,8 @@ public class TalkTest {
         assertEquals(true, talk.withId("42").feedbackReminderSent());
         assertEquals(
                 true, talk.withConference(new Conference(null, "Devoxx", null)).feedbackReminderSent());
+        assertEquals(true, talk.withDate("2026-10-09").feedbackReminderSent());
+        assertEquals(true, talk.withSpeakers(List.of()).feedbackReminderSent());
     }
 
     @Test

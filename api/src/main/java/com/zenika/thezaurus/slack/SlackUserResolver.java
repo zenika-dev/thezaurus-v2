@@ -40,9 +40,10 @@ public class SlackUserResolver {
     }
 
     /** Variante synchrone, point d'entrée des tests. Ne lève jamais : tout échec est absorbé. */
-    public void resolveAndPersist(String email) {
+    public Optional<String> resolveAndPersist(String email) {
         try {
-            resolveByEmail(email).ifPresent(slackUserId -> {
+            Optional<String> resolved = resolveByEmail(email);
+            resolved.ifPresent(slackUserId -> {
                 try {
                     userRepository.updateSlackUserId(email, slackUserId);
                     logger.infof("Compte Slack %s rattaché à %s", slackUserId, email);
@@ -53,9 +54,11 @@ public class SlackUserResolver {
                     logger.warnf(e, "Échec de la persistance du rattachement Slack de %s", email);
                 }
             });
+            return resolved;
         } catch (Exception e) {
             // Sans ce filet, l'exception disparaîtrait dans le CompletableFuture.
             logger.warnf(e, "Échec de la résolution du compte Slack de %s", email);
+            return Optional.empty();
         }
     }
 

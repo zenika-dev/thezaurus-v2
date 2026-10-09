@@ -113,7 +113,8 @@ public record Talk(
                 notes,
                 slides,
                 replay,
-                audience);
+                audience,
+                feedbackReminderSent);
     }
 
     public Talk(String id, String title, String description) {
@@ -186,6 +187,26 @@ public record Talk(
     }
 
     public Talk withConference(Conference conference) {
+        return new Talk(
+                id,
+                title,
+                description,
+                speakers,
+                office,
+                conference,
+                status,
+                visibility,
+                format,
+                date,
+                language,
+                notes,
+                slides,
+                replay,
+                audience,
+                feedbackReminderSent);
+    }
+
+    public Talk withSpeakers(List<User> speakers) {
         return new Talk(
                 id,
                 title,

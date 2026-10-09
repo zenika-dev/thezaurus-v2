@@ -49,4 +49,8 @@ public record User(
     public User withRoles(List<Role> roles) {
         return new User(name, email, slackUserId, roles, emailNotificationsEnabled, slackNotificationsEnabled, office);
     }
+
+    public User withSlackUserId(String slackUserId) {
+        return new User(name, email, slackUserId, roles, emailNotificationsEnabled, slackNotificationsEnabled, office);
+    }
 }

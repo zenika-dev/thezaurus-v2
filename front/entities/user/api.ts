@@ -18,7 +18,7 @@ function mapBackendToFrontend(profile: BackendProfileView): UserProfile {
       email: profile.notificationPreferences?.email ?? false,
       slack: profile.notificationPreferences?.slack ?? false,
     },
-    slackLinked: profile.slackLinked ?? false,
+    slackAvailable: profile.slackAvailable ?? false,
   };
 }
 

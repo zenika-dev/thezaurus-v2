@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import {
   formatHref, LinkBubbleMenu, LinkBubbleMenuHandler, MenuButtonBold,
   MenuButtonBulletedList, MenuButtonEditLink, MenuButtonItalic,
@@ -8,7 +9,10 @@ import {
 } from "mui-tiptap";
 import StarterKit from "@tiptap/starter-kit";
 import { FontSize, TextStyle } from "@tiptap/extension-text-style";
-import { MenuItem } from "@mui/material";
+import { Button, Divider, IconButton, MenuItem, Select, Tooltip } from "@mui/material";
+import {
+  Bold, Italic, Strikethrough, Code, FileCode, Quote, List, ListOrdered, Link as LinkIcon
+} from "lucide-react";
 
 import type { BackendMessageTemplateDefinition } from "@/shared/api";
 
@@ -18,8 +22,38 @@ export function ReminderBodyEditor({ initialHtml, disabled, onChange, definition
   disabled: boolean;
   onChange: (html: string) => void;
 }) {
-  return <fieldset disabled={disabled} className="border-0 p-0 m-0 min-w-0">
-    <legend className="font-semibold mb-2">Corps du modèle</legend>
+  const isMarkdown = definition.format === "markdown" || definition.format === "md";
+
+  return (
+    <fieldset disabled={disabled} className="border-0 p-0 m-0 min-w-0">
+      <legend className="font-semibold mb-2">Corps du modèle</legend>
+      {isMarkdown ? (
+        <MarkdownTemplateEditor
+          definition={definition}
+          initialContent={initialHtml}
+          disabled={disabled}
+          onChange={onChange}
+        />
+      ) : (
+        <HtmlTemplateEditor
+          definition={definition}
+          initialHtml={initialHtml}
+          disabled={disabled}
+          onChange={onChange}
+        />
+      )}
+      <TemplateHelp definition={definition} isMarkdown={isMarkdown} />
+    </fieldset>
+  );
+}
+
+function HtmlTemplateEditor({ definition, initialHtml, disabled, onChange }: {
+  definition: BackendMessageTemplateDefinition;
+  initialHtml: string;
+  disabled: boolean;
+  onChange: (html: string) => void;
+}) {
+  return (
     <RichTextEditor
       immediatelyRender={false}
       editable={!disabled}
@@ -88,12 +122,229 @@ export function ReminderBodyEditor({ initialHtml, disabled, onChange, definition
         }}
       />}
     </RichTextEditor>
+  );
+}
+
+function MarkdownTemplateEditor({
+  definition,
+  initialContent,
+  disabled,
+  onChange,
+}: {
+  definition: BackendMessageTemplateDefinition;
+  initialContent: string;
+  disabled: boolean;
+  onChange: (value: string) => void;
+}) {
+  const [value, setValue] = useState(initialContent);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setValue(initialContent);
+  }, [initialContent]);
+
+  const handleChange = (newVal: string) => {
+    setValue(newVal);
+    onChange(newVal);
+  };
+
+  const applyWrap = (prefix: string, suffix: string, placeholder = "texte") => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = value.substring(start, end);
+    const content = selected || placeholder;
+    const updated = value.substring(0, start) + prefix + content + suffix + value.substring(end);
+    handleChange(updated);
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const selStart = start + prefix.length;
+      const selEnd = selStart + content.length;
+      textarea.setSelectionRange(selStart, selEnd);
+    });
+  };
+
+  const applyLinePrefix = (prefix: string, placeholder = "élément") => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = value.substring(start, end);
+    let updatedText: string;
+    if (selected) {
+      const lines = selected.split("\n").map(l => `${prefix}${l}`).join("\n");
+      updatedText = value.substring(0, start) + lines + value.substring(end);
+    } else {
+      updatedText = value.substring(0, start) + `${prefix}${placeholder}` + value.substring(end);
+    }
+    handleChange(updatedText);
+    requestAnimationFrame(() => {
+      textarea.focus();
+    });
+  };
+
+  const insertText = (toInsert: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const updated = value.substring(0, start) + toInsert + value.substring(end);
+    handleChange(updated);
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const nextPos = start + toInsert.length;
+      textarea.setSelectionRange(nextPos, nextPos);
+    });
+  };
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden bg-surface">
+      <div className="flex flex-wrap items-center gap-1 p-1.5 border-b border-border bg-surface-muted/40">
+        <Tooltip title="Gras (*texte*)">
+          <span>
+            <IconButton size="small" disabled={disabled} onClick={() => applyWrap("*", "*", "texte en gras")} aria-label="Gras">
+              <Bold size={16} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Italique (_texte_)">
+          <span>
+            <IconButton size="small" disabled={disabled} onClick={() => applyWrap("_", "_", "texte en italique")} aria-label="Italique">
+              <Italic size={16} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Barré (~texte~)">
+          <span>
+            <IconButton size="small" disabled={disabled} onClick={() => applyWrap("~", "~", "texte barré")} aria-label="Barré">
+              <Strikethrough size={16} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Divider orientation="vertical" flexItem className="mx-1" />
+        <Tooltip title="Code en ligne (`code`)">
+          <span>
+            <IconButton size="small" disabled={disabled} onClick={() => applyWrap("`", "`", "code")} aria-label="Code">
+              <Code size={16} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Bloc de code (```)">
+          <span>
+            <IconButton size="small" disabled={disabled} onClick={() => applyWrap("```\n", "\n```", "bloc de code")} aria-label="Bloc de code">
+              <FileCode size={16} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Citation (> citation)">
+          <span>
+            <IconButton size="small" disabled={disabled} onClick={() => applyLinePrefix("> ", "citation")} aria-label="Citation">
+              <Quote size={16} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Divider orientation="vertical" flexItem className="mx-1" />
+        <Tooltip title="Liste à puces (• élément)">
+          <span>
+            <IconButton size="small" disabled={disabled} onClick={() => applyLinePrefix("• ", "élément")} aria-label="Liste à puces">
+              <List size={16} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Liste numérotée (1. élément)">
+          <span>
+            <IconButton size="small" disabled={disabled} onClick={() => applyLinePrefix("1. ", "élément")} aria-label="Liste numérotée">
+              <ListOrdered size={16} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Lien (<url|texte>)">
+          <span>
+            <IconButton size="small" disabled={disabled} onClick={() => applyWrap("<https://|", ">", "Libellé du lien")} aria-label="Insérer un lien">
+              <LinkIcon size={16} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Divider orientation="vertical" flexItem className="mx-1" />
+        <Select
+          size="small"
+          inputProps={{ "aria-label": "Insérer une variable dans le corps" }}
+          value=""
+          displayEmpty
+          renderValue={() => "Variable"}
+          disabled={disabled}
+          sx={{ height: 32, fontSize: "0.875rem" }}
+          onChange={(event) => {
+            if (event.target.value) insertText(`{${event.target.value}}`);
+          }}
+        >
+          {(definition.variables ?? []).map(({ name, label }) => (
+            <MenuItem key={name} value={name}>{label}</MenuItem>
+          ))}
+        </Select>
+        <Select
+          size="small"
+          inputProps={{ "aria-label": "Insérer une condition" }}
+          value=""
+          displayEmpty
+          renderValue={() => "Condition"}
+          disabled={disabled}
+          sx={{ height: 32, fontSize: "0.875rem" }}
+          onChange={(event) => {
+            if (event.target.value) {
+              insertText(`{#if ${event.target.value}}\nTexte conditionnel à compléter\n{/if}\n`);
+            }
+          }}
+        >
+          {(definition.conditions ?? []).map(({ name, label }) => (
+            <MenuItem key={name} value={name}>{label}</MenuItem>
+          ))}
+        </Select>
+        {(definition.links ?? []).map((link) => (
+          <Button
+            key={link.variable}
+            size="small"
+            variant="outlined"
+            disabled={disabled}
+            sx={{ height: 32, fontSize: "0.75rem", textTransform: "none" }}
+            onClick={() => insertText(`<${link.variable ? `{${link.variable}}` : "https://"}|${link.text || link.label}>`)}
+          >
+            {link.label}
+          </Button>
+        ))}
+      </div>
+      <textarea
+        ref={textareaRef}
+        role="textbox"
+        aria-label="Corps du modèle"
+        aria-multiline="true"
+        disabled={disabled}
+        value={value}
+        onChange={(e) => handleChange(e.target.value)}
+        className="w-full min-h-64 p-3 font-mono text-sm leading-relaxed bg-transparent border-0 resize-y focus:outline-none"
+        placeholder="Rédigez votre modèle en syntaxe Markdown / Slack..."
+      />
+    </div>
+  );
+}
+
+function TemplateHelp({ definition, isMarkdown }: { definition: BackendMessageTemplateDefinition; isMarkdown: boolean }) {
+  return (
     <details className="text-sm text-text-muted mt-3">
       <summary className="cursor-pointer">Variables et conditions : aide à la rédaction</summary>
-      <p>Les balises restent visibles dans l’éditeur. Leur valeur est remplacée dans l’aperçu. Placez les balises de condition dans des paragraphes séparés, sans mise en forme à l’intérieur des balises.</p>
+      <p>
+        {isMarkdown
+          ? "Les balises Qute et la syntaxe Markdown Slack (*gras*, _italique_, <url|texte>) sont prises en charge. Leur valeur est remplacée dans l’aperçu."
+          : "Les balises restent visibles dans l’éditeur. Leur valeur est remplacée dans l’aperçu. Placez les balises de condition dans des paragraphes séparés, sans mise en forme à l’intérieur des balises."}
+      </p>
       <pre className="whitespace-pre-wrap bg-surface-muted rounded p-3">{definition.example}</pre>
       <p>{definition.help}</p>
-      <ul className="list-disc pl-5">{(definition.conditions ?? []).map(({ name, label }) => <li key={name}><code>{name}</code> : {label}</li>)}</ul>
+      <ul className="list-disc pl-5">
+        {(definition.conditions ?? []).map(({ name, label }) => (
+          <li key={name}><code>{name}</code> : {label}</li>
+        ))}
+      </ul>
     </details>
-  </fieldset>;
+  );
 }

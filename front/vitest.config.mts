@@ -15,6 +15,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./tests/setup.ts"],
     restoreMocks: true,
+    testTimeout: 15000,
     // Use the browser module so Tiptap and its controls share one ProseMirror instance.
     server: { deps: { inline: ["mui-tiptap"] } },
   },

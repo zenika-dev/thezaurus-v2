@@ -11,14 +11,25 @@ import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.repository.UserRepository;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 @QuarkusTest
+@TestProfile(ProfileResourceTest.Profile.class)
 public class ProfileResourceTest {
+
+    public static class Profile implements QuarkusTestProfile {
+        @Override
+        public Map<String, String> getConfigOverrides() {
+            return Map.of("thezaurus.slack.bot-token", "xoxb-test");
+        }
+    }
 
     @InjectMock
     UserRepository userRepository;
@@ -107,7 +118,7 @@ public class ProfileResourceTest {
                 .body("email", is("jane@zenika.com"))
                 .body("notificationPreferences.email", is(true))
                 .body("notificationPreferences.slack", is(false))
-                .body("slackLinked", is(true));
+                .body("slackAvailable", is(true));
     }
 
     @Test
@@ -129,10 +140,11 @@ public class ProfileResourceTest {
     @TestSecurity(
             user = "jane@zenika.com",
             roles = {Role.Names.CONSULTANT})
-    public void testGetProfileReportsSlackNotLinkedWhenSlackUserIdIsAbsent() throws Exception {
+    public void testGetProfileReportsSlackAvailableWhenIntegrationIsConfiguredEvenWithoutSlackUserId()
+            throws Exception {
         Mockito.when(userRepository.findByEmail("jane@zenika.com")).thenReturn(jane(null, false, false));
 
-        given().when().get("/api/me/profile").then().statusCode(200).body("slackLinked", is(false));
+        given().when().get("/api/me/profile").then().statusCode(200).body("slackAvailable", is(true));
     }
 
     @Test

@@ -8,7 +8,7 @@ export type NotificationPreferences = Required<BackendNotificationPreferences>;
 
 /**
  * Profil de la personne connectée. `name` et `email` viennent du SSO, en lecture seule.
- * `slackLinked` et non le `slackUserId` : le backend ne publie pas l'identifiant Slack.
+ * `slackAvailable` et non le `slackUserId` : le backend ne publie pas l'identifiant Slack.
  */
 export type UserProfile = Omit<Required<BackendProfileView>, "notificationPreferences" | "office"> & {
   notificationPreferences: NotificationPreferences;

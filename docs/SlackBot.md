@@ -6,7 +6,9 @@ Ce document décrit l'intégration, la configuration et l'utilisation du bot Sla
 
 ## 📌 Présentation
 
-L'API backend expose un bot Slack permettant de créer et gérer des talks directement via des commandes slash (`/talk`) grâce au SDK [Bolt for Java](https://github.com/slackapi/java-slack-sdk).
+L'API backend expose :
+- Un bot Slack permettant de créer et gérer des talks directement via des commandes slash (`/talk`) grâce au SDK [Bolt for Java](https://github.com/slackapi/java-slack-sdk).
+- Un module d'envoi de messages directs de rappel post-talk pour inciter les speakers à renseigner le replay et l'audience (nécessite le scope `chat:write`).
 
 > [!NOTE]
 > Cette intégration est **totalement optionnelle**. Si les variables d'environnement Slack ne sont pas renseignées, l'application démarre normalement en désactivant le module Slack (aucun appel externe ni enregistrement de webhook).
@@ -19,7 +21,7 @@ Les variables suivantes sont configurables dans votre fichier `.env` :
 
 | Variable | Requise | Description |
 |---|---|---|
-| `SLACK_BOT_TOKEN` | Optionnelle | Token OAuth de l'utilisateur bot (`xoxb-...`). Si absent, le bot Slack est désactivé. |
+| `SLACK_BOT_TOKEN` | Optionnelle | Token OAuth de l'utilisateur bot (`xoxb-...`). Requis pour les interactions Slack et l'envoi des rappels post-talk. Si absent, le module Slack est désactivé. |
 | `SLACK_SIGNING_SECRET` | Optionnelle | Secret de signature permettant à l'API de vérifier l'authenticité des requêtes Slack. |
 | `SLACK_APP_TOKEN` | Optionnelle | Token de niveau application (`xapp-...`), utilisé si le mode Socket est activé. |
 

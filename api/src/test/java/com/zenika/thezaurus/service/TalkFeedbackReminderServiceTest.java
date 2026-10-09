@@ -3,10 +3,13 @@ package com.zenika.thezaurus.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.slack.api.bolt.App;
 import com.zenika.thezaurus.model.*;
 import com.zenika.thezaurus.repository.ReminderTemplateRepository;
+import com.zenika.thezaurus.repository.SlackReminderTemplateRepository;
 import com.zenika.thezaurus.repository.TalkRepository;
 import com.zenika.thezaurus.repository.UserRepository;
+import com.zenika.thezaurus.slack.SlackUserResolver;
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;
 import io.quarkus.test.InjectMock;
@@ -50,6 +53,7 @@ class TalkFeedbackReminderServiceTest {
                     "thezaurus.feedback-reminder.enabled", "true",
                     "quarkus.mailer.from", "thezaurus@example.com",
                     "thezaurus.public-url", "https://thezaurus.example",
+                    "thezaurus.slack.bot-token", "xoxb-test",
                     "quarkus.scheduler.enabled", "false");
         }
     }
@@ -64,13 +68,27 @@ class TalkFeedbackReminderServiceTest {
     ReminderTemplateRepository templates;
 
     @InjectMock
+    SlackReminderTemplateRepository slackTemplates;
+
+    @InjectMock
+    SlackUserResolver slackUserResolver;
+
+    @InjectMock
+    App slackApp;
+
+    @InjectMock
     UserRepository users;
 
     @InjectMock
     Mailer mailer;
 
+    com.slack.api.methods.MethodsClient slackClient;
+
     @BeforeEach
     void configureTemplate() throws Exception {
+        slackClient = mock(com.slack.api.methods.MethodsClient.class);
+        when(slackApp.client()).thenReturn(slackClient);
+        when(slackTemplates.get()).thenReturn(new ReminderTemplateView("", "", 0));
         when(users.findByEmail(anyString()))
                 .thenAnswer(invocation -> User.builder()
                         .email(invocation.getArgument(0))
@@ -438,6 +456,144 @@ class TalkFeedbackReminderServiceTest {
         service.sendReminders();
 
         verify(mailer).send(any(Mail.class));
+        verify(talks).markFeedbackReminderSent("talk-1");
+    }
+
+    @Test
+    void sendsSlackReminderIndividuallyAndPersistsSentStatus() throws Exception {
+        when(talks.findFeedbackReminderCandidates(any())).thenReturn(List.of(pastTalk()));
+        when(users.findByEmail("alice@example.com"))
+                .thenReturn(User.builder()
+                        .name("Alice")
+                        .email("alice@example.com")
+                        .slackUserId("U_ALICE")
+                        .emailNotificationsEnabled(false)
+                        .slackNotificationsEnabled(true)
+                        .build());
+        when(users.findByEmail("bob@example.com"))
+                .thenReturn(User.builder()
+                        .name("Bob")
+                        .email("bob@example.com")
+                        .slackUserId("U_BOB")
+                        .emailNotificationsEnabled(false)
+                        .slackNotificationsEnabled(true)
+                        .build());
+        when(slackTemplates.get())
+                .thenReturn(new ReminderTemplateView(
+                        "", "Hello {recipientMention}, pense à renseigner *{talkTitle}* : <{talkUrl}|ici>", 1));
+
+        com.slack.api.methods.response.chat.ChatPostMessageResponse ok =
+                new com.slack.api.methods.response.chat.ChatPostMessageResponse();
+        ok.setOk(true);
+        when(slackClient.chatPostMessage(any(com.slack.api.RequestConfigurator.class)))
+                .thenReturn(ok);
+
+        service.sendReminders();
+
+        verifyNoInteractions(mailer);
+        verify(slackClient, times(2)).chatPostMessage(any(com.slack.api.RequestConfigurator.class));
+        verify(talks).markFeedbackReminderSent("talk-1");
+    }
+
+    @Test
+    void resolvesSlackUserIdOnTheFlyWhenMissing() throws Exception {
+        when(talks.findFeedbackReminderCandidates(any())).thenReturn(List.of(pastTalk()));
+        when(users.findByEmail("alice@example.com"))
+                .thenReturn(User.builder()
+                        .name("Alice")
+                        .email("alice@example.com")
+                        .slackUserId(null)
+                        .emailNotificationsEnabled(false)
+                        .slackNotificationsEnabled(true)
+                        .build());
+        when(users.findByEmail("bob@example.com"))
+                .thenReturn(User.builder()
+                        .name("Bob")
+                        .email("bob@example.com")
+                        .emailNotificationsEnabled(false)
+                        .slackNotificationsEnabled(false)
+                        .build());
+        when(slackTemplates.get()).thenReturn(new ReminderTemplateView("", "Hello {recipientMention}", 1));
+        when(slackUserResolver.resolveAndPersist("alice@example.com")).thenReturn(java.util.Optional.of("U_RESOLVED"));
+
+        com.slack.api.methods.response.chat.ChatPostMessageResponse ok =
+                new com.slack.api.methods.response.chat.ChatPostMessageResponse();
+        ok.setOk(true);
+        when(slackClient.chatPostMessage(any(com.slack.api.RequestConfigurator.class)))
+                .thenReturn(ok);
+
+        service.sendReminders();
+
+        verify(slackUserResolver).resolveAndPersist("alice@example.com");
+        verify(slackClient, times(1)).chatPostMessage(any(com.slack.api.RequestConfigurator.class));
+        verify(talks).markFeedbackReminderSent("talk-1");
+    }
+
+    @Test
+    void marksSentIfSlackSucceedsEvenIfEmailFails() throws Exception {
+        when(talks.findFeedbackReminderCandidates(any())).thenReturn(List.of(pastTalk()));
+        when(users.findByEmail("alice@example.com"))
+                .thenReturn(User.builder()
+                        .name("Alice")
+                        .email("alice@example.com")
+                        .slackUserId("U_ALICE")
+                        .emailNotificationsEnabled(true)
+                        .slackNotificationsEnabled(true)
+                        .build());
+        when(users.findByEmail("bob@example.com"))
+                .thenReturn(User.builder()
+                        .name("Bob")
+                        .email("bob@example.com")
+                        .emailNotificationsEnabled(false)
+                        .slackNotificationsEnabled(false)
+                        .build());
+        when(slackTemplates.get()).thenReturn(new ReminderTemplateView("", "Hello {recipientMention}", 1));
+        doThrow(new RuntimeException("SMTP failed")).when(mailer).send(any(Mail.class));
+
+        com.slack.api.methods.response.chat.ChatPostMessageResponse ok =
+                new com.slack.api.methods.response.chat.ChatPostMessageResponse();
+        ok.setOk(true);
+        when(slackClient.chatPostMessage(any(com.slack.api.RequestConfigurator.class)))
+                .thenReturn(ok);
+
+        service.sendReminders();
+
+        verify(mailer).send(any(Mail.class));
+        verify(slackClient, times(1)).chatPostMessage(any(com.slack.api.RequestConfigurator.class));
+        verify(talks).markFeedbackReminderSent("talk-1");
+    }
+
+    @Test
+    void marksSentIfEmailSucceedsEvenIfSlackFails() throws Exception {
+        when(talks.findFeedbackReminderCandidates(any())).thenReturn(List.of(pastTalk()));
+        when(users.findByEmail("alice@example.com"))
+                .thenReturn(User.builder()
+                        .name("Alice")
+                        .email("alice@example.com")
+                        .slackUserId("U_ALICE")
+                        .emailNotificationsEnabled(true)
+                        .slackNotificationsEnabled(true)
+                        .build());
+        when(users.findByEmail("bob@example.com"))
+                .thenReturn(User.builder()
+                        .name("Bob")
+                        .email("bob@example.com")
+                        .emailNotificationsEnabled(false)
+                        .slackNotificationsEnabled(false)
+                        .build());
+        when(slackTemplates.get()).thenReturn(new ReminderTemplateView("", "Hello {recipientMention}", 1));
+
+        com.slack.api.methods.response.chat.ChatPostMessageResponse error =
+                new com.slack.api.methods.response.chat.ChatPostMessageResponse();
+        error.setOk(false);
+        error.setError("channel_not_found");
+        when(slackClient.chatPostMessage(any(com.slack.api.RequestConfigurator.class)))
+                .thenReturn(error);
+
+        service.sendReminders();
+
+        verify(mailer).send(any(Mail.class));
+        verify(slackClient, times(1)).chatPostMessage(any(com.slack.api.RequestConfigurator.class));
         verify(talks).markFeedbackReminderSent("talk-1");
     }
 }
