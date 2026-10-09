@@ -159,4 +159,23 @@ describe("modèle de rappel", () => {
     await waitFor(() => expect((screen.getByRole("button", { name: "Enregistrer" }) as HTMLButtonElement).disabled).toBe(false));
     expect((screen.getByRole("textbox", { name: /Sujet/ }) as HTMLInputElement).value).toBe("Rappel {talkTitle}");
   });
+
+  it("supports template with hasSubject: false (omits subject field and saves)", async () => {
+    vi.mocked(reminderTemplateApi.list).mockResolvedValue([
+      { id: "slack", label: "Rappel Slack", apiPath: "/api/admin/slack-reminder", hasSubject: false, variables: [] },
+    ]);
+    vi.mocked(reminderTemplateApi.get).mockResolvedValue({ bodyHtml: "Initial Slack text", revision: 0 });
+    mount();
+    const editor = await screen.findByRole("textbox", { name: "Corps du modèle" });
+    expect(screen.queryByRole("textbox", { name: /Sujet/ })).toBeNull();
+    fireEvent.change(editor, { target: { value: "Hello {recipientMention}" } });
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await screen.findByText("Modèle enregistré.");
+    expect(reminderTemplateApi.save).toHaveBeenCalledWith("/api/admin/slack-reminder", {
+      subject: "",
+      bodyHtml: "Hello {recipientMention}",
+      revision: 0,
+    });
+  });
 });
+

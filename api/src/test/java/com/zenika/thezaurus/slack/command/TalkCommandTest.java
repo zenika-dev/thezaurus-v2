@@ -16,6 +16,7 @@ import com.slack.api.model.view.View;
 import com.slack.api.model.view.ViewState;
 import com.zenika.thezaurus.model.Talk;
 import com.zenika.thezaurus.model.User;
+import com.zenika.thezaurus.repository.UserRepository;
 import com.zenika.thezaurus.service.TalkService;
 import java.io.IOException;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ public class TalkCommandTest {
     private MethodsClient client;
     private ViewSubmissionContext ctx;
     private TalkService service;
+    private UserRepository userRepository;
 
     @BeforeEach
     public void setUp() {
@@ -40,6 +42,8 @@ public class TalkCommandTest {
         command.logger = Mockito.mock(Logger.class);
         service = Mockito.mock(TalkService.class);
         command.service = service;
+        userRepository = Mockito.mock(UserRepository.class);
+        command.userRepository = userRepository;
 
         client = Mockito.mock(MethodsClient.class);
         ctx = Mockito.mock(ViewSubmissionContext.class);
@@ -120,8 +124,10 @@ public class TalkCommandTest {
     // --- Tests --------------------------------------------------------------------------------
 
     @Test
-    public void testSubmissionCapturesNameEmailAndSlackId() throws Exception {
+    public void testSubmissionCapturesNameEmailAndSyncsSlackIdInUserRepository() throws Exception {
         slackReturns(slackUser("Jane Doe", "jane@zenika.com", true));
+        User userInDb = User.builder().name("Jane Doe").email("jane@zenika.com").build();
+        Mockito.when(userRepository.findByEmail("jane@zenika.com")).thenReturn(userInDb);
 
         Talk talk = submit(List.of("U123"));
 
@@ -130,8 +136,30 @@ public class TalkCommandTest {
         User speaker = talk.speakers().get(0);
         assertEquals("Jane Doe", speaker.name());
         assertEquals("jane@zenika.com", speaker.email());
-        assertEquals("U123", speaker.slackUserId());
+        assertNull(speaker.slackUserId(), "Le slackUserId ne doit pas être embarqué dans le Talk");
         assertNull(speaker.roles(), "Un speaker ne doit jamais porter de rôles d'autorisation");
+
+        Mockito.verify(userRepository).updateSlackUserId("jane@zenika.com", "U123");
+    }
+
+    @Test
+    public void testSubmissionCreatesUserIfNotFoundInUserRepository() throws Exception {
+        slackReturns(slackUser("Jane Doe", "jane@zenika.com", true));
+        Mockito.when(userRepository.findByEmail("jane@zenika.com")).thenReturn(null);
+
+        Talk talk = submit(List.of("U123"));
+
+        assertEquals(1, talk.speakers().size());
+        User speaker = talk.speakers().get(0);
+        assertEquals("Jane Doe", speaker.name());
+        assertEquals("jane@zenika.com", speaker.email());
+        assertNull(speaker.slackUserId());
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        Mockito.verify(userRepository).create(captor.capture());
+        assertEquals("Jane Doe", captor.getValue().name());
+        assertEquals("jane@zenika.com", captor.getValue().email());
+        assertEquals("U123", captor.getValue().slackUserId());
     }
 
     @Test
@@ -152,27 +180,34 @@ public class TalkCommandTest {
     }
 
     @Test
-    public void testSubmissionWithoutProfile() throws Exception {
+    public void testSubmissionWithoutProfileResolvesFromSlackUserIdInUserRepository() throws Exception {
         slackReturns(slackUser("Jane Doe", null, false));
+        User userInDb = User.builder()
+                .name("Jane Doe")
+                .email("jane@zenika.com")
+                .slackUserId("U123")
+                .build();
+        Mockito.when(userRepository.findBySlackUserId("U123")).thenReturn(userInDb);
+        Mockito.when(userRepository.findByEmail("jane@zenika.com")).thenReturn(userInDb);
 
         User speaker = submit(List.of("U123")).speakers().get(0);
 
         assertEquals("Jane Doe", speaker.name());
-        assertNull(speaker.email());
-        assertEquals("U123", speaker.slackUserId());
+        assertEquals("jane@zenika.com", speaker.email());
+        assertNull(speaker.slackUserId());
     }
 
     @Test
-    public void testSubmissionWithProfileButNoEmail() throws Exception {
-        // Cas réel lorsque le scope users:read.email n'est pas accordé : le profil existe,
-        // mais l'email est absent.
+    public void testSubmissionWithProfileButNoEmailFallbackWhenNotInDb() throws Exception {
+        // Cas où le scope users:read.email n'est pas accordé et l'utilisateur n'est pas en base
         slackReturns(slackUser("Jane Doe", null, true));
+        Mockito.when(userRepository.findBySlackUserId("U123")).thenReturn(null);
 
         User speaker = submit(List.of("U123")).speakers().get(0);
 
         assertEquals("Jane Doe", speaker.name());
         assertNull(speaker.email());
-        assertEquals("U123", speaker.slackUserId());
+        assertNull(speaker.slackUserId());
     }
 
     @Test
@@ -186,10 +221,7 @@ public class TalkCommandTest {
 
         assertTrue(speaker.name().contains("U123"));
         assertNull(speaker.email());
-        assertEquals(
-                "U123",
-                speaker.slackUserId(),
-                "Le slackUserId doit rester exploitable pour rattraper l'email plus tard");
+        assertNull(speaker.slackUserId());
     }
 
     @Test
@@ -199,7 +231,7 @@ public class TalkCommandTest {
         User speaker = submit(List.of("U123")).speakers().get(0);
 
         assertTrue(speaker.name().contains("U123"));
-        assertEquals("U123", speaker.slackUserId());
+        assertNull(speaker.slackUserId());
     }
 
     @Test
@@ -225,6 +257,6 @@ public class TalkCommandTest {
         assertEquals(2, speakers.size());
         assertEquals("jane@zenika.com", speakers.get(0).email());
         assertNull(speakers.get(1).email());
-        assertEquals("U456", speakers.get(1).slackUserId());
+        assertNull(speakers.get(1).slackUserId());
     }
 }

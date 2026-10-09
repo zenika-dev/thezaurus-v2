@@ -34,14 +34,31 @@ class MessageTemplateCatalogResourceTest {
         given().get(PATH)
                 .then()
                 .statusCode(200)
-                .body("", hasSize(1))
+                .body("", hasSize(2))
                 .body("[0].id", is("talk-reminder"))
                 .body("[0].previewContext.optionsPath", is("/api/admin/reminder-template/contexts"))
                 .body("[0].previewContext.label", is("Talk utilisé pour l’aperçu"))
                 .body("[0].label", is("Email de rappel"))
                 .body("[0].apiPath", is("/api/admin/reminder-template"))
+                .body("[0].hasSubject", is(true))
                 .body("[0].variables.name", hasItems("talkTitle", "talkDate", "conferenceName", "talksUrl", "speakers"))
                 .body("[0].conditions.name", hasItems("hasConference", "hasDate", "missingReplay", "missingAudience"))
-                .body("[0].links[0].variable", is("talksUrl"));
+                .body("[0].links[0].variable", is("talksUrl"))
+                .body("[1].id", is("talk-slack-reminder"))
+                .body("[1].label", is("Rappel Slack"))
+                .body("[1].apiPath", is("/api/admin/slack-reminder-template"))
+                .body("[1].hasSubject", is(false))
+                .body(
+                        "[1].variables.name",
+                        hasItems(
+                                "recipientMention",
+                                "speakerName",
+                                "speakers",
+                                "talkTitle",
+                                "talkDate",
+                                "conferenceName",
+                                "talkUrl",
+                                "talksUrl"))
+                .body("[1].links[0].variable", is("talkUrl"));
     }
 }

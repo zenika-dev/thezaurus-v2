@@ -113,6 +113,22 @@ public class UserRepository {
         return result;
     }
 
+    public User findBySlackUserId(String slackUserId) throws ExecutionException, InterruptedException {
+        if (slackUserId == null || slackUserId.isBlank()) {
+            return null;
+        }
+        ApiFuture<QuerySnapshot> future = firestore
+                .collection(COLLECTION_NAME)
+                .whereEqualTo("slackUserId", slackUserId)
+                .limit(1)
+                .get();
+        List<com.google.cloud.firestore.QueryDocumentSnapshot> docs =
+                future.get().getDocuments();
+        if (!docs.isEmpty()) {
+            return docs.getFirst().toObject(User.class);
+        }
+        return null;
+    }
     public User create(User user) throws ExecutionException, InterruptedException {
         DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(user.email());
         ApiFuture<WriteResult> result = docRef.set(user);

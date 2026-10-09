@@ -6,22 +6,15 @@ Il utilise uniquement la date propre du talk (`date`).
 La date doit être strictement antérieure au jour courant ; une date absente
 ou invalide est ignorée.
 
-L’email est collectif : son sujet, son corps HTML et ses destinataires potentiels
-sont produits par le même moteur que la prévisualisation administrateur (PR 138).
-Il faut enregistrer le modèle dans **Administration → Templates de messages**.
-Un modèle vide ou invalide et un talk sans adresse email n’entraînent aucun envoi.
+L’envoi de rappels supporte deux canaux configurables de manière indépendante :
+- **Email** : message collectif envoyé aux speakers du talk ayant activé la notification par email. Modèle géré dans **Administration → Templates de messages → Email de rappel**.
+- **Slack** : message direct individuel envoyé à chaque speaker du talk ayant activé la notification Slack (`notifiesOnSlack == true`), avec mention personnalisée (`recipientMention` / `<@slackUserId>`). Modèle géré dans **Administration → Templates de messages → Rappel Slack**.
 
-Avant l’envoi, les destinataires sont filtrés selon les préférences actuelles de
-leur compte dans la collection `users`. Seuls ceux ayant activé les notifications
-par email reçoivent le rappel ; un compte ou une préférence absent vaut refus.
-La prévisualisation affiche tous les speakers potentiels avant ce filtrage.
-Sans destinataire ayant accepté les emails, aucun envoi ni marquage n’a lieu.
-La préférence Slack est enregistrée, mais aucun rappel Slack n’est envoyé.
+Avant l’envoi, les destinataires sont filtrés selon les préférences actuelles de leur compte dans la collection `users`. Un compte ou une préférence absent vaut refus. La prévisualisation dans l'administration affiche tous les speakers potentiels avant ce filtrage.
 
-Après acceptation par le serveur SMTP, seul le champ `feedbackReminderSent` est
-mis à `true`. Les prochaines exécutions ignorent le talk, même s’il est ensuite
-édité. Les anciens documents sans ce champ sont considérés comme non relancés.
-Un échec d’envoi laisse le talk éligible pour le lendemain et n’arrête pas les suivants.
+Pour Slack, le `slackUserId` est utilisé s'il est déjà connu, ou résolu à la volée via l'API Slack `users.lookupByEmail` et persisté sur l'utilisateur.
+
+Si au moins un des deux canaux aboutit avec succès, le champ `feedbackReminderSent` est mis à `true`. Les prochaines exécutions ignorent le talk, même s’il est ensuite édité. Les anciens documents sans ce champ sont considérés comme non relancés. Un échec d’envoi sur tous les canaux laisse le talk éligible pour le lendemain et n’arrête pas les suivants.
 
 ## SMTP local avec Docker Compose
 

@@ -9,9 +9,17 @@ Object.defineProperty(Range.prototype, "getBoundingClientRect", { configurable: 
 afterEach(cleanup);
 
 const definition = {
+  format: "html",
   variables: [{ name: "talkTitle", label: "Titre du talk" }],
   conditions: [{ name: "hasConference", label: "Conférence renseignée" }],
   links: [{ variable: "talksUrl", label: "Lien vers Thezaurus", text: "Ouvrir Thezaurus" }],
+};
+
+const markdownDefinition = {
+  format: "markdown",
+  variables: [{ name: "recipientMention", label: "Mention Slack du destinataire" }],
+  conditions: [{ name: "hasConference", label: "Conférence renseignée" }],
+  links: [{ variable: "talkUrl", label: "Lien vers Thezaurus", text: "Ouvrir Thezaurus" }],
 };
 
 it("does not report a document change when saving or previewing disables the editor", async () => {
@@ -59,4 +67,32 @@ it("preserves visible Qute, supported formatting and variable links through an e
   render(<ReminderBodyEditor definition={definition} initialHtml={html} disabled={false} onChange={onChange} />);
   const reopened = await screen.findByRole("textbox", { name: "Corps du modèle" });
   expect(reopened.innerHTML).toBe(html);
+});
+
+it("edits in Markdown mode with formatting buttons when format is markdown", async () => {
+  const onChange = vi.fn();
+  const initialMarkdown = "Bonjour {recipientMention},\nBravo pour ton talk !";
+  render(<ReminderBodyEditor definition={markdownDefinition} initialHtml={initialMarkdown} disabled={false} onChange={onChange} />);
+  const textbox = await screen.findByRole("textbox", { name: "Corps du modèle" });
+  expect((textbox as HTMLTextAreaElement).value).toBe(initialMarkdown);
+
+  // Type directly in textarea
+  fireEvent.change(textbox, { target: { value: "Nouveau texte markdown" } });
+  expect(onChange).toHaveBeenCalledWith("Nouveau texte markdown");
+
+  // Click bold button
+  const boldButton = screen.getByRole("button", { name: "Gras" });
+  fireEvent.click(boldButton);
+  expect(onChange).toHaveBeenCalled();
+  expect(onChange.mock.lastCall![0]).toContain("*texte en gras*");
+
+  // Insert variable
+  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Insérer une variable dans le corps" }));
+  fireEvent.click(await screen.findByRole("option", { name: "Mention Slack du destinataire" }));
+  expect(onChange.mock.lastCall![0]).toContain("{recipientMention}");
+
+  // Insert predefined link
+  const linkButton = screen.getByRole("button", { name: "Lien vers Thezaurus" });
+  fireEvent.click(linkButton);
+  expect(onChange.mock.lastCall![0]).toContain("<{talkUrl}|Ouvrir Thezaurus>");
 });

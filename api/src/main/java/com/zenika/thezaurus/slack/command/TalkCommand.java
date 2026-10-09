@@ -88,6 +88,9 @@ public class TalkCommand implements SlackCommand {
     @Inject
     TalkService service;
 
+    @Inject
+    com.zenika.thezaurus.repository.UserRepository userRepository;
+
     public void register(App app) {
         app.command(TALK_COMMAND, this::command);
         app.viewSubmission("talk-submission-modal", this::talkSubmission);
@@ -203,9 +206,21 @@ public class TalkCommand implements SlackCommand {
         String conferenceName = form.text(Field.CONFERENCE);
         String conferenceDate = form.selectedDate(Field.DATE);
 
-        List<User> speakers = getSpeakers(ctx, form.selectedUsers(Field.SPEAKERS));
+        List<String> speakerIds = form.selectedUsers(Field.SPEAKERS);
+        if (speakerIds == null || speakerIds.isEmpty()) {
+            String submitterId = req.getPayload().getUser() != null
+                    ? req.getPayload().getUser().getId()
+                    : null;
+            if (submitterId != null && !submitterId.isBlank()) {
+                speakerIds = List.of(submitterId);
+            }
+        }
+        List<User> speakers = getSpeakers(ctx, speakerIds);
 
         Talk talk = new Talk(title, description, speakers, office, status, visibility);
+        if (conferenceDate != null && !conferenceDate.isBlank()) {
+            talk = talk.withDate(conferenceDate);
+        }
         if ((conferenceName != null && !conferenceName.isBlank()) || conferenceDate != null) {
             talk = talk.withConference(
                     new Conference(null, conferenceName, ConferencePeriod.singleDay(conferenceDate)));
@@ -226,38 +241,100 @@ public class TalkCommand implements SlackCommand {
     }
 
     /**
-     * Le slackUserId est renseigné dans tous les cas, y compris en erreur : c'est la seule clé qui
-     * permette de re-résoudre l'email d'un speaker plus tard (cf. notifications par mail).
+     * Résout le speaker sélectionné dans Slack.
+     * Le slackUserId est enregistré dans la collection users, tandis que le speaker embarqué
+     * dans le talk conserve uniquement son nom et son email, comme pour les talks créés via l'UI.
      */
     private User getSpeaker(ViewSubmissionContext ctx, String userId) {
+        logger.debugf("[TalkCommand] Résolution du speaker Slack pour userId: %s", userId);
+        String name = null;
+        String email = null;
         try {
             UsersInfoResponse userInfo = ctx.client().usersInfo(r -> r.user(userId));
+            logger.debugf(
+                    "[TalkCommand] Slack usersInfo pour %s : isOk=%s, error=%s, warning=%s, needed=%s",
+                    userId, userInfo.isOk(), userInfo.getError(), userInfo.getWarning(), userInfo.getNeeded());
 
-            if (!userInfo.isOk() || userInfo.getUser() == null) {
-                logger.error("Impossible de récupérer l'utilisateur " + userId + " : " + userInfo.getError());
-                return User.builder()
-                        .name("Utilisateur Inconnu (" + userId + ")")
-                        .slackUserId(userId)
-                        .build();
+            if (userInfo.isOk() && userInfo.getUser() != null) {
+                name = userInfo.getUser().getRealName();
+                if (name == null || name.isBlank()) {
+                    name = userInfo.getUser().getName();
+                }
+                var profile = userInfo.getUser().getProfile();
+                logger.debugf(
+                        "[TalkCommand] Slack user details: realName=%s, name=%s, profile=%s",
+                        userInfo.getUser().getRealName(),
+                        userInfo.getUser().getName(),
+                        profile != null
+                                ? ("email=" + profile.getEmail() + ", displayName=" + profile.getDisplayName())
+                                : "null");
+                if (profile != null) {
+                    email = profile.getEmail();
+                }
+            } else {
+                logger.errorf(
+                        "[TalkCommand] Impossible de récupérer l'utilisateur Slack %s : %s",
+                        userId, userInfo != null ? userInfo.getError() : "réponse nulle");
             }
-            String email = userInfo.getUser().getProfile() != null
-                    ? userInfo.getUser().getProfile().getEmail()
-                    : null;
-            if (email == null || email.isBlank()) {
-                logger.warn("Aucun email pour l'utilisateur " + userId
-                        + " : vérifier que le scope users:read.email est accordé au bot");
-            }
-            return User.builder()
-                    .name(userInfo.getUser().getRealName())
-                    .email(email)
-                    .slackUserId(userId)
-                    .build();
         } catch (IOException | SlackApiException e) {
-            logger.error("Erreur d'appel API Slack pour l'utilisateur " + userId, e);
-            return User.builder()
-                    .name("Erreur Réseau (" + userId + ")")
-                    .slackUserId(userId)
-                    .build();
+            logger.errorf(e, "[TalkCommand] Erreur d'appel API Slack pour l'utilisateur %s", userId);
         }
+
+        // 1. Si l'email n'a pas pu être récupéré depuis Slack, on tente de le trouver via le slackUserId en base
+        if (email == null || email.isBlank()) {
+            try {
+                User existingUser = userRepository.findBySlackUserId(userId);
+                if (existingUser != null) {
+                    email = existingUser.email();
+                    logger.infof(
+                            "[TalkCommand] Utilisateur trouvé en base via slackUserId %s : email=%s, name=%s",
+                            userId, email, existingUser.name());
+                    if (name == null || name.isBlank()) {
+                        name = existingUser.name();
+                    }
+                } else {
+                    logger.infof("[TalkCommand] Aucun utilisateur trouvé en base avec slackUserId=%s", userId);
+                }
+            } catch (ExecutionException | InterruptedException e) {
+                logger.errorf(e, "[TalkCommand] Erreur lors de la recherche par slackUserId %s", userId);
+            }
+        }
+
+        if (name == null || name.isBlank()) {
+            name = "Utilisateur Inconnu (" + userId + ")";
+        }
+
+        // 2. Si on a l'email, on synchronise le slackUserId dans la collection users par recherche sur l'email
+        if (email != null && !email.isBlank()) {
+            try {
+                User userInDb = userRepository.findByEmail(email);
+                if (userInDb != null) {
+                    if (userInDb.slackUserId() == null
+                            || !userInDb.slackUserId().equals(userId)) {
+                        logger.infof(
+                                "[TalkCommand] Mise à jour du slackUserId=%s pour l'utilisateur trouvé par email %s",
+                                userId, email);
+                        userRepository.updateSlackUserId(email, userId);
+                    }
+                } else {
+                    logger.infof(
+                            "[TalkCommand] Création de l'utilisateur %s (%s) avec slackUserId=%s", name, email, userId);
+                    userRepository.create(User.builder()
+                            .name(name)
+                            .email(email)
+                            .slackUserId(userId)
+                            .build());
+                }
+            } catch (ExecutionException | InterruptedException e) {
+                logger.errorf(e, "[TalkCommand] Erreur lors de la mise à jour du slackUserId pour %s", email);
+            }
+        } else {
+            logger.warnf(
+                    "[TalkCommand] Impossible de déterminer l'email pour le speaker Slack %s (%s). Le speaker sera enregistré sans email.",
+                    userId, name);
+        }
+
+        logger.infof("[TalkCommand] Speaker final pour le talk : name='%s', email='%s'", name, email);
+        return User.builder().name(name).email(email).build();
     }
 }

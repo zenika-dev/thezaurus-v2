@@ -33,6 +33,10 @@ public class ProfileResource {
     @Inject
     UserRepository userRepository;
 
+    @Inject
+    @org.eclipse.microprofile.config.inject.ConfigProperty(name = "thezaurus.slack.bot-token")
+    Optional<String> botToken;
+
     @PUT
     @Path("/office")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -77,21 +81,26 @@ public class ProfileResource {
         return RestResponse.ok(preferences);
     }
 
-    private static ProfileView toProfile(User user) {
+    private ProfileView toProfile(User user) {
+        boolean slackAvailable =
+                botToken != null && botToken.filter(token -> !token.isBlank()).isPresent();
         return new ProfileView(
                 user.name(),
                 user.email(),
                 new NotificationPreferences(user.notifiesByEmail(), user.notifiesOnSlack()),
-                user.slackUserId() != null && !user.slackUserId().isBlank(),
+                slackAvailable,
                 Office.fromValue(user.office()));
     }
 
-    /** {@code slackLinked} et non le {@code slackUserId} : la page n'a besoin que de la joignabilité. */
+    /**
+     * {@code slackAvailable} indique si l'intégration Slack est activée sur l'environnement
+     * (permettant la résolution à la volée du compte Slack si l'utilisateur active les notifications).
+     */
     public record ProfileView(
             @NotBlank String name,
             @NotBlank String email,
             @NotNull NotificationPreferences notificationPreferences,
-            boolean slackLinked,
+            boolean slackAvailable,
             Office office) {}
 
     public record NotificationPreferences(boolean email, boolean slack) {}

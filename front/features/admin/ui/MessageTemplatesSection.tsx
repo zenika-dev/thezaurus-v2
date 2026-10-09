@@ -87,8 +87,9 @@ function TemplateForm({ initial, definition, onDirtyChange, onBusyChange }: Temp
     enabled: !!context?.optionsPath,
   });
   const contextOptions = contexts.data?.pages.flatMap((page) => page.options ?? []).filter((option) => !!option.id) ?? [];
-  const dirty = subject !== (saved.subject ?? "") || bodyHtml !== (saved.bodyHtml ?? "");
-  const source = JSON.stringify({ subject, bodyHtml, contextId });
+  const hasSubject = definition.hasSubject !== false;
+  const dirty = (hasSubject ? subject !== (saved.subject ?? "") : false) || bodyHtml !== (saved.bodyHtml ?? "");
+  const source = JSON.stringify({ subject: hasSubject ? subject : "", bodyHtml, contextId });
   useUnsavedTemplate(dirty);
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
@@ -97,9 +98,13 @@ function TemplateForm({ initial, definition, onDirtyChange, onBusyChange }: Temp
   async function save() {
     setPending("save"); setError(""); setSuccess(false);
     try {
-      const updated = await reminderTemplateApi.save(definition.apiPath!, { subject, bodyHtml, revision: saved.revision ?? 0 });
+      const updated = await reminderTemplateApi.save(definition.apiPath!, {
+        subject: hasSubject ? subject : "",
+        bodyHtml,
+        revision: saved.revision ?? 0,
+      });
       // Keep the editor's serialisation as baseline: the server may normalise HTML.
-      setSaved({ ...updated, subject, bodyHtml });
+      setSaved({ ...updated, subject: hasSubject ? subject : "", bodyHtml });
       setConflict(false); setComparison(null); setSuccess(true);
     } catch (error) {
       if (error instanceof ReminderTemplateError && error.status === 409) setConflict(true);
@@ -120,7 +125,11 @@ function TemplateForm({ initial, definition, onDirtyChange, onBusyChange }: Temp
   async function renderPreview() {
     setPending("preview"); setError(""); setPreview(null);
     try {
-      const rendered = await reminderTemplateApi.preview(definition.apiPath!, { subject, bodyHtml, contextId });
+      const rendered = await reminderTemplateApi.preview(definition.apiPath!, {
+        subject: hasSubject ? subject : "",
+        bodyHtml,
+        contextId,
+      });
       setPreview(rendered); setPreviewSource(source);
     } catch (error) { setError(errorMessage(error)); }
     finally { setPending(null); }
@@ -133,13 +142,32 @@ function TemplateForm({ initial, definition, onDirtyChange, onBusyChange }: Temp
       {comparison && <div className="rounded-xl border border-border p-4">
         <h3 className="font-semibold">Version enregistrée par l’autre administrateur</h3>
         <p className="text-sm my-2">Comparez-la à votre texte conservé ci-dessous. L’enregistrement remplacera cette version.</p>
-        <p className="font-semibold">{comparison.subject}</p>
-        <PreviewBody html={comparison.bodyHtml ?? ""} />
+        {hasSubject && <p className="font-semibold">{comparison.subject}</p>}
+        {hasSubject ? (
+          <PreviewBody html={comparison.bodyHtml ?? ""} />
+        ) : (
+          <div className="bg-surface-muted rounded p-4 text-sm whitespace-pre-wrap">{comparison.bodyHtml}</div>
+        )}
       </div>}
-      <TextField label="Sujet" value={subject} required disabled={!!pending} fullWidth onChange={(event) => { setSubject(event.target.value); setSuccess(false); }} />
+      {hasSubject && (
+        <TextField
+          label="Sujet"
+          value={subject}
+          required
+          disabled={!!pending}
+          fullWidth
+          onChange={(event) => { setSubject(event.target.value); setSuccess(false); }}
+        />
+      )}
       <ReminderBodyEditor definition={definition} initialHtml={initial.bodyHtml ?? ""} disabled={!!pending} onChange={(html) => { setBodyHtml(html); setSuccess(false); }} />
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="contained" disabled={!!pending || conflict || !dirty || !subject.trim() || !bodyHtml.trim()} onClick={save}>{pending === "save" ? "Enregistrement…" : comparison ? "Enregistrer ma version après comparaison" : "Enregistrer"}</Button>
+        <Button
+          variant="contained"
+          disabled={!!pending || conflict || !dirty || (hasSubject && !subject.trim()) || !bodyHtml.trim()}
+          onClick={save}
+        >
+          {pending === "save" ? "Enregistrement…" : comparison ? "Enregistrer ma version après comparaison" : "Enregistrer"}
+        </Button>
         <span role="status" className="text-sm text-text-muted">{dirty ? "Modifications non enregistrées" : "Aucune modification en attente"}</span>
       </div>
       <section className="border-t border-border pt-5 flex flex-col gap-4" aria-labelledby="preview-heading">
@@ -147,12 +175,23 @@ function TemplateForm({ initial, definition, onDirtyChange, onBusyChange }: Temp
         {contexts.isError && <Alert severity="error" action={<Button onClick={() => contexts.refetch()}>Réessayer</Button>}>Impossible de charger les éléments pour l’aperçu.</Alert>}
         {context && <Autocomplete options={contextOptions} getOptionLabel={(option) => option.label ?? ""} getOptionKey={(option) => option.id ?? option.label ?? ""} isOptionEqualToValue={(a, b) => a.id === b.id} value={contextOptions.find((option) => option.id === contextId) ?? null} onChange={(_, option) => setContextId(option?.id ?? "")} loading={contexts.isPending} disabled={!!pending} noOptionsText="Aucun élément dans les pages chargées" loadingText="Chargement…" renderInput={(params) => <TextField {...params} label={context.label} />} />}
         {context && contexts.hasNextPage && <Button className="self-start!" disabled={!!pending || contexts.isFetchingNextPage} onClick={() => contexts.fetchNextPage()}>{contexts.isFetchingNextPage ? "Chargement…" : "Charger plus d’éléments"}</Button>}
-        <Button className="self-start!" variant="outlined" disabled={!!pending || (!!context && !contextId) || !subject.trim() || !bodyHtml.trim()} onClick={renderPreview}>{pending === "preview" ? "Génération…" : "Générer l’aperçu"}</Button>
+        <Button
+          className="self-start!"
+          variant="outlined"
+          disabled={!!pending || (!!context && !contextId) || (hasSubject && !subject.trim()) || !bodyHtml.trim()}
+          onClick={renderPreview}
+        >
+          {pending === "preview" ? "Génération…" : "Générer l’aperçu"}
+        </Button>
         {preview && <div className="rounded-xl border border-border p-4">
           {previewSource !== source && <Alert severity="info">Le contenu ou le contexte a changé. Générez à nouveau l’aperçu.</Alert>}
           <p className="text-sm break-words"><strong>À :</strong> {preview.to?.join(", ") || "Aucun destinataire renseigné"}</p>
-          <p className="my-3"><strong>Sujet :</strong> {preview.subject}</p>
-          <PreviewBody html={preview.bodyHtml ?? ""} />
+          {hasSubject && <p className="my-3"><strong>Sujet :</strong> {preview.subject}</p>}
+          {hasSubject ? (
+            <PreviewBody html={preview.bodyHtml ?? ""} />
+          ) : (
+            <div className="bg-surface-muted rounded p-4 text-sm whitespace-pre-wrap">{preview.bodyHtml}</div>
+          )}
         </div>}
       </section>
     </div>;

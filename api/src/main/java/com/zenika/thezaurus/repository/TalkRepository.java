@@ -130,7 +130,11 @@ public class TalkRepository {
      */
     private Talk toTalkOrNull(DocumentSnapshot doc) {
         try {
-            return doc.toObject(Talk.class);
+            Talk talk = doc.toObject(Talk.class);
+            if (talk != null && (talk.id() == null || talk.id().isBlank())) {
+                talk = talk.withId(doc.getId());
+            }
+            return talk;
         } catch (RuntimeException e) {
             logger.errorv(e, "Talk {0} illisible, document ignoré", doc.getId());
             return null;

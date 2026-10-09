@@ -1,6 +1,7 @@
 package com.zenika.thezaurus.repository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.api.core.ApiFutures;
@@ -37,6 +38,8 @@ public class UserRepositoryTest {
 
         Mockito.when(firestore.collection("users")).thenReturn(collection);
         Mockito.when(collection.limit(Mockito.anyInt())).thenReturn(query);
+        Mockito.when(collection.whereEqualTo(Mockito.anyString(), Mockito.any()))
+                .thenReturn(query);
         Mockito.when(collection.whereGreaterThanOrEqualTo(Mockito.anyString(), Mockito.any()))
                 .thenReturn(query);
         Mockito.when(query.whereGreaterThanOrEqualTo(Mockito.anyString(), Mockito.any()))
@@ -241,5 +244,59 @@ public class UserRepositoryTest {
         assertEquals(Set.of("name"), written.keySet());
         assertEquals("Jane Doe", written.get("name"));
         Mockito.verify(reference, Mockito.never()).set(Mockito.any());
+    }
+
+    @Test
+    public void testFindBySlackUserId() throws Exception {
+        User jane = User.builder()
+                .name("Jane Doe")
+                .email("jane@zenika.com")
+                .slackUserId("U123")
+                .build();
+        QueryDocumentSnapshot doc = documentOf(jane);
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(doc));
+
+        User result = repository.findBySlackUserId("U123");
+        assertEquals("jane@zenika.com", result.email());
+        assertEquals("Jane Doe", result.name());
+        assertEquals("U123", result.slackUserId());
+    }
+
+    @Test
+    public void testFindBySlackUserIdNullOrBlank() throws Exception {
+        assertNull(repository.findBySlackUserId(null));
+        assertNull(repository.findBySlackUserId("   "));
+    }
+
+    @Test
+    public void testFindByEmailsWithEmptyListReturnsEmptyMap() throws Exception {
+        Map<String, User> result = repository.findByEmails(List.of());
+        assertTrue(result.isEmpty());
+        Map<String, User> nullResult = repository.findByEmails(null);
+        assertTrue(nullResult.isEmpty());
+    }
+
+    @Test
+    public void testFindByEmailsBatchesViaGetAll() throws Exception {
+        DocumentReference janeRef = documentReferenceFor("jane@zenika.com");
+        DocumentReference johnRef = documentReferenceFor("john@zenika.com");
+
+        com.google.cloud.firestore.DocumentSnapshot janeDoc =
+                Mockito.mock(com.google.cloud.firestore.DocumentSnapshot.class);
+        Mockito.when(janeDoc.exists()).thenReturn(true);
+        Mockito.when(janeDoc.getId()).thenReturn("jane@zenika.com");
+        User jane = User.builder().name("Jane Updated").email("jane@zenika.com").build();
+        Mockito.when(janeDoc.toObject(User.class)).thenReturn(jane);
+
+        com.google.cloud.firestore.DocumentSnapshot johnDoc =
+                Mockito.mock(com.google.cloud.firestore.DocumentSnapshot.class);
+        Mockito.when(johnDoc.exists()).thenReturn(false);
+
+        Mockito.when(repository.firestore.getAll(Mockito.any(DocumentReference[].class)))
+                .thenReturn(ApiFutures.immediateFuture(List.of(janeDoc, johnDoc)));
+
+        Map<String, User> result = repository.findByEmails(List.of("jane@zenika.com", "john@zenika.com"));
+        assertEquals(1, result.size());
+        assertEquals("Jane Updated", result.get("jane@zenika.com").name());
     }
 }

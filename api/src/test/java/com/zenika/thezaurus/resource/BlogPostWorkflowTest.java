@@ -240,6 +240,7 @@ class BlogPostWorkflowTest {
             });
             return reference;
         });
+        when(firestore.getAll(any(DocumentReference[].class))).thenReturn(ApiFutures.immediateFuture(List.of()));
     }
 
     @Test

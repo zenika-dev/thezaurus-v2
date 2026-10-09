@@ -1,5 +1,9 @@
+_metadata:
+  major_version: 1
+  minor_version: 1
 display_information:
   name: TheZaurus
+  description: Application et bot Slack pour la gestion et le suivi des talks TheZaurus
 features:
   bot_user:
     display_name: TheZaurus
@@ -7,7 +11,7 @@ features:
   slash_commands:
     - command: /talk
       url: https://your-url.zenika.com/slack/events
-      description: Ajouter un talk 
+      description: Ajouter un talk
       should_escape: false
 oauth_config:
   redirect_urls:
@@ -15,10 +19,12 @@ oauth_config:
   scopes:
     bot:
       - commands
-      # users.info : nom réel des speakers sélectionnés dans la modale /talk
+      # users:read : lecture des informations des utilisateurs/speakers
       - users:read
-      # users.info : email des speakers, requis pour les notifications par mail
+      # users:read.email : lecture de l'email pour rattacher les speakers aux utilisateurs TheZaurus
       - users:read.email
+      # chat:write : envoi des messages directs de rappel de feedback post-talk
+      - chat:write
   pkce_enabled: false
 settings:
   interactivity:
