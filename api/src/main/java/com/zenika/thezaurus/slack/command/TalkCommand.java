@@ -122,8 +122,8 @@ public class TalkCommand implements SlackCommand {
 
     private InputBlock titleBlock() {
         return input(i -> i.blockId(Field.TITLE.blockId)
-                .element(plainTextInput(ti ->
-                        ti.actionId(Field.TITLE.actionId).placeholder(plainText("Le titre de votre présentation"))))
+                .element(plainTextInput(
+                        ti -> ti.actionId(Field.TITLE.actionId).placeholder(plainText("Le titre de votre talk"))))
                 .label(plainText("Titre")));
     }
 

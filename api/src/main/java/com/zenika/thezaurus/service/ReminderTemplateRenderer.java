@@ -5,7 +5,6 @@ import com.zenika.thezaurus.model.ReminderTemplatePreview;
 import com.zenika.thezaurus.model.ReminderTemplateView;
 import com.zenika.thezaurus.model.Talk;
 import io.quarkus.qute.Engine;
-import io.quarkus.qute.TemplateException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
 import java.net.URI;
@@ -75,35 +74,7 @@ public class ReminderTemplateRenderer {
     }
 
     private void validateSyntax(String source) {
-        int depth = 0;
-        boolean[] hasElse = new boolean[20];
-        for (int i = 0; i < source.length(); i++) {
-            if (source.charAt(i) == '}') throw invalid("Accolade fermante Qute inattendue.");
-            if (source.charAt(i) != '{') continue;
-            int end = source.indexOf('}', i);
-            if (end < 0) throw invalid("Balise Qute non fermée.");
-            String token = source.substring(i + 1, end).trim();
-            if (token.startsWith("#if ")) {
-                if (!CONDITIONS.contains(token.substring(4).trim()))
-                    throw invalid("Condition Qute inconnue : " + token);
-                if (++depth > 20) throw invalid("Trop de conditions imbriquées (maximum 20).");
-                hasElse[depth - 1] = false;
-            } else if (token.equals("/if")) {
-                if (--depth < 0) throw invalid("Fermeture de condition Qute inattendue.");
-            } else if (token.equals("#else")) {
-                if (depth == 0 || hasElse[depth - 1]) throw invalid("Bloc else Qute inattendu ou multiple.");
-                hasElse[depth - 1] = true;
-            } else if (!VARIABLES.contains(token)) {
-                throw invalid("Variable ou syntaxe Qute non autorisée : " + token);
-            }
-            i = end;
-        }
-        if (depth != 0) throw invalid("Condition Qute non fermée.");
-        try {
-            engine.parse(source);
-        } catch (TemplateException exception) {
-            throw invalid("Syntaxe Qute invalide : " + exception.getMessage());
-        }
+        ReminderTemplateValidator.validateSyntax(engine, source, VARIABLES, CONDITIONS);
     }
 
     public ReminderTemplatePreview render(String subject, String bodyHtml, Talk talk) {
