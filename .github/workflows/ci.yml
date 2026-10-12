@@ -44,7 +44,7 @@ jobs:
       # Résumé des tests Surefire dans le job summary (équivalent du rapport Vitest côté front).
       - name: Résumé des tests API
         if: ${{ !cancelled() }}
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         with:
           report_paths: api/target/surefire-reports/TEST-*.xml
           check_name: API test report
