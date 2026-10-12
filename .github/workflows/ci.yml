@@ -1,9 +1,10 @@
 name: CI
 
+# Sur main, c'est release.yml qui appelle ce workflow (workflow_call) : les tests
+# conditionnent le déploiement et ne tournent pas deux fois par commit.
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_call:
   workflow_dispatch:
 
 # Une seule exécution par branche/PR : les runs obsolètes sont annulés,
@@ -19,11 +20,14 @@ jobs:
   api:
     name: API (Quarkus)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: api
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup JDK 21
         uses: actions/setup-java@v6
@@ -36,6 +40,17 @@ jobs:
       # les tests unitaires et le build Quarkus (quarkus:build).
       - name: Build & tests
         run: ./mvnw -B -ntp verify
+
+      # Résumé des tests Surefire dans le job summary (équivalent du rapport Vitest côté front).
+      - name: Résumé des tests API
+        if: ${{ !cancelled() }}
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: api/target/surefire-reports/TEST-*.xml
+          check_name: API test report
+          # Pas de check run créé : évite d'avoir besoin de la permission checks: write
+          annotate_only: true
+          detailed_summary: true
 
       # `verify` régénère target/openapi/openapi.json depuis les annotations JAX-RS.
       # La copie versionnée (api/openapi.json) doit être strictement identique.
@@ -55,11 +70,14 @@ jobs:
   front:
     name: Front (Next.js)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: front
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       # front/.nvmrc fait foi ; garder le Dockerfile aligné (node:<version>-alpine).
       - name: Setup Node
@@ -86,6 +104,12 @@ jobs:
       # Régénère shared/api/schema.d.ts, shared/api/enums.ts et shared/api/contract.ts depuis api/openapi.json.
       - name: Régénération des types du contrat
         run: npm run generate:api
+
+      # Les fichiers générés sont versionnés : ils doivent correspondre à api/openapi.json.
+      - name: Vérification de la synchronisation des types générés
+        run: |
+          git diff --exit-code -- shared/api \
+            || { echo "::error::front/shared/api est obsolète. Lancez 'npm run generate:api' et committez le résultat."; exit 1; }
 
       - name: Lint
         run: npm run lint

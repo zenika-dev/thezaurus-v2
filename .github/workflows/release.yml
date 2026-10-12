@@ -1,36 +1,55 @@
 name: Release
 
+# Chaîne de prod : tests → images → déploiement Cloud Run.
+# Une image n'est construite (et poussée) que si les tests du même commit sont verts.
 on:
+  push:
+     
+    branches: [main ]
   workflow_dispatch: {}
 
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
 
 concurrency:
-  group: release-main
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
+  ci:
+    uses: ./.github/workflows/ci.yml
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+  version:
+    uses: ./.github/workflows/_version.yml
 
-      - name: Install release tooling
-        run: npm ci
+  image-api:
+    needs: [ci, version]
+    uses: ./.github/workflows/_image-api.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      version: ${{ needs.version.outputs.version }}
 
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+  image-front:
+    needs: [ci, version]
+    uses: ./.github/workflows/_image-front.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      version: ${{ needs.version.outputs.version }}
+
+  # Images référencées par digest (immuables) : ce qui est déployé est exactement
+  # ce qui a été construit, même si un tag est réécrit entre-temps.
+  deploy-production:
+    needs: [version, image-api, image-front]
+    uses: ./.github/workflows/_deploy.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: production
+      version: ${{ needs.version.outputs.version }}
+      api_image: ${{ needs.image-api.outputs.image }}
+      front_image: ${{ needs.image-front.outputs.image }}
