@@ -66,7 +66,7 @@ jobs:
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+          service_account: ${{ vars.WIF_AGENT_SERVICE_ACCOUNT }}
 
       # --agent_engine_id : met à jour l'instance existante au lieu d'en créer une nouvelle.
       - name: Déployer sur Agent Engine
