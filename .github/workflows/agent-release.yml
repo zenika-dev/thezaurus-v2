@@ -1,0 +1,79 @@
+name: Release talks-agent
+
+# Déploie talk_agent sur Vertex AI Agent Engine (mise à jour de l'instance existante).
+# Pas d'image Docker : `adk deploy agent_engine` envoie le code, Google construit le conteneur.
+on:
+  push:
+    branches: [main, feat/deploy-agent-ci]
+    paths:
+      - "agents/talks-agent/talk_agent/**"
+      - "agents/talks-agent/requirements.txt"
+      - ".github/workflows/agent-release.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Agent Engine (production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+     
+    concurrency:
+      group: deploy-agent-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      AGENT_ENGINE_REGION: ${{ vars.GCP_REGION }}
+      AGENT_ENGINE_ID: ${{ vars.AGENT_ENGINE_ID }}
+    steps:
+      - name: Vérifier la configuration de l'environnement
+        env:
+          REQUIRED: >-
+            GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
+            AGENT_ENGINE_REGION=${{ vars.GCP_REGION }}
+            AGENT_ENGINE_ID=${{ vars.AGENT_ENGINE_ID }}
+            WIF_PROVIDER=${{ vars.WIF_PROVIDER }}
+            WIF_SERVICE_ACCOUNT=${{ vars.WIF_SERVICE_ACCOUNT }}
+        run: |
+          MISSING=0
+          for pair in $REQUIRED; do
+            if [ -z "${pair#*=}" ]; then
+              echo "::error::Variable '${pair%%=*}' manquante dans l'environnement production"
+              MISSING=1
+            fi
+          done
+          exit $MISSING
+
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Même version d'ADK pour déployer que celle embarquée par l'agent.
+      - name: Installer ADK
+        run: pip install -r agents/talks-agent/requirements.txt
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      # --agent_engine_id : met à jour l'instance existante au lieu d'en créer une nouvelle.
+      - name: Déployer sur Agent Engine
+        run: |
+          adk deploy agent_engine \
+            --project "$GCP_PROJECT_ID" \
+            --region "$AGENT_ENGINE_REGION" \
+            --agent_engine_id "$AGENT_ENGINE_ID" \
+            --requirements_file agents/talks-agent/requirements.txt \
+            agents/talks-agent/talk_agent
