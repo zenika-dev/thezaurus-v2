@@ -22,7 +22,7 @@ class TalkReviewOutput(BaseModel):
 
 
 root_agent = Agent(
-    model='gemini-flash-latest',
+    model='gemini-3.5-flash',
     name='talk_agent',
     description="Relit le titre et l'abstract d'un talk de conférence et propose des améliorations structurées.",
     instruction="""Tu es un relecteur expert pour une conférence technique.
