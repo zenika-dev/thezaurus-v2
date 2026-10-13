@@ -4,7 +4,7 @@ name: Release talks-agent
 # Pas d'image Docker : `adk deploy agent_engine` envoie le code, Google construit le conteneur.
 on:
   push:
-    branches: [main, feat/deploy-agent-ci]
+    branches: [main]
     paths:
       - "agents/talks-agent/talk_agent/**"
       - "agents/talks-agent/requirements.txt"
