@@ -12,6 +12,56 @@
  */
 
 export interface paths {
+    "/api/admin/message-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageTemplateDefinition"][];
+                    };
+                };
+                /** @description Not Authorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/reminder-template": {
         parameters: {
             query?: never;
@@ -100,6 +150,58 @@ export interface paths {
                 };
             };
         };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/reminder-template/contexts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Contexts */
+        get: {
+            parameters: {
+                query?: {
+                    cursor?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TemplateContextPage"];
+                    };
+                };
+                /** @description Not Authorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1707,6 +1809,18 @@ export interface components {
             address?: string;
             postalCode?: string;
         };
+        MessageTemplateDefinition: {
+            id?: string;
+            label?: string;
+            description?: string;
+            apiPath?: string;
+            variables?: components["schemas"]["TemplateToken"][];
+            conditions?: components["schemas"]["TemplateToken"][];
+            links?: components["schemas"]["TemplateLink"][];
+            example?: string;
+            help?: string;
+            previewContext?: components["schemas"]["PreviewContext"];
+        };
         /** @enum {string} */
         MonthLabel: "Jan" | "Fév" | "Mar" | "Avr" | "Mai" | "Juin" | "Juil" | "Août" | "Sep" | "Oct" | "Nov" | "Déc";
         MonthlyActivity: {
@@ -1725,6 +1839,10 @@ export interface components {
         OfficePreference: {
             office?: components["schemas"]["Office"];
         };
+        PreviewContext: {
+            label?: string;
+            optionsPath?: string;
+        };
         ProfileView: {
             name: string;
             email: string;
@@ -1740,7 +1858,7 @@ export interface components {
         ReminderTemplatePreviewRequest: {
             subject?: string;
             bodyHtml?: string;
-            talkId?: string;
+            contextId?: string;
         };
         ReminderTemplateUpdate: {
             subject?: string;
@@ -1777,6 +1895,7 @@ export interface components {
             replay?: string;
             /** Format: int32 */
             audience?: number;
+            feedbackReminderSent?: boolean;
         };
         /** @enum {string} */
         TalkFormat: "quicky" | "conference" | "workshop";
@@ -1792,6 +1911,23 @@ export interface components {
         };
         /** @enum {string} */
         TalkStatus: "DRAFT" | "PLANNED" | "SUBMITTED" | "ACCEPTED" | "REJECTED" | "DONE";
+        TemplateContextOption: {
+            id?: string;
+            label?: string;
+        };
+        TemplateContextPage: {
+            options?: components["schemas"]["TemplateContextOption"][];
+            nextCursor?: string;
+        };
+        TemplateLink: {
+            variable?: string;
+            label?: string;
+            text?: string;
+        };
+        TemplateToken: {
+            name?: string;
+            label?: string;
+        };
         User: {
             name: string;
             email?: string;
