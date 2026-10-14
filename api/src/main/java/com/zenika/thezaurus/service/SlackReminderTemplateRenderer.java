@@ -1,13 +1,20 @@
 package com.zenika.thezaurus.service;
 
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheException;
+import com.github.mustachejava.MustacheFactory;
 import com.zenika.thezaurus.exception.ThezaurusException;
 import com.zenika.thezaurus.model.ReminderTemplatePreview;
 import com.zenika.thezaurus.model.ReminderTemplateView;
 import com.zenika.thezaurus.model.Talk;
 import com.zenika.thezaurus.model.User;
-import io.quarkus.qute.Engine;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -17,32 +24,24 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class SlackReminderTemplateRenderer {
-    private static final Set<String> VARIABLES = Set.of(
-            "recipientMention",
-            "speakerName",
-            "speakers",
-            "talkTitle",
-            "talkDate",
-            "conferenceName",
-            "talkUrl",
-            "talksUrl");
+    private static final Pattern CONTROL = Pattern.compile("\\{\\{\\s*(?:[#^/][a-zA-Z0-9_]+)\\s*}}");
 
-    private static final Set<String> CONDITIONS = ReminderTemplateMetadata.CONDITIONS.stream()
-            .map(condition -> condition.name())
-            .collect(Collectors.toUnmodifiableSet());
-
-    private static final Pattern CONTROL = Pattern.compile("\\{\\s*(?:#if\\s+(?:"
-            + CONDITIONS.stream().map(Pattern::quote).collect(Collectors.joining("|"))
-            + ")|#else|/if)\\s*}");
-
-    private final Engine engine = Engine.builder().addDefaults().build();
+    private final MustacheFactory plainMustacheFactory = new DefaultMustacheFactory() {
+        @Override
+        public void encode(String value, Writer writer) {
+            try {
+                writer.write(value);
+            } catch (IOException e) {
+                throw new MustacheException(e);
+            }
+        }
+    };
 
     @ConfigProperty(name = "thezaurus.public-url", defaultValue = "http://localhost:3000")
     String publicUrl;
@@ -51,7 +50,7 @@ public class SlackReminderTemplateRenderer {
         if (body == null || body.isBlank() || body.length() > 100_000) {
             throw invalid("Le corps du message est requis (100 000 caractères maximum).");
         }
-        validateSyntax(body);
+        compile(body);
         String stripped = CONTROL.matcher(body).replaceAll("").trim();
         if (stripped.isBlank()) {
             throw invalid("Le corps du message ne peut pas être vide.");
@@ -59,8 +58,12 @@ public class SlackReminderTemplateRenderer {
         return new ReminderTemplateView("", body.trim(), 0);
     }
 
-    private void validateSyntax(String source) {
-        ReminderTemplateValidator.validateSyntax(engine, source, VARIABLES, CONDITIONS);
+    private Mustache compile(String source) {
+        try {
+            return plainMustacheFactory.compile(new StringReader(source), "slack-template");
+        } catch (MustacheException exception) {
+            throw invalid("Syntaxe Mustache invalide : " + exception.getMessage());
+        }
     }
 
     public String render(String body, Talk talk, User recipient) {
@@ -93,7 +96,9 @@ public class SlackReminderTemplateRenderer {
                                 .distinct()
                                 .collect(Collectors.joining(", ")));
 
-        return engine.parse(body).data(data).render().trim();
+        StringWriter writer = new StringWriter();
+        compile(body).execute(writer, data);
+        return writer.toString().trim();
     }
 
     public ReminderTemplatePreview renderPreview(String body, Talk talk) {

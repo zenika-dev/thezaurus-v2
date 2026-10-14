@@ -108,9 +108,9 @@ class TalkFeedbackReminderServiceTest {
         });
         when(templates.get())
                 .thenReturn(new ReminderTemplateView(
-                        "Rappel {talkTitle}",
-                        "<p>Bonjour {speakers}</p>{#if missingReplay}<p>Replay manquant</p>{/if}"
-                                + "{#if missingAudience}<p>Audience manquante</p>{/if}<a href=\"{talksUrl}\">Compléter</a>",
+                        "Rappel {{talkTitle}}",
+                        "<p>Bonjour {{speakers}}</p>{{#missingReplay}}<p>Replay manquant</p>{{/missingReplay}}"
+                                + "{{#missingAudience}}<p>Audience manquante</p>{{/missingAudience}}<a href=\"{{talksUrl}}\">Compléter</a>",
                         1));
     }
 
@@ -273,9 +273,9 @@ class TalkFeedbackReminderServiceTest {
                 "|<p>Texte</p>",
                 "Sujet|",
                 "Sujet|<p><br></p>",
-                "Sujet|{unknown}",
-                "{#if hasConference}Sujet{/if}|<p>Bonjour</p>",
-                "Sujet|{#if hasConference}<p>Date</p>{/if}"
+                "Sujet|{{/hasDate}}orphan",
+                "{{/hasDate}}orphan|<p>Bonjour</p>",
+                "Sujet|{{#hasConference}}<p>Date</p>{{/hasConference}}"
             },
             delimiter = '|')
     void doesNotSendOrMarkWhenTheTemplateIsEmptyInvalidOrRendersEmpty(String subject, String body) throws Exception {
@@ -480,7 +480,7 @@ class TalkFeedbackReminderServiceTest {
                         .build());
         when(slackTemplates.get())
                 .thenReturn(new ReminderTemplateView(
-                        "", "Hello {recipientMention}, pense à renseigner *{talkTitle}* : <{talkUrl}|ici>", 1));
+                        "", "Hello {{recipientMention}}, pense à renseigner *{{talkTitle}}* : <{{talkUrl}}|ici>", 1));
 
         com.slack.api.methods.response.chat.ChatPostMessageResponse ok =
                 new com.slack.api.methods.response.chat.ChatPostMessageResponse();
@@ -513,7 +513,7 @@ class TalkFeedbackReminderServiceTest {
                         .emailNotificationsEnabled(false)
                         .slackNotificationsEnabled(false)
                         .build());
-        when(slackTemplates.get()).thenReturn(new ReminderTemplateView("", "Hello {recipientMention}", 1));
+        when(slackTemplates.get()).thenReturn(new ReminderTemplateView("", "Hello {{recipientMention}}", 1));
         when(slackUserResolver.resolveAndPersist("alice@example.com")).thenReturn(java.util.Optional.of("U_RESOLVED"));
 
         com.slack.api.methods.response.chat.ChatPostMessageResponse ok =
@@ -547,7 +547,7 @@ class TalkFeedbackReminderServiceTest {
                         .emailNotificationsEnabled(false)
                         .slackNotificationsEnabled(false)
                         .build());
-        when(slackTemplates.get()).thenReturn(new ReminderTemplateView("", "Hello {recipientMention}", 1));
+        when(slackTemplates.get()).thenReturn(new ReminderTemplateView("", "Hello {{recipientMention}}", 1));
         doThrow(new RuntimeException("SMTP failed")).when(mailer).send(any(Mail.class));
 
         com.slack.api.methods.response.chat.ChatPostMessageResponse ok =
@@ -581,7 +581,7 @@ class TalkFeedbackReminderServiceTest {
                         .emailNotificationsEnabled(false)
                         .slackNotificationsEnabled(false)
                         .build());
-        when(slackTemplates.get()).thenReturn(new ReminderTemplateView("", "Hello {recipientMention}", 1));
+        when(slackTemplates.get()).thenReturn(new ReminderTemplateView("", "Hello {{recipientMention}}", 1));
 
         com.slack.api.methods.response.chat.ChatPostMessageResponse error =
                 new com.slack.api.methods.response.chat.ChatPostMessageResponse();

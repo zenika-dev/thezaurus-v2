@@ -68,7 +68,7 @@ class TalkFeedbackReminderDeliveryTest {
         when(users.findByEmail("alice@example.com"))
                 .thenReturn(User.builder().emailNotificationsEnabled(true).build());
         when(templates.get())
-                .thenReturn(new ReminderTemplateView("Rappel {talkTitle}", "<p>Bonjour {speakers}</p>", 1));
+                .thenReturn(new ReminderTemplateView("Rappel {{talkTitle}}", "<p>Bonjour {{speakers}}</p>", 1));
         when(talks.findFeedbackReminderCandidates(any()))
                 .thenReturn(List.of(new Talk(
                         "talk-1",
