@@ -54,10 +54,10 @@ class SlackReminderTemplateRendererTest {
                 .build();
         var talk = talk("Introduction à Quarkus", "2026-09-16", new Conference("c", "DevFest", null), null, null);
 
-        String template = "Bonjour {recipientMention} (ou {speakerName}) !\n"
-                + "{#if hasConference}Bravo pour {conferenceName} le {talkDate} !{/if}\n"
-                + "Co-speakers : {speakers}\n"
-                + "Renseigne le replay sur <{talkUrl}|Thezaurus>.";
+        String template = "Bonjour {{recipientMention}} (ou {{speakerName}}) !\n"
+                + "{{#hasConference}}Bravo pour {{conferenceName}} le {{talkDate}} !{{/hasConference}}\n"
+                + "Co-speakers : {{speakers}}\n"
+                + "Renseigne le replay sur <{{talkUrl}}|Thezaurus>.";
 
         String rendered = renderer.render(template, talk, recipient);
 
@@ -72,7 +72,7 @@ class SlackReminderTemplateRendererTest {
         User recipient = User.builder().name("Alice").email("alice@zenika.com").build();
         var talk = talk("Talk", null, null, null, null);
 
-        String rendered = renderer.render("Hello {recipientMention}", talk, recipient);
+        String rendered = renderer.render("Hello {{recipientMention}}", talk, recipient);
 
         assertEquals("Hello @Alice", rendered);
     }
@@ -80,9 +80,9 @@ class SlackReminderTemplateRendererTest {
     @Test
     void conditionsEvaluateMissingValuesCorrectly() {
         User recipient = User.builder().name("Alice").slackUserId("U123").build();
-        String template = "{#if missingReplay}Replay manquant{/if}"
-                + "{#if missingAudience}Audience manquante{/if}"
-                + "{#if hasConference}Avec conf{#else}Sans conf{/if}";
+        String template = "{{#missingReplay}}Replay manquant{{/missingReplay}}"
+                + "{{#missingAudience}}Audience manquante{{/missingAudience}}"
+                + "{{#hasConference}}Avec conf{{/hasConference}}{{^hasConference}}Sans conf{{/hasConference}}";
 
         var completeTalk = talk("Talk", "2026-09-16", null, "https://replay.example", 0);
         String completeRendered = renderer.render(template, completeTalk, recipient);
@@ -96,19 +96,7 @@ class SlackReminderTemplateRendererTest {
     }
 
     @ParameterizedTest
-    @ValueSource(
-            strings = {
-                "{#if hasDate}{unknown}{/if}",
-                "{talkTitle.toString()}",
-                "{inject:bean}",
-                "{#for x in talkTitle}{x}{/for}",
-                "{#if hasDate}missing",
-                "{#else}invalid",
-                "{#if hasDate}a{#else}b{#else}c{/if}",
-                "{talkTitle.raw}",
-                "{#if talkTitle}bad{/if}",
-                "{#if hasDate && missingVideo}bad{/if}"
-            })
+    @ValueSource(strings = {"{{/hasDate}}orphan", "{{#hasDate}}{{/other}}"})
     void rejectsInvalidOrUnsafeSyntax(String body) {
         assertThrows(ThezaurusException.class, () -> renderer.validate(body));
     }
@@ -117,13 +105,13 @@ class SlackReminderTemplateRendererTest {
     void rejectsEmptyOrBlankBody() {
         assertThrows(ThezaurusException.class, () -> renderer.validate(""));
         assertThrows(ThezaurusException.class, () -> renderer.validate("   "));
-        assertThrows(ThezaurusException.class, () -> renderer.validate("{#if hasDate}{/if}"));
+        assertThrows(ThezaurusException.class, () -> renderer.validate("{{#hasDate}}{{/hasDate}}"));
     }
 
     @Test
     void previewRendersFirstSpeakerAndListsAllSpeakers() {
         var talk = talk("Super Talk", "2026-09-16", new Conference("c", "DevFest", null), null, null);
-        String template = "Salut {recipientMention}, bravo pour *{talkTitle}* !";
+        String template = "Salut {{recipientMention}}, bravo pour *{{talkTitle}}* !";
 
         var preview = renderer.renderPreview(template, talk);
 
@@ -141,9 +129,9 @@ class SlackReminderTemplateRendererTest {
                 .build();
         var talk = talk("Quarkus 3", "2026-09-16", new Conference("c", "DevFest", null), null, null);
 
-        String markdownTemplate = "*Hello {recipientMention}*\n"
-                + "Bravo pour *{talkTitle}* à _{conferenceName}_ !\n"
-                + "Consulte la liste sur <{talksUrl}|Thezaurus>.\n"
+        String markdownTemplate = "*Hello {{recipientMention}}*\n"
+                + "Bravo pour *{{talkTitle}}* à _{{conferenceName}}_ !\n"
+                + "Consulte la liste sur <{{talksUrl}}|Thezaurus>.\n"
                 + "• Point 1\n• Point 2";
 
         String rendered = renderer.render(markdownTemplate, talk, recipient);

@@ -27,7 +27,7 @@ class ReminderTemplateResourceTest {
     static final String PATH = "/api/admin/reminder-template";
 
     private Map<String, Object> update() {
-        return Map.of("subject", "Sujet", "bodyHtml", "<p>{talkTitle}</p>", "revision", 0);
+        return Map.of("subject", "Sujet", "bodyHtml", "<p>{{talkTitle}}</p>", "revision", 0);
     }
 
     @Test
@@ -65,8 +65,8 @@ class ReminderTemplateResourceTest {
     void adminReadsAndSavesTemplate() throws Exception {
         when(repository.get()).thenReturn(new ReminderTemplateView("", "", 0));
         given().get(PATH).then().statusCode(200).body("subject", is("")).body("revision", is(0));
-        when(repository.save("Sujet", "<p>{talkTitle}</p>", 0))
-                .thenReturn(new ReminderTemplateView("Sujet", "<p>{talkTitle}</p>", 1));
+        when(repository.save("Sujet", "<p>{{talkTitle}}</p>", 0))
+                .thenReturn(new ReminderTemplateView("Sujet", "<p>{{talkTitle}}</p>", 1));
         given().contentType(ContentType.JSON)
                 .body(update())
                 .put(PATH)
@@ -89,11 +89,11 @@ class ReminderTemplateResourceTest {
                 .statusCode(409)
                 .body("message", is("Version modifiée"));
         given().contentType(ContentType.JSON)
-                .body(Map.of("subject", "Sujet", "bodyHtml", "{#if hasDate}{unknown}{/if}", "revision", 0))
+                .body(Map.of("subject", "Sujet", "bodyHtml", "{{#hasDate}}missing", "revision", 0))
                 .put(PATH)
                 .then()
                 .statusCode(400)
-                .body("message", containsString("unknown"));
+                .body("message", containsString("Mustache"));
     }
 
     @Test
@@ -110,7 +110,7 @@ class ReminderTemplateResourceTest {
                 .body("options[0].id", is("one"))
                 .body("options[0].label", is("Mon talk"));
         when(talks.findById("one")).thenReturn(new Talk("one", "Mon talk", "description"));
-        var request = Map.of("subject", "Rappel {talkTitle}", "bodyHtml", "<p>{talkTitle}</p>", "contextId", "one");
+        var request = Map.of("subject", "Rappel {{talkTitle}}", "bodyHtml", "<p>{{talkTitle}}</p>", "contextId", "one");
         given().contentType(ContentType.JSON)
                 .body(request)
                 .post(PATH + "/preview")

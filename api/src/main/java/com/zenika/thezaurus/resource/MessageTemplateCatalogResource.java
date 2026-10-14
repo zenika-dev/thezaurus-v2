@@ -34,7 +34,7 @@ public class MessageTemplateCatalogResource {
                                 new TemplateToken("talksUrl", "Lien vers Thezaurus")),
                         ReminderTemplateMetadata.CONDITIONS,
                         List.of(new TemplateLink("talksUrl", "Lien vers Thezaurus", "Ouvrir Thezaurus")),
-                        "{#if hasConference}\nLors de {conferenceName}\n{#else}\nMerci pour votre talk {talkTitle}\n{/if}",
+                        "{{#hasConference}}\nLors de {{conferenceName}}\n{{/hasConference}}\n{{^hasConference}}\nMerci pour votre talk {{talkTitle}}\n{{/hasConference}}",
                         "Date et conférence absentes donnent un texte vide. Une audience de zéro est renseignée. Le lien ouvre la liste des talks.",
                         new MessageTemplateDefinition.PreviewContext(
                                 "Talk utilisé pour l’aperçu", "/api/admin/reminder-template/contexts")),
@@ -56,7 +56,7 @@ public class MessageTemplateCatalogResource {
                                 new TemplateToken("talksUrl", "Lien vers la liste des talks")),
                         ReminderTemplateMetadata.CONDITIONS,
                         List.of(new TemplateLink("talkUrl", "Lien vers Thezaurus", "Ouvrir Thezaurus")),
-                        "Bonjour {recipientMention},\n{#if hasConference}\nFélicitations pour ton talk à {conferenceName} !\n{#else}\nFélicitations pour ton talk *{talkTitle}* !\n{/if}\nPense à renseigner le replay et l'audience sur Thezaurus : <{talkUrl}|Ouvrir Thezaurus>.",
+                        "Bonjour {{recipientMention}},\n{{#hasConference}}\nFélicitations pour ton talk à {{conferenceName}} !\n{{/hasConference}}\n{{^hasConference}}\nFélicitations pour ton talk *{{talkTitle}}* !\n{{/hasConference}}\nPense à renseigner le replay et l'audience sur Thezaurus : <{{talkUrl}}|Ouvrir Thezaurus>.",
                         "Date et conférence absentes donnent un texte vide. Une audience de zéro est renseignée. Le lien ouvre Thezaurus.",
                         new MessageTemplateDefinition.PreviewContext(
                                 "Talk utilisé pour l’aperçu", "/api/admin/slack-reminder-template/contexts")));

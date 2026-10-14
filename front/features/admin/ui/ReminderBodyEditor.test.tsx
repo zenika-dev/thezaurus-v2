@@ -35,7 +35,7 @@ it("does not report a document change when saving or previewing disables the edi
   expect(onChange).not.toHaveBeenCalled();
 });
 
-it("inserts a Qute link through the standard link dialog", async () => {
+it("inserts a Mustache link through the standard link dialog", async () => {
   const onChange = vi.fn();
   render(<ReminderBodyEditor definition={definition} initialHtml="<p></p>" disabled={false} onChange={onChange} />);
   await screen.findByRole("textbox", { name: "Corps du modèle" });
@@ -43,25 +43,25 @@ it("inserts a Qute link through the standard link dialog", async () => {
   await waitFor(() => expect(linkButton.hasAttribute("disabled")).toBe(false));
   fireEvent.click(linkButton);
   fireEvent.change(await screen.findByRole("textbox", { name: /^Texte/ }), { target: { value: "Voir les talks" } });
-  fireEvent.change(screen.getByRole("textbox", { name: /^URL/ }), { target: { value: "{talksUrl}" } });
+  fireEvent.change(screen.getByRole("textbox", { name: /^URL/ }), { target: { value: "{{talksUrl}}" } });
   fireEvent.click(screen.getByRole("button", { name: "Appliquer" }));
   await waitFor(() => expect(onChange).toHaveBeenCalled());
-  expect(onChange.mock.lastCall![0]).toContain('<a href="{talksUrl}">Voir les talks</a>');
+  expect(onChange.mock.lastCall![0]).toContain('<a href="{{talksUrl}}">Voir les talks</a>');
 });
 
-it("preserves visible Qute, supported formatting and variable links through an editor round trip", async () => {
+it("preserves visible Mustache, supported formatting and variable links through an editor round trip", async () => {
   const onChange = vi.fn();
-  const initialHtml = '<p>{#if hasConference}</p><p><strong>{conferenceName}</strong> <span style="font-size: 24px">Conférence</span></p><p>{/if}</p><p><a href="{talksUrl}">Ouvrir Thezaurus</a></p>';
+  const initialHtml = '<p>{{#hasConference}}</p><p><strong>{{conferenceName}}</strong> <span style="font-size: 24px">Conférence</span></p><p>{{/hasConference}}</p><p><a href="{{talksUrl}}">Ouvrir Thezaurus</a></p>';
   const first = render(<ReminderBodyEditor definition={definition} initialHtml={initialHtml} disabled={false} onChange={onChange} />);
   const body = await screen.findByRole("textbox", { name: "Corps du modèle" });
-  expect(body.innerHTML).toContain('{#if hasConference}');
-  expect(body.innerHTML).toContain('href="{talksUrl}"');
+  expect(body.innerHTML).toContain('{{#hasConference}}');
+  expect(body.innerHTML).toContain('href="{{talksUrl}}"');
   fireEvent.mouseDown(screen.getByRole("combobox", { name: "Insérer une variable dans le corps" }));
   fireEvent.click(await screen.findByRole("option", { name: "Titre du talk" }));
   await waitFor(() => expect(onChange).toHaveBeenCalled());
   const html: string = onChange.mock.lastCall![0];
-  expect(html).toContain("{talkTitle}");
-  expect(html).toContain("<strong>{conferenceName}</strong>");
+  expect(html).toContain("{{talkTitle}}");
+  expect(html).toContain("<strong>{{conferenceName}}</strong>");
   expect(html).toContain("font-size: 24px");
   first.unmount();
   render(<ReminderBodyEditor definition={definition} initialHtml={html} disabled={false} onChange={onChange} />);
@@ -71,7 +71,7 @@ it("preserves visible Qute, supported formatting and variable links through an e
 
 it("edits in Markdown mode with formatting buttons when format is markdown", async () => {
   const onChange = vi.fn();
-  const initialMarkdown = "Bonjour {recipientMention},\nBravo pour ton talk !";
+  const initialMarkdown = "Bonjour {{recipientMention}},\nBravo pour ton talk !";
   render(<ReminderBodyEditor definition={markdownDefinition} initialHtml={initialMarkdown} disabled={false} onChange={onChange} />);
   const textbox = await screen.findByRole("textbox", { name: "Corps du modèle" });
   expect((textbox as HTMLTextAreaElement).value).toBe(initialMarkdown);
@@ -89,10 +89,10 @@ it("edits in Markdown mode with formatting buttons when format is markdown", asy
   // Insert variable
   fireEvent.mouseDown(screen.getByRole("combobox", { name: "Insérer une variable dans le corps" }));
   fireEvent.click(await screen.findByRole("option", { name: "Mention Slack du destinataire" }));
-  expect(onChange.mock.lastCall![0]).toContain("{recipientMention}");
+  expect(onChange.mock.lastCall![0]).toContain("{{recipientMention}}");
 
   // Insert predefined link
   const linkButton = screen.getByRole("button", { name: "Lien vers Thezaurus" });
   fireEvent.click(linkButton);
-  expect(onChange.mock.lastCall![0]).toContain("<{talkUrl}|Ouvrir Thezaurus>");
+  expect(onChange.mock.lastCall![0]).toContain("<{{talkUrl}}|Ouvrir Thezaurus>");
 });

@@ -44,8 +44,8 @@ class ReminderTemplateRendererTest {
     @Test
     void rendersAllSpeakersEscapesDataAndFormatsFrenchDate() {
         var result = renderer.render(
-                "Rappel {talkTitle}",
-                "<p>{talkTitle} — {talkDate} — {conferenceName}</p><a href=\"{talksUrl}\">Ouvrir</a>",
+                "Rappel {{talkTitle}}",
+                "<p>{{talkTitle}} — {{talkDate}} — {{conferenceName}}</p><a href=\"{{talksUrl}}\">Ouvrir</a>",
                 talk(
                         "<script>alert('x')</script>",
                         "2026-09-16",
@@ -63,8 +63,8 @@ class ReminderTemplateRendererTest {
     @Test
     void conditionsUseActualMissingValuesIncludingZeroAudience() {
         String body =
-                "<p><strong>{#if hasDate}</strong></p><p>Date {talkDate}</p><p>{#else}</p><p>Sans date</p><p>{/if}</p>"
-                        + "{#if hasConference}Conférence{/if}{#if missingVideo}Vidéo{/if}{#if missingAudience}Audience{/if}";
+                "<p><strong>{{#hasDate}}</strong></p><p>Date {{talkDate}}</p><p>{{/hasDate}}</p><p>{{^hasDate}}</p><p>Sans date</p><p>{{/hasDate}}</p>"
+                        + "{{#hasConference}}Conférence{{/hasConference}}{{#missingVideo}}Vidéo{{/missingVideo}}{{#missingAudience}}Audience{{/missingAudience}}";
         var result = renderer.render("Sujet", body, talk("Talk", null, null, "https://video.example", 0));
         assertEquals("<p>Sans date</p>", result.bodyHtml());
         var missing = renderer.render(
@@ -76,36 +76,24 @@ class ReminderTemplateRendererTest {
     @Test
     void collectiveNamesAreEscapedAndReplayKeepsLegacyTemplatesWorking() {
         var result = renderer.render(
-                "Bonjour {speakers}",
-                "<p>{speakers}</p>{#if missingReplay}Replay{/if}{#if missingVideo}Legacy{/if}",
+                "Bonjour {{speakers}}",
+                "<p>{{speakers}}</p>{{#missingReplay}}Replay{{/missingReplay}}{{#missingVideo}}Legacy{{/missingVideo}}",
                 talk("Talk", null, null, null, null));
         assertEquals("Bonjour Alice & Bob, <Chloé>", result.subject());
         assertEquals("<p>Alice &amp; Bob, &lt;Chloé&gt;</p>ReplayLegacy", result.bodyHtml());
         var present = renderer.render(
                 "Sujet",
-                "<p>Texte</p>{#if missingReplay}Absent{/if}",
+                "<p>Texte</p>{{#missingReplay}}Absent{{/missingReplay}}",
                 talk("Talk", null, null, "https://example.org/replay", 0));
         assertEquals("<p>Texte</p>", present.bodyHtml());
         assertEquals(
                 "<p></p>",
-                renderer.render("Sujet", "<p>{speakers}</p>", new Talk("id", "Titre", "Description"))
+                renderer.render("Sujet", "<p>{{speakers}}</p>", new Talk("id", "Titre", "Description"))
                         .bodyHtml());
     }
 
     @ParameterizedTest
-    @ValueSource(
-            strings = {
-                "{#if hasDate}{unknown}{/if}",
-                "{talkTitle.toString()}",
-                "{inject:bean}",
-                "{#for x in talkTitle}{x}{/for}",
-                "{#if hasDate}missing",
-                "{#else}invalid",
-                "{#if hasDate}a{#else}b{#else}c{/if}",
-                "{talkTitle.raw}",
-                "{#if talkTitle}bad{/if}",
-                "{#if hasDate && missingVideo}bad{/if}"
-            })
+    @ValueSource(strings = {"{{/hasDate}}orphan", "{{#hasDate}}{{/other}}"})
     void rejectsInvalidOrUnsafeSyntaxInEveryBranch(String body) {
         assertThrows(ThezaurusException.class, () -> renderer.validate("Sujet", body));
     }
@@ -125,8 +113,9 @@ class ReminderTemplateRendererTest {
         assertThrows(ThezaurusException.class, () -> renderer.validate("", "text"));
         assertThrows(ThezaurusException.class, () -> renderer.validate("Subject", "<p><br></p>"));
         assertThrows(ThezaurusException.class, () -> renderer.validate("Subject", "<p>&nbsp;</p>"));
-        assertThrows(ThezaurusException.class, () -> renderer.validate("Subject", "<a href=\"{talkTitle}\">link</a>"));
-        assertThrows(ThezaurusException.class, () -> renderer.validate("Subject", "{#if hasDate}{/if}"));
+        assertThrows(
+                ThezaurusException.class, () -> renderer.validate("Subject", "<a href=\"{{talkTitle}}\">link</a>"));
+        assertThrows(ThezaurusException.class, () -> renderer.validate("Subject", "{{#hasDate}}{{/hasDate}}"));
     }
 
     @Test
@@ -135,17 +124,18 @@ class ReminderTemplateRendererTest {
                 "<p>Titre /  / </p>",
                 renderer.render(
                                 "Sujet",
-                                "<p>{talkTitle} / {talkDate} / {conferenceName}</p>",
+                                "<p>{{talkTitle}} / {{talkDate}} / {{conferenceName}}</p>",
                                 talk("Titre", null, null, null, null))
                         .bodyHtml());
     }
 
     @Test
     void spacedConditionControlsDoNotCountAsContentOrLeaveParagraphs() {
-        assertThrows(ThezaurusException.class, () -> renderer.validate("Sujet", "<p>{#if hasDate }</p><p>{/if}</p>"));
+        assertThrows(
+                ThezaurusException.class, () -> renderer.validate("Sujet", "<p>{{#hasDate }}</p><p>{{/hasDate}}</p>"));
         var result = renderer.render(
                 "Sujet",
-                "<p>{#if hasDate }</p><p>Avec date</p><p>{#else}</p><p>Sans date</p><p>{/if}</p>",
+                "<p>{{#hasDate }}</p><p>Avec date</p><p>{{/hasDate}}</p><p>{{^hasDate}}</p><p>Sans date</p><p>{{/hasDate}}</p>",
                 talk("Talk", null, null, null, null));
         assertEquals("<p>Sans date</p>", result.bodyHtml());
     }

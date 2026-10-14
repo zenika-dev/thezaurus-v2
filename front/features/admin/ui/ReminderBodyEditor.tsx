@@ -1,53 +1,51 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
+import IconButton from "@mui/material/IconButton";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import Tooltip from "@mui/material/Tooltip";
 import {
-  formatHref, LinkBubbleMenu, LinkBubbleMenuHandler, MenuButtonBold,
-  MenuButtonBulletedList, MenuButtonEditLink, MenuButtonItalic,
-  MenuButtonOrderedList, MenuButtonUnderline, MenuControlsContainer,
-  MenuButton, MenuDivider, MenuSelect, MenuSelectFontSize, RichTextEditor,
+  Bold,
+  Code,
+  FileCode,
+  Italic,
+  Link as LinkIcon,
+  List,
+  ListOrdered,
+  Quote,
+  Strikethrough,
+} from "lucide-react";
+import {
+  LinkBubbleMenu,
+  LinkBubbleMenuHandler,
+  MenuButton,
+  MenuButtonBold,
+  MenuButtonBulletedList,
+  MenuButtonEditLink,
+  MenuButtonItalic,
+  MenuButtonOrderedList,
+  MenuButtonUnderline,
+  MenuControlsContainer,
+  MenuDivider,
+  MenuSelect,
+  MenuSelectFontSize,
+  RichTextEditor,
+  RichTextReadOnly,
 } from "mui-tiptap";
 import StarterKit from "@tiptap/starter-kit";
 import { FontSize, TextStyle } from "@tiptap/extension-text-style";
-import { Button, Divider, IconButton, MenuItem, Select, Tooltip } from "@mui/material";
-import {
-  Bold, Italic, Strikethrough, Code, FileCode, Quote, List, ListOrdered, Link as LinkIcon
-} from "lucide-react";
+import { type BackendMessageTemplateDefinition } from "@/shared/api";
 
-import type { BackendMessageTemplateDefinition } from "@/shared/api";
-
-export function ReminderBodyEditor({ initialHtml, disabled, onChange, definition }: {
-  definition: BackendMessageTemplateDefinition;
-  initialHtml: string;
-  disabled: boolean;
-  onChange: (html: string) => void;
-}) {
-  const isMarkdown = definition.format === "markdown" || definition.format === "md";
-
-  return (
-    <fieldset disabled={disabled} className="border-0 p-0 m-0 min-w-0">
-      <legend className="font-semibold mb-2">Corps du modèle</legend>
-      {isMarkdown ? (
-        <MarkdownTemplateEditor
-          definition={definition}
-          initialContent={initialHtml}
-          disabled={disabled}
-          onChange={onChange}
-        />
-      ) : (
-        <HtmlTemplateEditor
-          definition={definition}
-          initialHtml={initialHtml}
-          disabled={disabled}
-          onChange={onChange}
-        />
-      )}
-      <TemplateHelp definition={definition} isMarkdown={isMarkdown} />
-    </fieldset>
-  );
-}
-
-function HtmlTemplateEditor({ definition, initialHtml, disabled, onChange }: {
+function HtmlTemplateEditor({
+  definition,
+  initialHtml,
+  disabled,
+  onChange,
+}: {
   definition: BackendMessageTemplateDefinition;
   initialHtml: string;
   disabled: boolean;
@@ -55,7 +53,6 @@ function HtmlTemplateEditor({ definition, initialHtml, disabled, onChange }: {
 }) {
   return (
     <RichTextEditor
-      immediatelyRender={false}
       editable={!disabled}
       extensions={[
         StarterKit.configure({
@@ -64,7 +61,7 @@ function HtmlTemplateEditor({ definition, initialHtml, disabled, onChange }: {
           link: {
             openOnClick: false, autolink: false, linkOnPaste: false,
             HTMLAttributes: { target: null, rel: null, class: null },
-            isAllowedUri: (url) => definition.links?.some((link) => url === `{${link.variable}}`) === true || /^https?:\/\//i.test(url),
+            isAllowedUri: (url) => definition.links?.some((link) => url === `{{${link.variable}}}`) === true || /^https?:\/\//i.test(url),
           },
         }),
         TextStyle, FontSize, LinkBubbleMenuHandler,
@@ -96,24 +93,24 @@ function HtmlTemplateEditor({ definition, initialHtml, disabled, onChange }: {
         <MenuButtonEditLink tooltipLabel="Insérer ou modifier un lien" />
         <MenuDivider />
         <MenuSelect inputProps={{ "aria-label": "Insérer une variable dans le corps" }} value="" displayEmpty renderValue={() => "Variable"} disabled={!editor?.isEditable} onChange={(event) => {
-          if (event.target.value) editor?.chain().focus().insertContent({ type: "text", text: `{${event.target.value}}` }).run();
+          if (event.target.value) editor?.chain().focus().insertContent({ type: "text", text: `{{${event.target.value}}}` }).run();
         }}>
           {(definition.variables ?? []).map(({ name, label }) => <MenuItem key={name} value={name}>{label}</MenuItem>)}
         </MenuSelect>
         <MenuSelect inputProps={{ "aria-label": "Insérer une condition" }} value="" displayEmpty renderValue={() => "Condition"} disabled={!editor?.isEditable} onChange={(event) => {
           if (event.target.value) editor?.chain().focus().insertContent([
-            { type: "paragraph", content: [{ type: "text", text: `{#if ${event.target.value}}` }] },
+            { type: "paragraph", content: [{ type: "text", text: `{{#${event.target.value}}}` }] },
             { type: "paragraph", content: [{ type: "text", text: "Texte conditionnel à compléter" }] },
-            { type: "paragraph", content: [{ type: "text", text: "{/if}" }] },
+            { type: "paragraph", content: [{ type: "text", text: `{{/${event.target.value}}}` }] },
           ]).run();
         }}>
           {(definition.conditions ?? []).map(({ name, label }) => <MenuItem key={name} value={name}>{label}</MenuItem>)}
         </MenuSelect>
-        {(definition.links ?? []).map((link) => <MenuButton key={link.variable} tooltipLabel={link.label ?? "Insérer un lien"} disabled={!editor?.isEditable} onClick={() => editor?.chain().focus().insertContent({ type: "text", text: link.text, marks: [{ type: "link", attrs: { href: `{${link.variable}}` } }] }).run()}>{link.label}</MenuButton>)}
+        {(definition.links ?? []).map((link) => <MenuButton key={link.variable} tooltipLabel={link.label ?? "Insérer un lien"} disabled={!editor?.isEditable} onClick={() => editor?.chain().focus().insertContent({ type: "text", text: link.text, marks: [{ type: "link", attrs: { href: `{{${link.variable}}}` } }] }).run()}>{link.label}</MenuButton>)}
       </MenuControlsContainer>}
     >
       {() => <LinkBubbleMenu
-        formatHref={(value) => definition.links?.some((link) => value.trim() === `{${link.variable}}`) ? value.trim() : formatHref(value)}
+        formatHref={(value) => definition.links?.some((link) => value.trim() === `{{${link.variable}}}`) ? value.trim() : formatHref(value)}
         labels={{
           editLinkAddTitle: "Insérer un lien", editLinkEditTitle: "Modifier le lien",
           editLinkTextInputLabel: "Texte", editLinkHrefInputLabel: "URL",
@@ -136,12 +133,14 @@ function MarkdownTemplateEditor({
   disabled: boolean;
   onChange: (value: string) => void;
 }) {
+  const [prevInitialContent, setPrevInitialContent] = useState(initialContent);
   const [value, setValue] = useState(initialContent);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
+  if (prevInitialContent !== initialContent) {
+    setPrevInitialContent(initialContent);
     setValue(initialContent);
-  }, [initialContent]);
+  }
 
   const handleChange = (newVal: string) => {
     setValue(newVal);
@@ -276,7 +275,7 @@ function MarkdownTemplateEditor({
           disabled={disabled}
           sx={{ height: 32, fontSize: "0.875rem" }}
           onChange={(event) => {
-            if (event.target.value) insertText(`{${event.target.value}}`);
+            if (event.target.value) insertText(`{{${event.target.value}}}`);
           }}
         >
           {(definition.variables ?? []).map(({ name, label }) => (
@@ -293,7 +292,7 @@ function MarkdownTemplateEditor({
           sx={{ height: 32, fontSize: "0.875rem" }}
           onChange={(event) => {
             if (event.target.value) {
-              insertText(`{#if ${event.target.value}}\nTexte conditionnel à compléter\n{/if}\n`);
+              insertText(`{{#${event.target.value}}}\nTexte conditionnel à compléter\n{{/${event.target.value}}}\n`);
             }
           }}
         >
@@ -308,7 +307,7 @@ function MarkdownTemplateEditor({
             variant="outlined"
             disabled={disabled}
             sx={{ height: 32, fontSize: "0.75rem", textTransform: "none" }}
-            onClick={() => insertText(`<${link.variable ? `{${link.variable}}` : "https://"}|${link.text || link.label}>`)}
+            onClick={() => insertText(`<${link.variable ? `{{${link.variable}}}` : "https://"}|${link.text || link.label}>`)}
           >
             {link.label}
           </Button>
@@ -335,7 +334,7 @@ function TemplateHelp({ definition, isMarkdown }: { definition: BackendMessageTe
       <summary className="cursor-pointer">Variables et conditions : aide à la rédaction</summary>
       <p>
         {isMarkdown
-          ? "Les balises Qute et la syntaxe Markdown Slack (*gras*, _italique_, <url|texte>) sont prises en charge. Leur valeur est remplacée dans l’aperçu."
+          ? "Les balises Mustache et la syntaxe Markdown Slack (*gras*, _italique_, <url|texte>) sont prises en charge. Leur valeur est remplacée dans l’aperçu."
           : "Les balises restent visibles dans l’éditeur. Leur valeur est remplacée dans l’aperçu. Placez les balises de condition dans des paragraphes séparés, sans mise en forme à l’intérieur des balises."}
       </p>
       <pre className="whitespace-pre-wrap bg-surface-muted rounded p-3">{definition.example}</pre>
@@ -346,5 +345,59 @@ function TemplateHelp({ definition, isMarkdown }: { definition: BackendMessageTe
         ))}
       </ul>
     </details>
+  );
+}
+
+export function ReminderBodyEditor({
+  definition,
+  initialHtml,
+  disabled,
+  onChange,
+}: {
+  definition: BackendMessageTemplateDefinition;
+  initialHtml: string;
+  disabled: boolean;
+  onChange: (html: string) => void;
+}) {
+  const isMarkdown = definition.format === "markdown";
+
+  return (
+    <fieldset className="border-0 p-0 m-0">
+      <legend className="sr-only">Corps du modèle</legend>
+      {isMarkdown ? (
+        <MarkdownTemplateEditor
+          definition={definition}
+          initialContent={initialHtml}
+          disabled={disabled}
+          onChange={onChange}
+        />
+      ) : (
+        <HtmlTemplateEditor
+          definition={definition}
+          initialHtml={initialHtml}
+          disabled={disabled}
+          onChange={onChange}
+        />
+      )}
+      <TemplateHelp definition={definition} isMarkdown={isMarkdown} />
+    </fieldset>
+  );
+}
+
+function formatHref(url: string) {
+  const clean = url.trim();
+  if (!clean) return "";
+  if (/^https?:\/\//i.test(clean)) return clean;
+  return `https://${clean}`;
+}
+
+export function ReminderBodyReadOnly({ html }: { html: string }) {
+  return (
+    <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, p: 2, bgcolor: "background.paper" }}>
+      <RichTextReadOnly
+        extensions={[StarterKit, TextStyle, FontSize]}
+        content={html}
+      />
+    </Box>
   );
 }

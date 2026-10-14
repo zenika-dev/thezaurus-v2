@@ -20,7 +20,7 @@ function mount() {
 }
 
 beforeEach(() => {
-  vi.mocked(reminderTemplateApi.contexts).mockReset().mockResolvedValue({ options: [{ id: 'talk-1', label: 'Qute en pratique — 2026-09-16' }] });
+  vi.mocked(reminderTemplateApi.contexts).mockReset().mockResolvedValue({ options: [{ id: 'talk-1', label: 'Mustache en pratique — 2026-09-16' }] });
   vi.mocked(reminderTemplateApi.list).mockReset().mockResolvedValue([{ id: 'test', label: 'Modèle de test', apiPath: '/api/admin/test-template', variables: [], conditions: [], links: [], previewContext: { label: "Contexte fourni par le backend", optionsPath: "/api/admin/test-contexts" } }]);
   vi.mocked(reminderTemplateApi.get).mockReset().mockResolvedValue({ subject: "", bodyHtml: "", revision: 0 });
   vi.mocked(reminderTemplateApi.save).mockReset().mockImplementation(async (_path, data) => ({ subject: data.subject ?? "", bodyHtml: data.bodyHtml ?? "", revision: 1 }));
@@ -83,7 +83,7 @@ it("loads backend-defined models and protects a dirty draft when switching", asy
   fireEvent.click(await screen.findByRole("option", { name: "Nouveau modèle" }));
   expect(confirmation).toHaveBeenCalled();
   expect(reminderTemplateApi.get).not.toHaveBeenCalledWith("/api/admin/future");
-  expect((screen.getByRole("textbox", { name: /Sujet/ }) as HTMLInputElement).value).toBe("Rappel {talkTitle}");
+  expect((screen.getByRole("textbox", { name: /Sujet/ }) as HTMLInputElement).value).toBe("Rappel {{talkTitle}}");
   confirmation.mockReturnValue(true);
   fireEvent.mouseDown(screen.getByRole("combobox", { name: "Modèle" }));
   fireEvent.click(await screen.findByRole("option", { name: "Nouveau modèle" }));
@@ -96,8 +96,8 @@ it("loads backend-defined models and protects a dirty draft when switching", asy
 });
 
 async function edit() {
-  fireEvent.change(await screen.findByRole("textbox", { name: /Sujet/ }), { target: { value: "Rappel {talkTitle}" } });
-  fireEvent.change(screen.getByRole("textbox", { name: "Corps du modèle" }), { target: { value: "<p>{#if missingVideo}Ajoutez la vidéo{/if}</p>" } });
+  fireEvent.change(await screen.findByRole("textbox", { name: /Sujet/ }), { target: { value: "Rappel {{talkTitle}}" } });
+  fireEvent.change(screen.getByRole("textbox", { name: "Corps du modèle" }), { target: { value: "<p>{{#missingVideo}}Ajoutez la vidéo{{/missingVideo}}</p>" } });
 }
 
 describe("modèle de rappel", () => {
@@ -112,10 +112,11 @@ describe("modèle de rappel", () => {
     expect(reminderTemplateApi.save).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await screen.findByText("Modèle enregistré.");
-    expect(reminderTemplateApi.save).toHaveBeenCalledWith("/api/admin/test-template", { subject: "Rappel {talkTitle}", bodyHtml: "<p>{#if missingVideo}Ajoutez la vidéo{/if}</p>", revision: 0 });
-    const after = new Event("beforeunload", { cancelable: true });
-    window.dispatchEvent(after);
-    expect(after.defaultPrevented).toBe(false);
+    await waitFor(() => {
+      const after = new Event("beforeunload", { cancelable: true });
+      window.dispatchEvent(after);
+      expect(after.defaultPrevented).toBe(false);
+    });
   });
 
   it("preserves the local draft on conflict and requires comparison before saving with the latest revision", async () => {
@@ -127,22 +128,22 @@ describe("modèle de rappel", () => {
     vi.mocked(reminderTemplateApi.get).mockResolvedValueOnce({ subject: "Autre version", bodyHtml: "<p>Autre texte</p>", revision: 7 });
     fireEvent.click(screen.getByRole("button", { name: "Recharger pour comparer" }));
     await screen.findByText("Autre version");
-    expect((screen.getByRole("textbox", { name: /Sujet/ }) as HTMLInputElement).value).toBe("Rappel {talkTitle}");
+    expect((screen.getByRole("textbox", { name: /Sujet/ }) as HTMLInputElement).value).toBe("Rappel {{talkTitle}}");
     expect((screen.getByRole("textbox", { name: "Corps du modèle" }) as HTMLTextAreaElement).value).toContain("Ajoutez la vidéo");
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer ma version après comparaison" }));
     await screen.findByText("Modèle enregistré.");
-    expect(reminderTemplateApi.save).toHaveBeenLastCalledWith("/api/admin/test-template", expect.objectContaining({ revision: 7, subject: "Rappel {talkTitle}" }));
+    expect(reminderTemplateApi.save).toHaveBeenLastCalledWith("/api/admin/test-template", expect.objectContaining({ revision: 7, subject: "Rappel {{talkTitle}}" }));
   });
 
   it("previews the unsaved draft for the selected real talk in a sandbox without saving", async () => {
-    vi.mocked(reminderTemplateApi.preview).mockResolvedValue({ subject: "Rappel Qute en pratique", bodyHtml: "<p>Ajoutez la vidéo</p>", to: ["alice@example.com", "bob@example.com"] });
+    vi.mocked(reminderTemplateApi.preview).mockResolvedValue({ subject: "Rappel Mustache en pratique", bodyHtml: "<p>Ajoutez la vidéo</p>", to: ["alice@example.com", "bob@example.com"] });
     mount(); await edit();
     const talk = screen.getByRole("combobox", { name: "Contexte fourni par le backend" });
     fireEvent.mouseDown(talk);
-    fireEvent.click(await screen.findByRole("option", { name: /Qute en pratique/ }));
+    fireEvent.click(await screen.findByRole("option", { name: /Mustache en pratique/ }));
     fireEvent.click(screen.getByRole("button", { name: "Générer l’aperçu" }));
     await screen.findByText(/alice@example.com, bob@example.com/);
-    expect(reminderTemplateApi.preview).toHaveBeenCalledWith("/api/admin/test-template", expect.objectContaining({ subject: "Rappel {talkTitle}", contextId: "talk-1" }));
+    expect(reminderTemplateApi.preview).toHaveBeenCalledWith("/api/admin/test-template", expect.objectContaining({ subject: "Rappel {{talkTitle}}", contextId: "talk-1" }));
     expect(reminderTemplateApi.save).not.toHaveBeenCalled();
     const frame = screen.getByTitle("Corps de l’email");
     expect(frame.getAttribute("sandbox")).toBe("");
@@ -157,25 +158,24 @@ describe("modèle de rappel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await screen.findByText("Variable inconnue : secret");
     await waitFor(() => expect((screen.getByRole("button", { name: "Enregistrer" }) as HTMLButtonElement).disabled).toBe(false));
-    expect((screen.getByRole("textbox", { name: /Sujet/ }) as HTMLInputElement).value).toBe("Rappel {talkTitle}");
+    expect((screen.getByRole("textbox", { name: /Sujet/ }) as HTMLInputElement).value).toBe("Rappel {{talkTitle}}");
   });
 
   it("supports template with hasSubject: false (omits subject field and saves)", async () => {
     vi.mocked(reminderTemplateApi.list).mockResolvedValue([
       { id: "slack", label: "Rappel Slack", apiPath: "/api/admin/slack-reminder", hasSubject: false, variables: [] },
     ]);
-    vi.mocked(reminderTemplateApi.get).mockResolvedValue({ bodyHtml: "Initial Slack text", revision: 0 });
+    vi.mocked(reminderTemplateApi.get).mockResolvedValue({ subject: "", bodyHtml: "Initial Slack text", revision: 0 });
     mount();
     const editor = await screen.findByRole("textbox", { name: "Corps du modèle" });
     expect(screen.queryByRole("textbox", { name: /Sujet/ })).toBeNull();
-    fireEvent.change(editor, { target: { value: "Hello {recipientMention}" } });
+    fireEvent.change(editor, { target: { value: "Hello {{recipientMention}}" } });
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await screen.findByText("Modèle enregistré.");
     expect(reminderTemplateApi.save).toHaveBeenCalledWith("/api/admin/slack-reminder", {
       subject: "",
-      bodyHtml: "Hello {recipientMention}",
+      bodyHtml: "Hello {{recipientMention}}",
       revision: 0,
     });
   });
 });
-
