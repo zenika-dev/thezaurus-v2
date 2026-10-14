@@ -22,9 +22,9 @@ import jakarta.ws.rs.WebApplicationException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Objects;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -200,7 +200,9 @@ public class TalkRepository {
             }
             if (canEdit == null) transaction.create(reference, payload);
             else transaction.set(reference, payload);
-            return talk.withConference(current).withDate((String) payload.get("date")).withFeedbackReminderSent(Boolean.TRUE.equals(reminderSent));
+            return talk.withConference(current)
+                    .withDate((String) payload.get("date"))
+                    .withFeedbackReminderSent(Boolean.TRUE.equals(reminderSent));
         });
     }
 
