@@ -76,6 +76,18 @@ class TalkFeedbackReminderServiceTest {
                         .email(invocation.getArgument(0))
                         .emailNotificationsEnabled(true)
                         .build());
+        when(users.findByEmails(any())).thenAnswer(invocation -> {
+            java.util.Collection<String> emails = invocation.getArgument(0);
+            if (emails == null) return Map.of();
+            Map<String, User> map = new java.util.HashMap<>();
+            for (String e : emails) {
+                User u = users.findByEmail(e);
+                if (u != null) {
+                    map.put(e.toLowerCase(), u);
+                }
+            }
+            return map;
+        });
         when(templates.get())
                 .thenReturn(new ReminderTemplateView(
                         "Rappel {talkTitle}",
@@ -288,6 +300,24 @@ class TalkFeedbackReminderServiceTest {
         verify(mailer).send(mail.capture());
         assertTrue(mail.getValue().getHtml().contains("Audience manquante"));
         assertFalse(mail.getValue().getHtml().contains("Replay manquant"));
+        verify(talks).markFeedbackReminderSent("talk-1");
+    }
+
+    @Test
+    void sendsWhenTalkDateIsNullButConferenceDateIsInThePast() throws Exception {
+        Talk talk = candidate(
+                TalkStatus.ACCEPTED,
+                null,
+                new ConferencePeriod("2020-01-10", "2020-01-12", DatePrecision.DAY),
+                null,
+                null,
+                List.of(User.builder().name("Alice").email("alice@example.com").build()),
+                false);
+        when(talks.findFeedbackReminderCandidates(any())).thenReturn(List.of(talk));
+
+        service.sendReminders();
+
+        verify(mailer).send(any(Mail.class));
         verify(talks).markFeedbackReminderSent("talk-1");
     }
 

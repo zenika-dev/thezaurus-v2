@@ -83,6 +83,36 @@ public class UserRepository {
         return null;
     }
 
+    public Map<String, User> findByEmails(java.util.Collection<String> emails)
+            throws ExecutionException, InterruptedException {
+        if (emails == null || emails.isEmpty()) {
+            return Map.of();
+        }
+        List<String> distinctEmails = emails.stream()
+                .filter(e -> e != null && !e.isBlank())
+                .map(String::trim)
+                .distinct()
+                .toList();
+        if (distinctEmails.isEmpty()) {
+            return Map.of();
+        }
+        DocumentReference[] docRefs = distinctEmails.stream()
+                .map(email -> firestore.collection(COLLECTION_NAME).document(email))
+                .toArray(DocumentReference[]::new);
+
+        List<DocumentSnapshot> snapshots = firestore.getAll(docRefs).get();
+        Map<String, User> result = new HashMap<>();
+        for (DocumentSnapshot doc : snapshots) {
+            if (doc.exists()) {
+                User user = doc.toObject(User.class);
+                if (user != null && doc.getId() != null) {
+                    result.put(doc.getId().trim().toLowerCase(), user);
+                }
+            }
+        }
+        return result;
+    }
+
     public User create(User user) throws ExecutionException, InterruptedException {
         DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(user.email());
         ApiFuture<WriteResult> result = docRef.set(user);

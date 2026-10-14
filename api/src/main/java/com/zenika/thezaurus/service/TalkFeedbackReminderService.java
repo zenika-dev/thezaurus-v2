@@ -65,6 +65,8 @@ public class TalkFeedbackReminderService {
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             LOG.warn("Envoi des rappels interrompu.");
+        } catch (Exception error) {
+            LOG.errorv(error, "Erreur lors de l'exécution du batch de rappels post-talk.");
         }
     }
 
@@ -78,7 +80,24 @@ public class TalkFeedbackReminderService {
             return;
         }
         LocalDate today = LocalDate.now(ZoneId.of(timeZone));
-        for (Talk talk : talks.findFeedbackReminderCandidates(today)) {
+        var candidates = talks.findFeedbackReminderCandidates(today);
+        if (candidates.isEmpty()) return;
+
+        java.util.Set<String> allEmails = new java.util.HashSet<>();
+        for (Talk talk : candidates) {
+            if (talk.speakers() != null) {
+                for (com.zenika.thezaurus.model.User speaker : talk.speakers()) {
+                    if (speaker != null
+                            && speaker.email() != null
+                            && !speaker.email().isBlank()) {
+                        allEmails.add(speaker.email().trim().toLowerCase());
+                    }
+                }
+            }
+        }
+        var userMap = users.findByEmails(allEmails);
+
+        for (Talk talk : candidates) {
             if (!eligible(talk, today)) continue;
             try {
                 var message = renderer.render(template.subject(), template.bodyHtml(), talk);
@@ -90,7 +109,10 @@ public class TalkFeedbackReminderService {
                                 .isBlank()) continue;
                 var recipients = new ArrayList<String>();
                 for (String email : message.to()) {
-                    var user = users.findByEmail(email);
+                    var user = userMap.get(email.trim().toLowerCase());
+                    if (user == null) {
+                        user = users.findByEmail(email);
+                    }
                     if (user != null && user.notifiesByEmail()) recipients.add(email);
                 }
                 if (recipients.isEmpty()) continue;
@@ -105,15 +127,44 @@ public class TalkFeedbackReminderService {
         }
     }
 
+    private String effectiveDate(Talk talk) {
+        if (talk.date() != null && !talk.date().isBlank()) {
+            return talk.date().trim();
+        }
+        if (talk.conference() != null && talk.conference().getDate() != null) {
+            String end = talk.conference().getDate().getEnd();
+            String start = talk.conference().getDate().getStart();
+            if (end != null && !end.isBlank()) {
+                if (start != null && !start.isBlank()) {
+                    try {
+                        LocalDate startDate = LocalDate.parse(start.trim());
+                        LocalDate endDate = LocalDate.parse(end.trim());
+                        if (startDate.isAfter(endDate)) {
+                            return null;
+                        }
+                    } catch (DateTimeParseException ignored) {
+                        return null;
+                    }
+                }
+                return end.trim();
+            }
+            if (start != null && !start.isBlank()) {
+                return start.trim();
+            }
+        }
+        return null;
+    }
+
     private boolean eligible(Talk talk, LocalDate today) {
         if (talk.feedbackReminderSent()
                 || (talk.status() != TalkStatus.ACCEPTED && talk.status() != TalkStatus.DONE)
                 || (talk.replay() != null && !talk.replay().isBlank() && talk.audience() != null)) return false;
-        if (talk.date() == null || talk.date().isBlank()) {
+        String dateStr = effectiveDate(talk);
+        if (dateStr == null) {
             return false;
         }
         try {
-            return LocalDate.parse(talk.date().trim()).isBefore(today);
+            return LocalDate.parse(dateStr).isBefore(today);
         } catch (DateTimeParseException ignored) {
             return false;
         }

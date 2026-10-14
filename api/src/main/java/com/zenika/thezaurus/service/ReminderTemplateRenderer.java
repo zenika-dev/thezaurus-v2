@@ -108,7 +108,7 @@ public class ReminderTemplateRenderer {
 
     public ReminderTemplatePreview render(String subject, String bodyHtml, Talk talk) {
         ReminderTemplateView template = validate(subject, bodyHtml);
-        String date = date(talk.date());
+        String date = date(effectiveDate(talk));
         String conference =
                 talk.conference() == null ? "" : text(talk.conference().getName());
         Map<String, Object> data = new HashMap<>();
@@ -207,6 +207,34 @@ public class ReminderTemplateRenderer {
 
     private static String escape(String value) {
         return Entities.escape(value).replace("\"", "&quot;").replace("'", "&#39;");
+    }
+
+    private static String effectiveDate(Talk talk) {
+        if (talk.date() != null && !talk.date().isBlank()) {
+            return talk.date().trim();
+        }
+        if (talk.conference() != null && talk.conference().getDate() != null) {
+            String end = talk.conference().getDate().getEnd();
+            String start = talk.conference().getDate().getStart();
+            if (end != null && !end.isBlank()) {
+                if (start != null && !start.isBlank()) {
+                    try {
+                        LocalDate startDate = LocalDate.parse(start.trim());
+                        LocalDate endDate = LocalDate.parse(end.trim());
+                        if (startDate.isAfter(endDate)) {
+                            return null;
+                        }
+                    } catch (DateTimeParseException ignored) {
+                        return null;
+                    }
+                }
+                return end.trim();
+            }
+            if (start != null && !start.isBlank()) {
+                return start.trim();
+            }
+        }
+        return null;
     }
 
     private static String date(String value) {

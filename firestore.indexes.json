@@ -1,0 +1,19 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "talks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "feedbackReminderSent",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
