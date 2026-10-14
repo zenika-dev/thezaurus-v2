@@ -129,6 +129,7 @@ public class UserRepository {
         }
         return null;
     }
+
     public User create(User user) throws ExecutionException, InterruptedException {
         DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(user.email());
         ApiFuture<WriteResult> result = docRef.set(user);
