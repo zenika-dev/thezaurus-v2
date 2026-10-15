@@ -5,6 +5,7 @@ import com.zenika.thezaurus.exception.ThezaurusException;
 import com.zenika.thezaurus.model.Talk;
 import com.zenika.thezaurus.model.TalkStatus;
 import com.zenika.thezaurus.model.User;
+import com.zenika.thezaurus.model.Visibility;
 import com.zenika.thezaurus.repository.ReminderTemplateRepository;
 import com.zenika.thezaurus.repository.SlackReminderTemplateRepository;
 import com.zenika.thezaurus.repository.TalkRepository;
@@ -268,6 +269,7 @@ public class TalkFeedbackReminderService {
     private boolean eligible(Talk talk, LocalDate today) {
         if (talk.feedbackReminderSent()
                 || (talk.status() != TalkStatus.ACCEPTED && talk.status() != TalkStatus.DONE)
+                || talk.visibility() != Visibility.PUBLIC
                 || (talk.replay() != null && !talk.replay().isBlank() && talk.audience() != null)) return false;
         String dateStr = effectiveDate(talk);
         if (dateStr == null) {
