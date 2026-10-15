@@ -301,11 +301,13 @@ public class TalkRepositoryTest {
     @Test
     public void findFeedbackReminderCandidatesQueriesOnlyUnsentAcceptedOrDoneTalks() throws Exception {
         var query = Mockito.mock(com.google.cloud.firestore.Query.class);
+        var visibilityQuery = Mockito.mock(com.google.cloud.firestore.Query.class);
         var statusQuery = Mockito.mock(com.google.cloud.firestore.Query.class);
         var dateQuery = Mockito.mock(com.google.cloud.firestore.Query.class);
         LocalDate today = LocalDate.of(2026, 10, 5);
         Mockito.when(collection.whereEqualTo("feedbackReminderSent", false)).thenReturn(query);
-        Mockito.when(query.whereIn("status", List.of(TalkStatus.ACCEPTED.name(), TalkStatus.DONE.name())))
+        Mockito.when(query.whereEqualTo("visibility", "PUBLIC")).thenReturn(visibilityQuery);
+        Mockito.when(visibilityQuery.whereIn("status", List.of(TalkStatus.ACCEPTED.name(), TalkStatus.DONE.name())))
                 .thenReturn(statusQuery);
         Mockito.when(statusQuery.whereLessThan("date", "2026-10-05")).thenReturn(dateQuery);
         Mockito.when(dateQuery.get()).thenReturn(ApiFutures.immediateFuture(snapshot));
@@ -319,7 +321,8 @@ public class TalkRepositoryTest {
 
         assertEquals(List.of(valid), candidates);
         Mockito.verify(collection).whereEqualTo("feedbackReminderSent", false);
-        Mockito.verify(query).whereIn("status", List.of(TalkStatus.ACCEPTED.name(), TalkStatus.DONE.name()));
+        Mockito.verify(query).whereEqualTo("visibility", "PUBLIC");
+        Mockito.verify(visibilityQuery).whereIn("status", List.of(TalkStatus.ACCEPTED.name(), TalkStatus.DONE.name()));
         Mockito.verify(statusQuery).whereLessThan("date", "2026-10-05");
     }
 
