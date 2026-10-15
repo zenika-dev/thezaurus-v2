@@ -146,6 +146,18 @@ class TalkFeedbackReminderServiceTest {
             Integer audience,
             List<User> speakers,
             boolean sent) {
+        return candidate(status, date, period, replay, audience, speakers, sent, Visibility.PUBLIC);
+    }
+
+    private static Talk candidate(
+            TalkStatus status,
+            String date,
+            ConferencePeriod period,
+            String replay,
+            Integer audience,
+            List<User> speakers,
+            boolean sent,
+            Visibility visibility) {
         return new Talk(
                 "talk-1",
                 "Java & Qute",
@@ -154,7 +166,7 @@ class TalkFeedbackReminderServiceTest {
                 "Lyon",
                 period == null ? null : new Conference(null, "Conférence", period),
                 status,
-                Visibility.PUBLIC,
+                visibility,
                 "Conference",
                 date,
                 null,
@@ -175,6 +187,13 @@ class TalkFeedbackReminderServiceTest {
                 Arguments.of(
                         "already reminded",
                         candidate(TalkStatus.ACCEPTED, yesterday, null, null, null, speakers, true)),
+                Arguments.of(
+                        "private visibility",
+                        candidate(
+                                TalkStatus.ACCEPTED, yesterday, null, null, null, speakers, false, Visibility.PRIVATE)),
+                Arguments.of(
+                        "null visibility",
+                        candidate(TalkStatus.ACCEPTED, yesterday, null, null, null, speakers, false, null)),
                 Arguments.of("today", candidate(TalkStatus.ACCEPTED, today, null, null, null, speakers, false)),
                 Arguments.of(
                         "future",
@@ -595,5 +614,46 @@ class TalkFeedbackReminderServiceTest {
         verify(mailer).send(any(Mail.class));
         verify(slackClient, times(1)).chatPostMessage(any(com.slack.api.RequestConfigurator.class));
         verify(talks).markFeedbackReminderSent("talk-1");
+    }
+
+    @Test
+    void sendsReminderForPublicTalkButIgnoresPrivateTalk() throws Exception {
+        Talk publicTalk = candidate(
+                        TalkStatus.ACCEPTED,
+                        LocalDate.now().minusDays(1).toString(),
+                        null,
+                        null,
+                        null,
+                        List.of(User.builder()
+                                .name("Alice")
+                                .email("alice@example.com")
+                                .build()),
+                        false,
+                        Visibility.PUBLIC)
+                .withId("talk-public");
+
+        Talk privateTalk = candidate(
+                        TalkStatus.ACCEPTED,
+                        LocalDate.now().minusDays(1).toString(),
+                        null,
+                        null,
+                        null,
+                        List.of(User.builder()
+                                .name("Bob")
+                                .email("bob@example.com")
+                                .build()),
+                        false,
+                        Visibility.PRIVATE)
+                .withId("talk-private");
+
+        when(talks.findFeedbackReminderCandidates(any())).thenReturn(List.of(publicTalk, privateTalk));
+
+        service.sendReminders();
+
+        var mail = org.mockito.ArgumentCaptor.forClass(Mail.class);
+        verify(mailer, times(1)).send(mail.capture());
+        assertEquals(List.of("alice@example.com"), mail.getValue().getTo());
+        verify(talks).markFeedbackReminderSent("talk-public");
+        verify(talks, never()).markFeedbackReminderSent("talk-private");
     }
 }
