@@ -9,50 +9,25 @@ import {
 
 export function useTalksMutations() {
   const queryClient = useQueryClient();
-  const queryKey = queryKeys.talks.lists();
 
   const createTalk = useMutation({
     mutationFn: (talk: TalkData) => createTalkAction(talk),
-    onMutate: async (newTalk) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<TalkData[]>(queryKey);
-      queryClient.setQueryData<TalkData[]>(queryKey, (old = []) => [...old, newTalk]);
-      return { previous };
-    },
-    onError: (_err, _talk, ctx) => {
-      queryClient.setQueryData(queryKey, ctx?.previous);
-    },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.talks.all });
     },
   });
 
   const updateTalk = useMutation({
     mutationFn: (talk: TalkData) => updateTalkAction(talk),
-    onSuccess: (updated) => {
-      queryClient.setQueryData<TalkData[]>(queryKey, (old = []) =>
-        old.map(talk => talk.id === updated.id ? updated : talk));
-    },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.talks.all });
     },
   });
 
   const deleteTalk = useMutation({
     mutationFn: (id: string) => deleteTalkAction(id),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<TalkData[]>(queryKey);
-      queryClient.setQueryData<TalkData[]>(queryKey, (old = []) =>
-        old.filter((t) => t.id !== id)
-      );
-      return { previous };
-    },
-    onError: (_err, _id, ctx) => {
-      queryClient.setQueryData(queryKey, ctx?.previous);
-    },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.talks.all });
     },
   });
 

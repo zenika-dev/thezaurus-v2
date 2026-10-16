@@ -18,10 +18,9 @@ export function BlogPosts() {
   const [open, setOpen] = useState(false);
   const { createPost } = usePostsMutations();
 
-
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-8 pb-0 flex flex-col min-h-full">
+      <div className="flex justify-between items-center mb-6 shrink-0">
         <div>
           <h1 className="text-[34px] leading-[1.235] font-bold text-text m-0 tracking-[0.25px]">Blog Posts</h1>
           <p className="text-[14px] leading-[1.43] text-text-muted m-0 tracking-[0.15px]">

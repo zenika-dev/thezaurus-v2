@@ -27,16 +27,40 @@ public class BlogPostResourceTest {
 
     @Test
     public void testList() throws Exception {
-        Mockito.when(service.findAll())
-                .thenReturn(Collections.singletonList(new BlogPost("1", "Titre", "https://blog.zenika.com/article")));
+        BlogPost post = new BlogPost("1", "Titre", "https://blog.zenika.com/article");
+        Mockito.when(service.findPaged(0, 10, null, false))
+                .thenReturn(new com.zenika.thezaurus.model.PagedResult<>(Collections.singletonList(post), 1, 0, 10, 1));
 
         given().when()
                 .get("/blog-posts")
                 .then()
                 .statusCode(200)
-                .body("size()", is(1))
-                .body("[0].id", is("1"))
-                .body("[0].title", is("Titre"));
+                .body("total", is(1))
+                .body("page", is(0))
+                .body("pageSize", is(10))
+                .body("totalPages", is(1))
+                .body("items.size()", is(1))
+                .body("items[0].id", is("1"))
+                .body("items[0].title", is("Titre"));
+    }
+
+    @Test
+    public void testListWithParams() throws Exception {
+        BlogPost post = new BlogPost("2", "Titre 2", "https://blog.zenika.com/article2");
+        Mockito.when(service.findPaged(1, 25, BlogPostStatus.IDEA, true))
+                .thenReturn(
+                        new com.zenika.thezaurus.model.PagedResult<>(Collections.singletonList(post), 55, 1, 25, 3));
+
+        given().when()
+                .get("/blog-posts?page=1&pageSize=25&status=IDEA&personal=true")
+                .then()
+                .statusCode(200)
+                .body("total", is(55))
+                .body("page", is(1))
+                .body("pageSize", is(25))
+                .body("totalPages", is(3))
+                .body("items.size()", is(1))
+                .body("items[0].id", is("2"));
     }
 
     @Test

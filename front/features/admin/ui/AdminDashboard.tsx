@@ -21,7 +21,7 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-8 pb-0 flex flex-col min-h-full">
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">

@@ -22,7 +22,13 @@ it("transmet séparément les dates prévue et réelle et restitue l’agence lo
     creationDate: "2026-01-20T00:00:00", publicationDate: "2026-01-12T00:00:00",
     actualPublicationDate: "2026-01-10T00:00:00", office: "nantes",
   });
-  expect(await postApi.getPosts()).toEqual([post]);
+  expect(await postApi.getPosts()).toEqual({
+    items: [post],
+    total: 1,
+    page: 0,
+    pageSize: 1,
+    totalPages: 1,
+  });
 });
 
 it("transmet explicitement les dates effacées sans en recréer", async () => {
@@ -31,4 +37,28 @@ it("transmet explicitement les dates effacées sans en recréer", async () => {
   await postApi.updatePost({ id: "article", title: "Idée", writers: [{ name: "Alice" }], status: "IDEA", tags: [], creationDate: "", publicationDate: "", actualPublicationDate: "" });
   const request: RequestInit = fetch.mock.calls[0]?.[1] ?? {};
   expect(JSON.parse(String(request.body))).toMatchObject({ creationDate: null, publicationDate: null, actualPublicationDate: null });
+});
+
+it("transmet les paramètres de pagination et de filtrage à l'API", async () => {
+  let requestedUrl = "";
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+    requestedUrl = url;
+    return Response.json({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+      totalPages: 0,
+    });
+  }));
+
+  const res = await postApi.getPosts({ page: 1, pageSize: 10, status: "DRAFT", personal: true });
+  expect(requestedUrl).toContain("/blog-posts?page=1&pageSize=10&status=DRAFT&personal=true");
+  expect(res).toEqual({
+    items: [],
+    total: 0,
+    page: 1,
+    pageSize: 10,
+    totalPages: 0,
+  });
 });

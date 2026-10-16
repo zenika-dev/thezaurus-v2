@@ -21,7 +21,7 @@ export function TalkDashboard() {
   const handleSubmit = createTalk;
 
   return (
-    <div className="p-8">
+    <div className="p-8 pb-0 flex flex-col min-h-full">
       {/* Header — always rendered, independent of data */}
       <div className="flex justify-between items-center mb-6">
         <div>
