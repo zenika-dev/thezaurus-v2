@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
-import { ContributionFilters } from "@/shared/ui/ContributionFilters";
-import { isContributor } from "@/entities/user/lib/isContributor";
+import { ContributionFilters, PaginationBar } from "@/shared/ui";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -17,6 +15,7 @@ import { agencyLabels, talkStatusConfig } from "@/entities/talk";
 import { SpeakerChip } from "@/entities/user";
 import dynamic from "next/dynamic";
 import { useTalks } from "@/features/talks/model";
+import { usePaginationUrlParams } from "@/shared/lib";
 import { StatusTag, VisibilityTag } from "./TalkTags";
 
 const TalkDetailsDialog = dynamic(
@@ -25,34 +24,46 @@ const TalkDetailsDialog = dynamic(
 );
 
 export function TalkTable() {
-  const { data: session } = useSession();
-  const [personalOnly, setPersonalOnly] = useState(false);
   const [selectedTalkId, setSelectedTalkId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<"All" | TalkStatus>("All");
-  const { talks, updateTalk, deleteTalk } = useTalks();
+  const {
+    page,
+    pageSize,
+    status,
+    personal,
+    setStatus,
+    setPersonal,
+    setPage,
+    setPageSize,
+    resetFilters,
+    apiParams,
+  } = usePaginationUrlParams(TalkStatus);
+
+  const { talks, total, totalPages, updateTalk, deleteTalk } = useTalks(apiParams);
 
   const selectedTalk = talks.find((talkItem) => talkItem.id === selectedTalkId) ?? null;
 
   const handleUpdate = updateTalk;
   const handleDelete = deleteTalk;
 
-  const filteredTalks = talks.filter((talk) =>
-    (statusFilter === "All" || talk.status === statusFilter) &&
-    (!personalOnly || isContributor(talk.speakers, session?.user?.email)),
-  );
-
   return (
-    <>
-      <ContributionFilters
-        statuses={TalkStatus} labels={talkStatusConfig}
-        status={statusFilter} onStatusChange={setStatusFilter}
-        personalLabel="Mes talks" personalOnly={personalOnly} onPersonalChange={setPersonalOnly}
-      />
+    <div className="flex flex-col flex-1">
+      <div className="mb-4 shrink-0">
+        <ContributionFilters
+          statuses={TalkStatus}
+          labels={talkStatusConfig}
+          status={status}
+          onStatusChange={setStatus}
+          personalLabel="Mes talks"
+          personalOnly={personal}
+          onPersonalChange={setPersonal}
+          onReset={resetFilters}
+        />
+      </div>
 
       <TableContainer
         component={Paper}
         variant="outlined"
-        className="border! border-primary! rounded-2xl! overflow-hidden! bg-surface!"
+        className="border! border-primary! rounded-2xl! overflow-hidden! bg-surface! mb-4"
       >
         <Table>
           <TableHead className="bg-surface-muted!">
@@ -67,14 +78,14 @@ export function TalkTable() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredTalks.length === 0 ? (
+            {talks.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center" className="py-8! text-text-muted!">
                   Aucun talk ne correspond à ces critères.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredTalks.map((talk) => (
+              talks.map((talk) => (
                 <TableRow key={talk.id} hover>
                   <TableCell>
                     <span
@@ -126,6 +137,16 @@ export function TalkTable() {
         </Table>
       </TableContainer>
 
+      <PaginationBar
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        label="Talks par page :"
+      />
+
       <TalkDetailsDialog
         talk={selectedTalk}
         open={!!selectedTalkId}
@@ -133,6 +154,6 @@ export function TalkTable() {
         onUpdate={handleUpdate}
         onDelete={handleDelete}
       />
-    </>
+    </div>
   );
 }

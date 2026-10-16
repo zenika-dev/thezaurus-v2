@@ -1,10 +1,12 @@
 package com.zenika.thezaurus.resource;
 
+import com.zenika.thezaurus.model.PagedResult;
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.Talk;
 import com.zenika.thezaurus.model.TalkFormat;
 import com.zenika.thezaurus.model.TalkReviewRequest;
 import com.zenika.thezaurus.model.TalkReviewResponse;
+import com.zenika.thezaurus.model.TalkStatus;
 import com.zenika.thezaurus.service.TalkReviewService;
 import com.zenika.thezaurus.service.TalkService;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -13,16 +15,17 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -43,8 +46,13 @@ public class TalkResource {
     SecurityIdentity identity;
 
     @GET
-    public List<Talk> list() throws ExecutionException, InterruptedException {
-        return service.findAll();
+    public PagedResult<Talk> list(
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+            @QueryParam("status") TalkStatus status,
+            @QueryParam("personal") @DefaultValue("false") boolean personal)
+            throws ExecutionException, InterruptedException {
+        return service.findPaged(page, pageSize, status, personal);
     }
 
     @GET
