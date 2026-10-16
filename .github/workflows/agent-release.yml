@@ -100,5 +100,6 @@ jobs:
             --project "$GCP_PROJECT_ID" \
             --region "$AGENT_ENGINE_REGION" \
             --update-only \
+            --service-name talk_agent \
             --no-confirm-project \
             --update-env-vars="OTEL_RESOURCE_ATTRIBUTES=service.version=${{ github.sha }}"
