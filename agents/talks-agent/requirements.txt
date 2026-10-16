@@ -1,3 +1,0 @@
-google-adk==2.11.0
-google-cloud-aiplatform[adk,agent_engines]==2.4.0 # used to deploy on cloud engine using adk
-pydantic==2.14.1

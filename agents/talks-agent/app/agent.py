@@ -1,6 +1,8 @@
-from google.adk.agents.llm_agent import Agent
-from pydantic import BaseModel, Field
 from typing import Literal
+
+from google.adk.agents.llm_agent import Agent
+from google.adk.apps import App
+from pydantic import BaseModel, Field
 
 
 class TalkReviewInput(BaseModel):
@@ -11,20 +13,21 @@ class TalkReviewInput(BaseModel):
 class ReviewPoint(BaseModel):
     category: Literal["titre", "abstract", "coherence"]
     comment: str = Field(description="Retour concret et actionnable")
+    suggestions: list[str] = Field(
+         min_length=3,
+        description="Au moins 3 propositions concrètes pour corriger ce point (formulations alternatives, reformulations, etc.)"
+    )
 
 
 class TalkReviewOutput(BaseModel):
-    score: int = Field(description="Note globale sur 10", ge=0, le=10)
-    strengths: list[str] = Field(description="Points forts identifiés")
     improvements: list[ReviewPoint] = Field(description="Points à améliorer, par catégorie")
-    suggested_title: str | None = Field(default=None, description="Proposition de titre reformulé, si pertinent")
-    suggested_abstract: str | None = Field(default=None, description="Proposition d'abstract reformulé, si pertinent")
 
 
 root_agent = Agent(
     model='gemini-2.5-flash',
-    name='talk_agent',
-    description="Relit le titre et l'abstract d'un talk de conférence et propose des améliorations structurées.",
+    # Doit rester identique à root_agent_name dans agents-cli-manifest.yaml
+    name='talks_agent',
+    description="""Relit le titre et l'abstract d'un talk de conférence et propose des améliorations structurées""",
     instruction="""Tu es un relecteur expert pour une conférence technique.
 Tu reçois un titre et un abstract de talk. Évalue :
 - Clarté et impact du titre
@@ -35,4 +38,9 @@ Réponds uniquement selon le schéma de sortie attendu, en français, avec un to
 """,
     input_schema=TalkReviewInput,
     output_schema=TalkReviewOutput,
+)
+
+app = App(
+    root_agent=root_agent,
+    name="app",
 )
