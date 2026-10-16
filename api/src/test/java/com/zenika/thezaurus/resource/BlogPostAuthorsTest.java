@@ -119,11 +119,11 @@ class BlogPostAuthorsTest {
         given().get("/blog-posts")
                 .then()
                 .statusCode(200)
-                .body("[0].title", is("Article modifié"))
-                .body("[0].writers.size()", is(2))
-                .body("[0].writers[0].email", is("bob@zenika.com"))
-                .body("[0].writers[1].name", is("Externe"))
-                .body("[0].writers[1].email", nullValue());
+                .body("items[0].title", is("Article modifié"))
+                .body("items[0].writers.size()", is(2))
+                .body("items[0].writers[0].email", is("bob@zenika.com"))
+                .body("items[0].writers[1].name", is("Externe"))
+                .body("items[0].writers[1].email", nullValue());
     }
 
     @ParameterizedTest
@@ -164,8 +164,8 @@ class BlogPostAuthorsTest {
         given().get("/blog-posts")
                 .then()
                 .statusCode(200)
-                .body("[0].writers[1].name", is("Bob"))
-                .body("[0].writers[1].email", nullValue());
+                .body("items[0].writers[1].name", is("Bob"))
+                .body("items[0].writers[1].email", nullValue());
         given().contentType("application/json")
                 .body("""
                     {"title":"Ancien article","writers":[{"name":"Alice","email":"alice@zenika.com"},{"name":"Bob"}],"status":"DRAFT","tags":["java"]}

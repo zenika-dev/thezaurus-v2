@@ -29,10 +29,11 @@ interface ContributionFiltersProps<S extends string> {
   personalLabel: string;
   personalOnly: boolean;
   onPersonalChange: (enabled: boolean) => void;
+  onReset?: () => void;
 }
 
 export function ContributionFilters<S extends string>({
-  statuses, labels, status, onStatusChange, personalLabel, personalOnly, onPersonalChange,
+  statuses, labels, status, onStatusChange, personalLabel, personalOnly, onPersonalChange, onReset,
 }: ContributionFiltersProps<S>) {
   return (
     <div className="flex items-center gap-6 flex-wrap mb-6">
@@ -56,7 +57,14 @@ export function ContributionFilters<S extends string>({
       {(status !== "All" || personalOnly) && (
         <button
           type="button"
-          onClick={() => { onStatusChange("All"); onPersonalChange(false); }}
+          onClick={() => {
+            if (onReset) {
+              onReset();
+            } else {
+              onStatusChange("All");
+              onPersonalChange(false);
+            }
+          }}
           className="text-xs cursor-pointer text-primary border border-primary/20 px-3 py-1 rounded-2xl bg-primary/10 hover:bg-primary/20"
         >
           Réinitialiser

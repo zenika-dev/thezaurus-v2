@@ -1,6 +1,13 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { apiFetch, BlogPostStatus, type BackendBlogPost } from "@/shared/api";
+import {
+  apiFetch,
+  BlogPostStatus,
+  type BackendBlogPost,
+  type BackendPagedResultBlogPost,
+  type PagedResult,
+  type PaginationParams,
+} from "@/shared/api";
 import type { BlogPostData } from "./model";
 
 dayjs.extend(customParseFormat);
@@ -63,11 +70,32 @@ export function mapFrontendToBackend(p: BlogPostData): BackendBlogPostPayload {
 }
 
 export const postApi = {
-  getPosts: async (): Promise<BlogPostData[]> => {
-    const res = await apiFetch("/blog-posts");
+  getPosts: async (params?: PaginationParams): Promise<PagedResult<BlogPostData>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.page !== undefined) searchParams.set("page", String(params.page));
+    if (params?.pageSize !== undefined) searchParams.set("pageSize", String(params.pageSize));
+    if (params?.status && params.status !== "All") searchParams.set("status", params.status);
+    if (params?.personal) searchParams.set("personal", "true");
+    const qs = searchParams.toString();
+    const res = await apiFetch(`/blog-posts${qs ? `?${qs}` : ""}`);
     if (!res.ok) throw new Error("Failed to fetch posts");
-    const data = await res.json();
-    return data.map(mapBackendToFrontend);
+    const data: BackendPagedResultBlogPost | BackendBlogPost[] = await res.json();
+    if (Array.isArray(data)) {
+      return {
+        items: data.map(mapBackendToFrontend),
+        total: data.length,
+        page: 0,
+        pageSize: data.length,
+        totalPages: 1,
+      };
+    }
+    return {
+      items: (data.items ?? []).map(mapBackendToFrontend),
+      total: data.total ?? 0,
+      page: data.page ?? 0,
+      pageSize: data.pageSize ?? 25,
+      totalPages: data.totalPages ?? 0,
+    };
   },
   createPost: async (post: BlogPostData): Promise<BlogPostData> => {
     const res = await apiFetch("/blog-posts", {
