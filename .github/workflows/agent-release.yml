@@ -42,6 +42,7 @@ jobs:
       AGENT_ENGINE_ID: ${{ vars.AGENT_ENGINE_ID }}
     steps:
       - name: Vérifier la configuration de l'environnement
+         working-directory: .
         env:
           REQUIRED: >-
             GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
