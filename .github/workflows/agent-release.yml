@@ -5,7 +5,7 @@ name: Release talks-agent
 # et met à jour l'instance existante identifiée par AGENT_ENGINE_ID.
 on:
   push:
-    branches: [main , feat/structure-agent-project]
+    branches: [main  ]
     paths:
       - "agents/talks-agent/app/**"
       - "agents/talks-agent/pyproject.toml"
