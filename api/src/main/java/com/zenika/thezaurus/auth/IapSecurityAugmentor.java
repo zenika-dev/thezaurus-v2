@@ -36,6 +36,7 @@ public class IapSecurityAugmentor implements SecurityIdentityAugmentor {
                     .setPrincipal(() -> "dev@zenika.com")
                     .addRole(Role.Names.ADMIN)
                     .addRole(Role.Names.CONSULTANT)
+                    .setAnonymous(false)
                     .build();
             return Uni.createFrom().item(devIdentity);
         }

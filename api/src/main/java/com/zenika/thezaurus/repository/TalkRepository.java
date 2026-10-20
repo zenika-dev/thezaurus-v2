@@ -18,6 +18,7 @@ import com.zenika.thezaurus.model.TalkStatus;
 import com.zenika.thezaurus.model.TemplateContextOption;
 import com.zenika.thezaurus.model.TemplateContextPage;
 import com.zenika.thezaurus.model.User;
+import com.zenika.thezaurus.model.Visibility;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
@@ -351,6 +352,7 @@ public class TalkRepository {
         Query query = firestore
                 .collection(getCollectionName())
                 .whereEqualTo("feedbackReminderSent", false)
+                .whereEqualTo("visibility", Visibility.PUBLIC.name())
                 .whereIn("status", List.of(TalkStatus.ACCEPTED.name(), TalkStatus.DONE.name()))
                 .whereLessThan("date", today.toString());
         QuerySnapshot querySnapshot = query.get().get();
