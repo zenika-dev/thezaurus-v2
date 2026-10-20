@@ -1,13 +1,18 @@
 name: Release talks-agent
 
-# Déploie talk_agent sur Vertex AI Agent Engine (mise à jour de l'instance existante).
-# Pas d'image Docker : `adk deploy agent_engine` envoie le code, Google construit le conteneur.
+# Déploie talks-agent sur Agent Runtime avec agents-cli.
+# agents-cli construit une image à partir du Dockerfile (serveur app/fast_api_app.py)
+# et met à jour l'instance existante identifiée par AGENT_ENGINE_ID.
 on:
   push:
-    branches: [main]
+    branches: [main  ]
     paths:
-      - "agents/talks-agent/talk_agent/**"
-      - "agents/talks-agent/requirements.txt"
+      - "agents/talks-agent/app/**"
+      - "agents/talks-agent/pyproject.toml"
+      - "agents/talks-agent/uv.lock"
+      - "agents/talks-agent/Dockerfile"
+      - "agents/talks-agent/.gcloudignore"
+      - "agents/talks-agent/agents-cli-manifest.yaml"
       - ".github/workflows/agent-release.yml"
   workflow_dispatch: {}
 
@@ -16,31 +21,35 @@ permissions:
 
 jobs:
   deploy:
-    name: Agent Engine (production)
+    name: Agent Runtime (production)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
       name: production
-     
     concurrency:
       group: deploy-agent-production
       cancel-in-progress: false
     permissions:
       contents: read
       id-token: write
+    defaults:
+      run:
+        # pyproject.toml, le manifeste et le Dockerfile sont lus depuis ce dossier
+        working-directory: agents/talks-agent
     env:
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       AGENT_ENGINE_REGION: ${{ vars.GCP_REGION }}
       AGENT_ENGINE_ID: ${{ vars.AGENT_ENGINE_ID }}
     steps:
       - name: Vérifier la configuration de l'environnement
+        working-directory: .
         env:
           REQUIRED: >-
             GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
             AGENT_ENGINE_REGION=${{ vars.GCP_REGION }}
             AGENT_ENGINE_ID=${{ vars.AGENT_ENGINE_ID }}
             WIF_PROVIDER=${{ vars.WIF_PROVIDER }}
-            WIF_SERVICE_ACCOUNT=${{ vars.WIF_SERVICE_ACCOUNT }}
+            WIF_AGENT_SERVICE_ACCOUNT=${{ vars.WIF_AGENT_SERVICE_ACCOUNT }}
         run: |
           MISSING=0
           for pair in $REQUIRED; do
@@ -55,25 +64,42 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
+      - name: Installer uv
+        uses: astral-sh/setup-uv@v8.0.0
 
-      # Même version d'ADK pour déployer que celle embarquée par l'agent.
-      - name: Installer ADK
-        run: pip install -r agents/talks-agent/requirements.txt
+      - name: Installer les dépendances
+        run: uv sync --locked
+
+      - name: Tests unitaires
+        run: uv run pytest tests/unit
 
       - uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.WIF_AGENT_SERVICE_ACCOUNT }}
 
-      # --agent_engine_id : met à jour l'instance existante au lieu d'en créer une nouvelle.
-      - name: Déployer sur Agent Engine
+      - name: Installer le Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          install_components: beta
+
+      # agents-cli cible l'instance enregistrée dans deployment_metadata.json.
+      # Sans ID, il chercherait par nom affiché et pourrait créer une nouvelle instance.
+      - name: Cibler l'instance existante
         run: |
-          adk deploy agent_engine \
+          case "$AGENT_ENGINE_ID" in
+            projects/*) ID="$AGENT_ENGINE_ID" ;;
+            *) ID="projects/$GCP_PROJECT_ID/locations/$AGENT_ENGINE_REGION/reasoningEngines/$AGENT_ENGINE_ID" ;;
+          esac
+          echo "{\"remote_agent_runtime_id\": \"$ID\"}" > deployment_metadata.json
+
+      # --update-only : échoue au lieu de créer une deuxième instance si la cible est introuvable.
+      - name: Déployer sur Agent Runtime
+        run: |
+          uvx google-agents-cli@1.10.0 deploy \
             --project "$GCP_PROJECT_ID" \
             --region "$AGENT_ENGINE_REGION" \
-            --agent_engine_id "$AGENT_ENGINE_ID" \
-            --requirements_file agents/talks-agent/requirements.txt \
-            agents/talks-agent/talk_agent
+            --update-only \
+            --service-name talk_agent \
+            --no-confirm-project \
+            --update-env-vars="OTEL_RESOURCE_ATTRIBUTES=service.version=${{ github.sha }}"
