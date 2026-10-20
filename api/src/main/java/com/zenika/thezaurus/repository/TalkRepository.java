@@ -12,15 +12,18 @@ import com.google.cloud.firestore.WriteBatch;
 import com.google.cloud.firestore.WriteResult;
 import com.google.cloud.firestore.encoding.CustomClassMapper;
 import com.zenika.thezaurus.model.Conference;
+import com.zenika.thezaurus.model.PagedResult;
 import com.zenika.thezaurus.model.Talk;
 import com.zenika.thezaurus.model.TalkStatus;
 import com.zenika.thezaurus.model.TemplateContextOption;
 import com.zenika.thezaurus.model.TemplateContextPage;
+import com.zenika.thezaurus.model.User;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +70,83 @@ public class TalkRepository {
             if (talk != null) result.add(resolveConference(talk, conferences));
         }
         return result;
+    }
+
+    public PagedResult<Talk> findPaged(int page, int pageSize, TalkStatus status, String speakerEmail)
+            throws ExecutionException, InterruptedException {
+        Query query = firestore.collection(getCollectionName());
+        if (status != null) {
+            query = query.whereEqualTo("status", status.name());
+        }
+        QuerySnapshot querySnapshot = query.get().get();
+        List<Talk> matchingTalks = new ArrayList<>();
+        for (DocumentSnapshot document : querySnapshot.getDocuments()) {
+            Talk talk = toTalkOrNull(document);
+            if (talk != null && matchesSpeaker(talk, speakerEmail)) {
+                matchingTalks.add(talk);
+            }
+        }
+        matchingTalks.sort(this::compareTalks);
+
+        PagedResult<Talk> paged = PagedResult.of(matchingTalks, page, pageSize);
+        List<Talk> enrichedItems = resolveConferences(paged.items());
+        return new PagedResult<>(enrichedItems, paged.total(), paged.page(), paged.pageSize(), paged.totalPages());
+    }
+
+    private boolean matchesSpeaker(Talk talk, String email) {
+        if (email == null || email.isBlank()) {
+            return true;
+        }
+        if (talk.speakers() == null) {
+            return false;
+        }
+        for (User speaker : talk.speakers()) {
+            if (speaker != null && isSameEmail(speaker.email(), email)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isSameEmail(String email1, String email2) {
+        return email1 != null && email1.trim().equalsIgnoreCase(email2.trim());
+    }
+
+    private int compareTalks(Talk t1, Talk t2) {
+        String date1 = normalizeDate(t1 != null ? t1.date() : null);
+        String date2 = normalizeDate(t2 != null ? t2.date() : null);
+
+        int dateComparison = compareDatesDescNullsLast(date1, date2);
+        if (dateComparison != 0) {
+            return dateComparison;
+        }
+
+        String title1 = t1 != null && t1.title() != null ? t1.title() : "";
+        String title2 = t2 != null && t2.title() != null ? t2.title() : "";
+        return String.CASE_INSENSITIVE_ORDER.compare(title1, title2);
+    }
+
+    private String normalizeDate(String date) {
+        return (date == null || date.isBlank()) ? null : date.trim();
+    }
+
+    private int compareDatesDescNullsLast(String d1, String d2) {
+        if (d1 == null && d2 == null) return 0;
+        if (d1 == null) return 1;
+        if (d2 == null) return -1;
+        return d2.compareTo(d1);
+    }
+
+    private List<Talk> resolveConferences(List<Talk> talks) throws ExecutionException, InterruptedException {
+        if (talks == null || talks.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Talk> result = new ArrayList<>(talks.size());
+        Map<String, Conference> cache = new HashMap<>();
+        for (Talk talk : talks) {
+            result.add(resolveConference(talk, cache));
+        }
+        return Collections.unmodifiableList(result);
     }
 
     public Talk findById(String id) throws ExecutionException, InterruptedException {

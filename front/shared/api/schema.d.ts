@@ -875,7 +875,12 @@ export interface paths {
         /** List */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    page?: number;
+                    pageSize?: number;
+                    personal?: boolean;
+                    status?: components["schemas"]["BlogPostStatus"];
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -888,7 +893,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BlogPost"][];
+                        "application/json": components["schemas"]["PagedResultBlogPost"];
                     };
                 };
                 /** @description Not Authorized */
@@ -1652,7 +1657,12 @@ export interface paths {
         /** List */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    page?: number;
+                    pageSize?: number;
+                    personal?: boolean;
+                    status?: components["schemas"]["TalkStatus"];
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1665,7 +1675,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Talk"][];
+                        "application/json": components["schemas"]["PagedResultTalk"];
                     };
                 };
                 /** @description Not Authorized */
@@ -2048,6 +2058,28 @@ export interface components {
         Office: "paris" | "nantes" | "rennes" | "bordeaux" | "lyon" | "lille" | "grenoble" | "singapour" | "montreal";
         OfficePreference: {
             office?: components["schemas"]["Office"];
+        };
+        PagedResultBlogPost: {
+            items?: components["schemas"]["BlogPost"][];
+            /** Format: int64 */
+            total?: number;
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        PagedResultTalk: {
+            items?: components["schemas"]["Talk"][];
+            /** Format: int64 */
+            total?: number;
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
+            totalPages?: number;
         };
         PreviewContext: {
             label?: string;

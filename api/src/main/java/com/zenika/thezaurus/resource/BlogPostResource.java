@@ -1,6 +1,8 @@
 package com.zenika.thezaurus.resource;
 
 import com.zenika.thezaurus.model.BlogPost;
+import com.zenika.thezaurus.model.BlogPostStatus;
+import com.zenika.thezaurus.model.PagedResult;
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.service.BlogPostService;
 import jakarta.annotation.security.RolesAllowed;
@@ -8,14 +10,15 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.jboss.resteasy.reactive.RestResponse;
 
@@ -29,8 +32,13 @@ public class BlogPostResource {
     BlogPostService service;
 
     @GET
-    public List<BlogPost> list() throws ExecutionException, InterruptedException {
-        return service.findAll();
+    public PagedResult<BlogPost> list(
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+            @QueryParam("status") BlogPostStatus status,
+            @QueryParam("personal") @DefaultValue("false") boolean personal)
+            throws ExecutionException, InterruptedException {
+        return service.findPaged(page, pageSize, status, personal);
     }
 
     @GET

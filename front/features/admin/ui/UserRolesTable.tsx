@@ -8,7 +8,6 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import TablePagination from "@mui/material/TablePagination";
 import Paper from "@mui/material/Paper";
 import Tooltip from "@mui/material/Tooltip";
 import Snackbar from "@mui/material/Snackbar";
@@ -21,6 +20,7 @@ import { Funnel, Plus, Search, X } from "lucide-react";
 import { Role, type BackendUserAdminView } from "@/shared/api";
 import { SpeakerChip } from "@/entities/user";
 import { useAdminUsers } from "@/features/admin";
+import { PaginationBar } from "@/shared/ui";
 
 const ROLE_BADGE_STYLES: Record<Role, { label: string; className: string }> = {
   ADMIN: {
@@ -61,7 +61,7 @@ export function UserRolesTable() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<"All" | Role>("All");
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const [toast, setToast] = useState<{ message: string; severity: "success" | "error" } | null>(
@@ -88,8 +88,10 @@ export function UserRolesTable() {
     });
   }, [users, searchQuery, roleFilter]);
 
+  const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
+
   const paginatedUsers = useMemo(() => {
-    const start = page * rowsPerPage;
+    const start = (page - 1) * rowsPerPage;
     return filteredUsers.slice(start, start + rowsPerPage);
   }, [filteredUsers, page, rowsPerPage]);
 
@@ -153,7 +155,7 @@ export function UserRolesTable() {
   }, [menuAnchor]);
 
   return (
-    <>
+    <div className="flex flex-col flex-1">
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <TextField
@@ -162,7 +164,7 @@ export function UserRolesTable() {
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              setPage(0);
+              setPage(1);
             }}
             className="w-full sm:w-80"
             slotProps={{
@@ -187,7 +189,7 @@ export function UserRolesTable() {
                 active={roleFilter === role}
                 onClick={() => {
                   setRoleFilter(role);
-                  setPage(0);
+                  setPage(1);
                 }}
               />
             ))}
@@ -195,7 +197,7 @@ export function UserRolesTable() {
               <button
                 onClick={() => {
                   setRoleFilter("All");
-                  setPage(0);
+                  setPage(1);
                 }}
                 className="flex text-xs items-center font-sans gap-1 cursor-pointer text-primary border border-primary/20 px-3 py-1 rounded-2xl bg-primary/10 transition-colors hover:bg-primary/20"
               >
@@ -209,7 +211,7 @@ export function UserRolesTable() {
       <TableContainer
         component={Paper}
         variant="outlined"
-        className="border! border-primary! rounded-2xl! overflow-hidden! bg-surface!"
+        className="border! border-primary! rounded-2xl! overflow-hidden! bg-surface! mb-4"
       >
         <Table>
           <TableHead className="bg-surface-muted!">
@@ -321,24 +323,22 @@ export function UserRolesTable() {
             )}
           </TableBody>
         </Table>
-        <TablePagination
-          component="div"
-          count={filteredUsers.length}
-          page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
-          rowsPerPageOptions={[10, 25, 50]}
-          labelRowsPerPage="Lignes par page :"
-          labelDisplayedRows={({ from, to, count }) =>
-            `${from}–${to} sur ${count !== -1 ? count : `plus de ${to}`}`
-          }
-          className="border-t border-border"
-        />
       </TableContainer>
+
+      <PaginationBar
+        page={page}
+        pageSize={rowsPerPage}
+        total={filteredUsers.length}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        onPageSizeChange={(newSize) => {
+          setRowsPerPage(newSize);
+          setPage(1);
+        }}
+        pageSizeOptions={[10, 25, 50]}
+        label="Utilisateurs par page :"
+        ariaLabel="Pagination des utilisateurs"
+      />
 
       <Menu
         anchorEl={menuAnchor?.el}
@@ -384,6 +384,6 @@ export function UserRolesTable() {
           </Alert>
         ) : undefined}
       </Snackbar>
-    </>
+    </div>
   );
 }

@@ -1,11 +1,13 @@
+import type { PaginationParams } from "./pagination";
+
 export const queryKeys = {
   talks: {
     all: ["talks"] as const,
-    lists: () => ["talks", "list"] as const,
+    lists: (params?: PaginationParams) => (params ? (["talks", "list", params] as const) : (["talks", "list"] as const)),
   },
   posts: {
     all: ["posts"] as const,
-    lists: () => ["posts", "list"] as const,
+    lists: (params?: PaginationParams) => (params ? (["posts", "list", params] as const) : (["posts", "list"] as const)),
   },
   conferences: {
     all: ["conferences"] as const,

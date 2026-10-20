@@ -5,11 +5,16 @@ import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.BlogPost;
+import com.zenika.thezaurus.model.BlogPostStatus;
+import com.zenika.thezaurus.model.PagedResult;
+import com.zenika.thezaurus.model.User;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +53,79 @@ public class BlogPostRepository {
                 firestore.collection(getCollectionName()).get();
         QuerySnapshot querySnapshot = query.get();
         return querySnapshot.getDocuments().stream().map(this::readPost).collect(Collectors.toList());
+    }
+
+    public PagedResult<BlogPost> findPaged(int page, int pageSize, BlogPostStatus status, String writerEmail)
+            throws ExecutionException, InterruptedException {
+        Query query = firestore.collection(getCollectionName());
+        if (status != null) {
+            query = query.whereEqualTo("status", status.name());
+        }
+        QuerySnapshot querySnapshot = query.get().get();
+        List<BlogPost> matchingPosts = new ArrayList<>();
+        for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+            BlogPost post = readPost(doc);
+            if (post != null && matchesWriter(post, writerEmail)) {
+                matchingPosts.add(post);
+            }
+        }
+        matchingPosts.sort(this::compareBlogPosts);
+        return PagedResult.of(matchingPosts, page, pageSize);
+    }
+
+    private boolean matchesWriter(BlogPost post, String email) {
+        if (email == null || email.isBlank()) {
+            return true;
+        }
+        if (post.getWriters() == null) {
+            return false;
+        }
+        for (User writer : post.getWriters()) {
+            if (writer != null && isSameEmail(writer.email(), email)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isSameEmail(String email1, String email2) {
+        return email1 != null && email1.trim().equalsIgnoreCase(email2.trim());
+    }
+
+    private int compareBlogPosts(BlogPost p1, BlogPost p2) {
+        String date1 = resolveSortDate(p1);
+        String date2 = resolveSortDate(p2);
+
+        int dateComparison = compareDatesDescNullsLast(date1, date2);
+        if (dateComparison != 0) {
+            return dateComparison;
+        }
+
+        String title1 = p1 != null && p1.getTitle() != null ? p1.getTitle() : "";
+        String title2 = p2 != null && p2.getTitle() != null ? p2.getTitle() : "";
+        return String.CASE_INSENSITIVE_ORDER.compare(title1, title2);
+    }
+
+    private String resolveSortDate(BlogPost post) {
+        if (post == null) return null;
+        if (post.getActualPublicationDate() != null
+                && !post.getActualPublicationDate().isBlank()) {
+            return post.getActualPublicationDate().trim();
+        }
+        if (post.getPublicationDate() != null && !post.getPublicationDate().isBlank()) {
+            return post.getPublicationDate().trim();
+        }
+        if (post.getCreationDate() != null && !post.getCreationDate().isBlank()) {
+            return post.getCreationDate().trim();
+        }
+        return null;
+    }
+
+    private int compareDatesDescNullsLast(String d1, String d2) {
+        if (d1 == null && d2 == null) return 0;
+        if (d1 == null) return 1;
+        if (d2 == null) return -1;
+        return d2.compareTo(d1);
     }
 
     public BlogPost findById(String id) throws ExecutionException, InterruptedException {

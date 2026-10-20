@@ -2,7 +2,9 @@ package com.zenika.thezaurus.service;
 
 import com.zenika.thezaurus.model.BlogPost;
 import com.zenika.thezaurus.model.BlogPostStatus;
+import com.zenika.thezaurus.model.PagedResult;
 import com.zenika.thezaurus.repository.BlogPostRepository;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
@@ -20,10 +22,19 @@ public class BlogPostService {
     BlogPostRepository repository;
 
     @Inject
+    SecurityIdentity identity;
+
+    @Inject
     Clock clock;
 
     public List<BlogPost> findAll() throws ExecutionException, InterruptedException {
         return repository.findAll();
+    }
+
+    public PagedResult<BlogPost> findPaged(int page, int pageSize, BlogPostStatus status, boolean personal)
+            throws ExecutionException, InterruptedException {
+        String currentEmail = personal ? getCurrentUserEmail() : null;
+        return repository.findPaged(page, pageSize, status, currentEmail);
     }
 
     public BlogPost findById(String id) throws ExecutionException, InterruptedException {
@@ -53,16 +64,34 @@ public class BlogPostService {
         return true;
     }
 
+    private String getCurrentUserEmail() {
+        if (identity == null || identity.getPrincipal() == null) {
+            return null;
+        }
+        String name = identity.getPrincipal().getName();
+        return (name == null || name.isBlank()) ? null : name.trim();
+    }
+
     private void validate(BlogPost post) {
         if (post == null) throw new BadRequestException("Un article est requis");
         validateDate(post.getCreationDate(), "La date de création", true);
         validateDate(post.getPublicationDate(), "La date de publication prévue", false);
         validateDate(post.getActualPublicationDate(), "La date de publication réelle", true);
-        if ((post.getStatus() == BlogPostStatus.REVIEW || post.getStatus() == BlogPostStatus.READY_TO_PUBLISH)
+        validateEditorialReviewLink(post);
+        validatePublishedRequirements(post);
+    }
+
+    private void validateEditorialReviewLink(BlogPost post) {
+        boolean requiresReviewLink =
+                post.getStatus() == BlogPostStatus.REVIEW || post.getStatus() == BlogPostStatus.READY_TO_PUBLISH;
+        if (requiresReviewLink
                 && (post.getGoogleDocDraftLink() == null
                         || post.getGoogleDocDraftLink().isBlank())) {
             throw new BadRequestException("Le lien du texte à relire est requis");
         }
+    }
+
+    private void validatePublishedRequirements(BlogPost post) {
         if (post.getStatus() == BlogPostStatus.PUBLISHED) {
             if (post.getLink() == null || post.getLink().isBlank()) {
                 throw new BadRequestException("L’URL publique est requise");

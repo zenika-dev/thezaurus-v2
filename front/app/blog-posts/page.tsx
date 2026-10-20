@@ -2,8 +2,8 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { postApi } from "@/entities/post";
-import { queryKeys } from "@/shared/api";
-import { getQueryClient } from "@/shared/lib";
+import { BlogPostStatus, queryKeys } from "@/shared/api";
+import { getQueryClient, parsePaginationSearchParams } from "@/shared/lib";
 import { BlogPosts } from "@/features/blog-posts";
 import { BlogPostsSkeleton } from "@/features/blog-posts/ui/BlogPostsSkeleton";
 
@@ -14,20 +14,32 @@ export const metadata: Metadata = {
   description: "Suivi des articles de blog Zenika.",
 };
 
-export default function BlogPostsPage() {
+interface BlogPostsPageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function BlogPostsPage({ searchParams }: BlogPostsPageProps) {
+  const resolvedParams = await searchParams;
   return (
     <Suspense fallback={<BlogPostsSkeleton />}>
-      <BlogPostsLoader />
+      <BlogPostsLoader rawParams={resolvedParams} />
     </Suspense>
   );
 }
 
-async function BlogPostsLoader() {
+async function BlogPostsLoader({
+  rawParams,
+}: {
+  rawParams: { [key: string]: string | string[] | undefined };
+}) {
   const queryClient = getQueryClient();
+  const apiParams = parsePaginationSearchParams(rawParams, BlogPostStatus);
+
   await queryClient.prefetchQuery({
-    queryKey: queryKeys.posts.lists(),
-    queryFn: () => postApi.getPosts(),
+    queryKey: queryKeys.posts.lists(apiParams),
+    queryFn: () => postApi.getPosts(apiParams),
   });
+
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <BlogPosts />

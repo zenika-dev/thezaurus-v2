@@ -191,15 +191,18 @@ public class TalkResourceTest {
     @Test
     @DisplayName("GET /talks - retourne la liste des talks")
     public void testList() throws Exception {
-        Mockito.when(service.findAll()).thenReturn(Collections.singletonList(new Talk("1", "Titre", "Description")));
+        Mockito.when(service.findPaged(0, 10, null, false))
+                .thenReturn(new com.zenika.thezaurus.model.PagedResult<>(
+                        Collections.singletonList(new Talk("1", "Titre", "Description")), 1, 0, 10, 1));
 
         given().when()
                 .get("/talks")
                 .then()
                 .statusCode(200)
-                .body("size()", is(1))
-                .body("[0].id", is("1"))
-                .body("[0].title", is("Titre"));
+                .body("total", is(1))
+                .body("items.size()", is(1))
+                .body("items[0].id", is("1"))
+                .body("items[0].title", is("Titre"));
     }
 
     @Test
@@ -359,14 +362,15 @@ public class TalkResourceTest {
                         null,
                         null)
                 .withId("1");
-        Mockito.when(service.findAll()).thenReturn(Collections.singletonList(talk));
+        Mockito.when(service.findPaged(0, 10, null, false))
+                .thenReturn(new com.zenika.thezaurus.model.PagedResult<>(Collections.singletonList(talk), 1, 0, 10, 1));
 
         given().when()
                 .get("/talks")
                 .then()
                 .statusCode(200)
-                .body("[0].speakers[0].name", is("Jane"))
-                .body("[0].speakers[0].roles", is(nullValue()));
+                .body("items[0].speakers[0].name", is("Jane"))
+                .body("items[0].speakers[0].roles", is(nullValue()));
     }
 
     @Test
@@ -437,5 +441,42 @@ public class TalkResourceTest {
                 .then()
                 .statusCode(502)
                 .body("message", is("Reasoning Engine AI Agent indisponible"));
+    }
+
+    @Test
+    public void testListDefault() throws Exception {
+        Talk talk = new Talk("1", "Title", "Abstract");
+        Mockito.when(service.findPaged(0, 10, null, false))
+                .thenReturn(new com.zenika.thezaurus.model.PagedResult<>(List.of(talk), 1, 0, 10, 1));
+
+        given().when()
+                .get("/talks")
+                .then()
+                .statusCode(200)
+                .body("total", is(1))
+                .body("page", is(0))
+                .body("pageSize", is(10))
+                .body("totalPages", is(1))
+                .body("items.size()", is(1))
+                .body("items[0].id", is("1"))
+                .body("items[0].title", is("Title"));
+    }
+
+    @Test
+    public void testListWithParams() throws Exception {
+        Talk talk = new Talk("2", "Title 2", "Abstract 2");
+        Mockito.when(service.findPaged(2, 25, TalkStatus.PLANNED, true))
+                .thenReturn(new com.zenika.thezaurus.model.PagedResult<>(List.of(talk), 55, 2, 25, 3));
+
+        given().when()
+                .get("/talks?page=2&pageSize=25&status=PLANNED&personal=true")
+                .then()
+                .statusCode(200)
+                .body("total", is(55))
+                .body("page", is(2))
+                .body("pageSize", is(25))
+                .body("totalPages", is(3))
+                .body("items.size()", is(1))
+                .body("items[0].id", is("2"));
     }
 }

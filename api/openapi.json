@@ -561,16 +561,43 @@
     },
     "/blog-posts" : {
       "get" : {
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "pageSize",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 10
+          }
+        }, {
+          "name" : "personal",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "$ref" : "#/components/schemas/BlogPostStatus"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/BlogPost"
-                  }
+                  "$ref" : "#/components/schemas/PagedResultBlogPost"
                 }
               }
             }
@@ -1157,16 +1184,43 @@
     },
     "/talks" : {
       "get" : {
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "pageSize",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 10
+          }
+        }, {
+          "name" : "personal",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "$ref" : "#/components/schemas/TalkStatus"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/Talk"
-                  }
+                  "$ref" : "#/components/schemas/PagedResultTalk"
                 }
               }
             }
@@ -1718,6 +1772,60 @@
         "properties" : {
           "office" : {
             "$ref" : "#/components/schemas/Office"
+          }
+        }
+      },
+      "PagedResultBlogPost" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/BlogPost"
+            }
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PagedResultTalk" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Talk"
+            }
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       },
