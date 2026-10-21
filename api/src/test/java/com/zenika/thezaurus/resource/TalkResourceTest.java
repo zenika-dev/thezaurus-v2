@@ -432,7 +432,7 @@ public class TalkResourceTest {
         TalkReviewRequest request = new TalkReviewRequest("Titre Erreur", "Abstract Erreur");
 
         Mockito.when(talkReviewService.reviewTalk(Mockito.any(TalkReviewRequest.class)))
-                .thenThrow(new TalkReviewException("Reasoning Engine AI Agent indisponible"));
+                .thenThrow(new TalkReviewException());
 
         given().contentType(ContentType.JSON)
                 .body(request)
@@ -440,7 +440,7 @@ public class TalkResourceTest {
                 .post("/talks/review")
                 .then()
                 .statusCode(502)
-                .body("message", is("Reasoning Engine AI Agent indisponible"));
+                .body("message", is(TalkReviewException.REVIEW_UNAVAILABLE_MESSAGE));
     }
 
     @Test

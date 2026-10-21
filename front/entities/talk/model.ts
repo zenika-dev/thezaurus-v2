@@ -3,6 +3,7 @@ export { agencyLabels } from "@/shared/lib/offices";
 import type {
   BackendConference,
   BackendTalkReviewRequest,
+  BackendTalkReviewResponse,
   BackendUser,
 } from "@/shared/api";
 
@@ -26,6 +27,18 @@ export interface TalkData {
 }
 
 export type TalkReviewRequest = Required<BackendTalkReviewRequest>;
+
+/** Message affiché quand le back ne fournit pas de message fonctionnel (réseau, réponse illisible…). */
+export const TALK_REVIEW_FALLBACK_ERROR =
+  "L'assistant IA rencontre une difficulté temporaire. Merci de réessayer dans quelques instants.";
+
+/**
+ * Résultat de la relecture IA : une server action ne peut pas lever d'erreur avec un message
+ * lisible côté client (Next.js le masque en production), on le retourne donc explicitement.
+ */
+export type TalkReviewResult =
+  | { ok: true; data: BackendTalkReviewResponse }
+  | { ok: false; message: string };
 
 export interface ApiErrorResponse {
   timestamp: string;
