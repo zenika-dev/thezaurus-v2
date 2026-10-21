@@ -78,7 +78,7 @@ class TalkReviewServiceTest {
                 Assertions.assertThrows(TalkReviewException.class, () -> talkReviewService.reviewTalk(request));
 
         Assertions.assertEquals(
-                "Impossible d'obtenir la revue du talk auprès du Reasoning Engine AI Agent.", exception.getMessage());
+                TalkReviewException.REVIEW_UNAVAILABLE_MESSAGE, exception.getMessage());
         verify(talkReviewAdapter).sendStreamQuery("Titre de talk", "Abstract de talk");
         verify(talkReviewMapper, never()).toDomain(anyString());
     }
@@ -97,7 +97,7 @@ class TalkReviewServiceTest {
                 Assertions.assertThrows(TalkReviewException.class, () -> talkReviewService.reviewTalk(request));
 
         Assertions.assertEquals(
-                "Impossible d'obtenir la revue du talk auprès du Reasoning Engine AI Agent.", exception.getMessage());
+                TalkReviewException.REVIEW_UNAVAILABLE_MESSAGE, exception.getMessage());
         verify(talkReviewAdapter).sendStreamQuery("Titre de talk", "Abstract de talk");
         verify(talkReviewMapper).toDomain(rawSseResponse);
     }

@@ -27,8 +27,7 @@ public class TalkReviewService {
         return talkReviewAdapter
                 .sendStreamQuery(title, abstractText)
                 .flatMap(talkReviewMapper::toDomain)
-                .orElseThrow(() -> new TalkReviewException(
-                        "Impossible d'obtenir la revue du talk auprès du Reasoning Engine AI Agent."));
+                .orElseThrow(() -> new TalkReviewException());
     }
 
     private void validateRequest(TalkReviewRequest request) {

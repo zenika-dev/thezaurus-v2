@@ -6,7 +6,10 @@ import {
   type PagedResult,
   type PaginationParams,
 } from "@/shared/api";
-import type { ApiErrorResponse, TalkData, TalkReviewRequest } from "./model";
+import { TALK_REVIEW_FALLBACK_ERROR, type ApiErrorResponse, type TalkData, type TalkReviewRequest } from "./model";
+
+/** Erreur renvoyée par le back avec un message fonctionnel, affichable tel quel à l'utilisateur. */
+export class TalkReviewApiError extends Error {}
 
 /**
  * Ne fait que totaliser le payload : le contrat déclare tous les champs optionnels, faute
@@ -99,12 +102,8 @@ export const talkApi = {
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
-      let errorMessage = "Une erreur est survenue lors de l'analyse du talk.";
-      const errorData: ApiErrorResponse = await response.json();
-      if (errorData.message) {
-        errorMessage = errorData.message;
-      }
-      throw new Error(errorMessage);
+      const errorData: Partial<ApiErrorResponse> | null = await response.json().catch(() => null);
+      throw new TalkReviewApiError(errorData?.message || TALK_REVIEW_FALLBACK_ERROR);
     }
     return await response.json();
   },

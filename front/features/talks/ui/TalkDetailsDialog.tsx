@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { Alert, Button } from "@mui/material";
 import dayjs from "dayjs";
 import { type BackendTalkReviewResponse } from "@/shared/api";
-import { type TalkData, talkFormSchema, reviewTalkAction } from "@/entities/talk";
+import { type TalkData, talkFormSchema, reviewTalkAction, TALK_REVIEW_FALLBACK_ERROR } from "@/entities/talk";
 import { TalkAssistantDialog } from "./TalkAssistantDialog";
 import { TalkFormDialog } from "./TalkFormDialog";
 import { TalkReadOnlyDialog } from "./TalkReadOnlyDialog";
@@ -81,8 +81,10 @@ function TalkEditor({ talk, onClose, onUpdate, onDelete }: Omit<TalkDetailsDialo
   };
   const review = async () => {
     setAiOpen(true); setAiLoading(true); setAiError(null);
-    try { setAiResult(await reviewTalkAction({ title: draft.title, abstract: draft.description })); }
-    catch { setAiError("L’assistant est indisponible. Réessayez plus tard."); }
+    try {
+      const res = await reviewTalkAction({ title: draft.title, abstract: draft.description });
+      if (res.ok) setAiResult(res.data); else setAiError(res.message);
+    } catch { setAiError(TALK_REVIEW_FALLBACK_ERROR); }
     finally { setAiLoading(false); }
   };
   if (!editable) return <TalkReadOnlyDialog talk={saved} onClose={onClose} success={success} />;

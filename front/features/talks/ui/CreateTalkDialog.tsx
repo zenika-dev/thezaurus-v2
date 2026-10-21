@@ -9,7 +9,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Button } from "@mui/material";
 import dayjs from "dayjs";
-import { type TalkData, talkFormSchema, type TalkFormData, type SpeakerFormData, reviewTalkAction } from "@/entities/talk";
+import { type TalkData, talkFormSchema, type TalkFormData, type SpeakerFormData, reviewTalkAction, TALK_REVIEW_FALLBACK_ERROR } from "@/entities/talk";
 import { TalkAssistantDialog } from "./TalkAssistantDialog";
 import { TalkFormDialog } from "./TalkFormDialog";
 
@@ -152,11 +152,10 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
         title: values.title,
         abstract: values.description,
       });
-      setAssistantResult(res);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Erreur de communication avec l'assistant IA.";
-      setError(message);
+      if (res.ok) setAssistantResult(res.data);
+      else setError(res.message);
+    } catch {
+      setError(TALK_REVIEW_FALLBACK_ERROR);
     } finally {
       setAssistantLoading(false);
     }
