@@ -12,6 +12,7 @@ import type { components } from "./schema";
 
 type Schemas = components["schemas"];
 
+export type BackendAiPhotoPreference = Schemas["AiPhotoPreference"];
 export type BackendBlogPost = Schemas["BlogPost"];
 export type BackendBlogPostStatus = Schemas["BlogPostStatus"];
 export type BackendCityCount = Schemas["CityCount"];
@@ -25,6 +26,7 @@ export type BackendEvent = Schemas["Event"];
 export type BackendEventsDashboard = Schemas["EventsDashboard"];
 export type BackendEventsTotals = Schemas["EventsTotals"];
 export type BackendEventTypeSummary = Schemas["EventTypeSummary"];
+export type BackendGooglePhotoSync = Schemas["GooglePhotoSync"];
 export type BackendLocation = Schemas["Location"];
 export type BackendMessageTemplateDefinition = Schemas["MessageTemplateDefinition"];
 export type BackendMonthLabel = Schemas["MonthLabel"];

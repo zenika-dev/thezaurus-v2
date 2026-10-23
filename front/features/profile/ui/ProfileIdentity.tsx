@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useSession } from "next-auth/react";
-import Image from "next/image";
+import { ProfileAvatar, ProfilePhotoEditor } from "@/entities/user";
 import type { UserProfile } from "@/entities/user";
 import { SectionCard } from "@/shared/ui";
 
@@ -10,33 +8,15 @@ interface ProfileIdentityProps {
   profile: UserProfile;
 }
 
-/** Identité en lecture seule : le compte Google Zenika en est la source de vérité. */
+/** Le nom et l’email viennent de Google ; la photo peut être personnalisée. */
 export function ProfileIdentity({ profile }: ProfileIdentityProps) {
-  const { data: session } = useSession();
-  const [imageFailed, setImageFailed] = useState(false);
-  const avatarUrl = session?.user?.image;
 
   return (
     <SectionCard
       titleId="profile-identity-title"
       header={
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
-          {avatarUrl && !imageFailed ? (
-            <Image
-              src={avatarUrl}
-              alt={profile.name || "Photo de profil"}
-              width={64}
-              height={64}
-              unoptimized
-              referrerPolicy="no-referrer"
-              onError={() => setImageFailed(true)}
-              className="w-16 h-16 rounded-full object-cover border border-border shrink-0"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-surface-muted flex items-center justify-center text-[20px] font-bold text-text-muted shrink-0">
-              {profile.name?.charAt(0)?.toUpperCase() || "?"}
-            </div>
-          )}
+          <ProfileAvatar email={profile.email} name={profile.name} />
 
           <div>
             <h2
@@ -46,7 +26,7 @@ export function ProfileIdentity({ profile }: ProfileIdentityProps) {
               Mes informations
             </h2>
             <p className="text-sm leading-normal text-text-muted m-0">
-              Ces informations proviennent de ton compte Google Zenika et ne sont pas modifiables ici.
+              Ton nom et ton email proviennent de ton compte Google Zenika. Tu peux personnaliser ta photo.
             </p>
           </div>
         </div>
@@ -62,6 +42,7 @@ export function ProfileIdentity({ profile }: ProfileIdentityProps) {
           <dd className="text-base break-words text-text m-0 mt-1">{profile.email || "—"}</dd>
         </div>
       </dl>
+      <div className="mt-6"><ProfilePhotoEditor email={profile.email} /></div>
     </SectionCard>
   );
 }
