@@ -1,8 +1,9 @@
 "use client";
+import { FormDialog } from "@/shared/ui";
 
-import { Alert, Button, Dialog, DialogTitle, DialogContent, DialogActions, Switch, MenuItem,
+import { Alert, Button, Switch, MenuItem,
   FormControl, Divider, Select, TextField, InputAdornment, IconButton } from "@mui/material";
-import { Lock, Globe, X, Users, MapPin, Mic, Calendar, Bot,
+import { Lock, Globe, Users, MapPin, Mic, Calendar, Bot,
   Link as LinkIcon, Play as PlayIcon, ExternalLink as ExternalLinkIcon } from "lucide-react";
 import { TalkStatus } from "@/shared/api";
 import { type TalkData, agencyLabels, talkStatusConfig } from "@/entities/talk";
@@ -19,16 +20,8 @@ interface TalkReadOnlyDialogProps {
 /** Présentation historique de la fiche, sans action de modification. */
 export function TalkReadOnlyDialog({ talk, onClose, success }: TalkReadOnlyDialogProps) {
   return (
-    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle className="font-semibold! pb-2! flex! justify-between! items-center! tracking-[-0.75px]!">
-        {talk.title}
-        <div className="flex items-center gap-2 tracking-normal">
-          <StatusTag status={talk.status} />
-          <IconButton aria-label="Fermer" onClick={onClose} size="small"><X size={20} /></IconButton>
-        </div>
-      </DialogTitle>
-
-      <DialogContent className="pb-2!">
+    <FormDialog open onClose={onClose} maxWidth="sm" fullWidth title={talk.title}
+      headerAction={<StatusTag status={talk.status} />} cancelLabel="Fermer">
         {success && <Alert severity="success">{success}</Alert>}
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-text-muted">Détails du talk</p>
@@ -36,8 +29,8 @@ export function TalkReadOnlyDialog({ talk, onClose, success }: TalkReadOnlyDialo
             variant="outlined"
             size="small"
             disabled
-            startIcon={<Bot size={16} className="text-purple-600 dark:text-purple-400" />}
-            className="normal-case text-xs border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/50"
+            startIcon={<Bot size={16} className="text-link" />}
+            className="normal-case text-xs"
           >
             Relire avec l’IA
           </Button>
@@ -45,14 +38,14 @@ export function TalkReadOnlyDialog({ talk, onClose, success }: TalkReadOnlyDialo
 
         <div className="flex flex-col gap-4 mt-1">
           {talk.description && (
-            <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+            <div className="bg-surface-muted p-3 rounded-lg border border-border">
               <p className="text-xs font-semibold text-text-muted mb-1">Abstract actuel :</p>
-              <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap">{talk.description}</p>
+              <p className="text-sm text-text whitespace-pre-wrap">{talk.description}</p>
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-4 col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-4 sm:col-span-2">
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -131,7 +124,7 @@ export function TalkReadOnlyDialog({ talk, onClose, success }: TalkReadOnlyDialo
               <div>
                 <p className="text-sm text-text-muted mb-4">Liens et restitution</p>
                 <div className="flex flex-col gap-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <TextField
                       label="Slides" placeholder="https://..." value={talk.slides ?? ""} fullWidth size="small"
                       slotProps={{
@@ -165,7 +158,7 @@ export function TalkReadOnlyDialog({ talk, onClose, success }: TalkReadOnlyDialo
                       }}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <TextField
                       label="Audience"
                       placeholder="Ex : 150"
@@ -191,12 +184,6 @@ export function TalkReadOnlyDialog({ talk, onClose, success }: TalkReadOnlyDialo
             </>
           )}
         </div>
-      </DialogContent>
-
-      <DialogActions className="px-6! pb-6! pt-5! justify-between!">
-        <div className="flex-1" />
-        <Button variant="outlined" onClick={onClose}>Fermer</Button>
-      </DialogActions>
-    </Dialog>
+    </FormDialog>
   );
 }

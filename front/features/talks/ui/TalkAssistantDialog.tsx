@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import Button from "@mui/material/Button";
-import Dialog from "@mui/material/Dialog";
+import { ResponsiveDialog as Dialog } from "@/shared/ui";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -40,7 +40,7 @@ type Feedback = {
 
 const toneClasses: Record<Feedback["tone"], string> = {
   title: "border-primary/30 bg-primary/5",
-  abstract: "border-border bg-muted/40",
+  abstract: "border-border bg-surface-muted/40",
   coherence: "border-emerald-500/30 bg-emerald-500/5",
 };
 
@@ -112,37 +112,38 @@ export function TalkAssistantDialog({
 
   return (
     <Dialog
+      aria-labelledby="talk-assistant-title"
       open={open}
       maxWidth="md"
       fullWidth
       onClose={loading ? undefined : onClose}
     >
-      <DialogTitle className="flex flex-col space-y-1.5 text-left font-display text-lg">
+      <DialogTitle id="talk-assistant-title" className="flex flex-col space-y-1.5 text-left font-sans text-lg">
         <div className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight">
-          <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
+          <Sparkles className="h-4 w-4 text-link" aria-hidden="true" />
           Assistant talk — relecture
         </div>
-        <p className="text-sm font-normal text-muted-foreground">
+        <p className="text-sm font-normal text-text-muted">
           Suggestions facultatives : gardez votre texte ou piochez ce qui vous aide.
         </p>
       </DialogTitle>
 
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto space-y-4 pt-2">
+      <DialogContent className="w-full overflow-y-auto space-y-4 pt-2">
         {loading && (
           <div className="flex flex-col items-center justify-center py-12 space-y-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm font-medium text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin text-link" />
+            <p className="text-sm font-medium text-text-muted">
               L&#39;Assistant révise votre talk en direct...
             </p>
           </div>
         )}
 
         {error && !loading && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+          <div className="rounded-lg border border-error/30 bg-error/10 p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-error shrink-0 mt-0.5" />
             <div className="flex-1 text-sm">
-              <p className="font-semibold text-destructive">Échec de l&#39;analyse</p>
-              <p className="text-muted-foreground mt-0.5">{error}</p>
+              <p className="font-semibold text-error">Échec de l&#39;analyse</p>
+              <p className="text-text-muted mt-0.5">{error}</p>
             </div>
           </div>
         )}
@@ -157,11 +158,11 @@ export function TalkAssistantDialog({
                     key={f.label}
                     className={`rounded-lg border p-2.5 ${toneClasses[f.tone]}`}
                   >
-                    <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                    <p className="flex items-center gap-1.5 text-xs font-semibold text-text">
                       <MessageSquare className="h-3 w-3" aria-hidden="true" />
                       {f.label}
                     </p>
-                    <p className="mt-1 text-xs leading-snug text-muted-foreground">
+                    <p className="mt-1 text-xs leading-snug text-text-muted">
                       {f.text}
                     </p>
                   </div>
@@ -175,10 +176,10 @@ export function TalkAssistantDialog({
                   htmlFor="assistant-title"
                   className="flex items-center gap-1.5 text-sm font-semibold"
                 >
-                  <FileText className="h-3.5 w-3.5 text-primary" aria-hidden="true" />{" "}
+                  <FileText className="h-3.5 w-3.5 text-link" aria-hidden="true" />{" "}
                   Titre du talk
                 </label>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-text-muted">
                   {draftTitle.length} caractères
                 </span>
               </div>
@@ -195,7 +196,7 @@ export function TalkAssistantDialog({
                     key={s}
                     type="button"
                     onClick={() => setDraftTitle(s)}
-                    className="max-w-full truncate rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    className="max-w-full truncate rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-text transition-colors hover:bg-surface-hover hover:text-text"
                     title={s}
                   >
                     <Wand2 className="mr-1 inline h-3 w-3" aria-hidden="true" />
@@ -211,10 +212,10 @@ export function TalkAssistantDialog({
                   htmlFor="assistant-abstract"
                   className="flex items-center gap-1.5 text-sm font-semibold"
                 >
-                  <FileText className="h-3.5 w-3.5 text-primary" aria-hidden="true" />{" "}
+                  <FileText className="h-3.5 w-3.5 text-link" aria-hidden="true" />{" "}
                   Abstract / Description
                 </label>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-text-muted">
                   {draftAbstract.length} caractères
                 </span>
               </div>
@@ -223,15 +224,15 @@ export function TalkAssistantDialog({
                 minRows={7}
                 value={draftAbstract}
                 onChange={(e) => setDraftAbstract(e.target.value)}
-                className="w-full rounded-md border border-input bg-background p-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="font-sans text-text w-full rounded-md border border-border-strong bg-surface p-3 text-sm ring-offset-surface placeholder:text-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               />
               <div className="space-y-1.5">
                 {abstractSuggestions.map((s) => (
                   <div
                     key={s}
-                    className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-2"
+                    className="flex items-start gap-2 rounded-lg border border-border bg-surface-muted/30 p-2"
                   >
-                    <p className="flex-1 text-xs leading-snug text-muted-foreground">
+                    <p className="flex-1 text-xs leading-snug text-text-muted">
                       {s}
                     </p>
                     <button
@@ -241,7 +242,7 @@ export function TalkAssistantDialog({
                           `${prev.trim()} ${s.split("« ")[1]?.replace(" »", "") ?? s}`.trim()
                         )
                       }
-                      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-xs font-medium transition-colors hover:bg-surface-hover hover:text-text"
                     >
                       <Plus className="h-3 w-3" aria-hidden="true" /> Ajouter
                     </button>

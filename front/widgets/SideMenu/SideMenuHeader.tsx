@@ -18,7 +18,7 @@ const HeaderRoot = styled(Box, { shouldForwardProp: (p) => p !== "open" })<{
   paddingLeft: open ? OPEN_PADDING_LEFT : CLOSED_PADDING_LEFT,
   height: 64,
   position: "relative",
-  borderBottom: "1px solid rgba(0, 0, 0, 0.08)",
+  borderBottom: `1px solid ${theme.palette.divider}`,
   flexShrink: 0,
   transition: theme.transitions.create("padding-left", {
     easing: theme.transitions.easing.sharp,
@@ -42,7 +42,7 @@ export function SideMenuHeader({ open, onToggle }: SideMenuHeaderProps) {
             width: 36,
             height: 36,
             borderRadius: "12px",
-            backgroundColor: "#D51F51",
+            backgroundColor: "primary.main",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -71,10 +71,7 @@ export function SideMenuHeader({ open, onToggle }: SideMenuHeaderProps) {
           <Typography
             sx={{
               fontWeight: 800,
-              color:
-                theme.palette.mode === "dark"
-                  ? "hsl(var(--foreground))"
-                  : "#1e293b",
+              color: "text.primary",
               letterSpacing: "-0.5px",
               fontSize: "1.125rem",
               lineHeight: 1.2,
@@ -87,7 +84,7 @@ export function SideMenuHeader({ open, onToggle }: SideMenuHeaderProps) {
               fontSize: "10px",
               textTransform: "uppercase",
               letterSpacing: "0.1em",
-              color: "var(--color-text-muted)",
+              color: "text.secondary",
               fontWeight: 700,
               mt: 0.5,
             }}

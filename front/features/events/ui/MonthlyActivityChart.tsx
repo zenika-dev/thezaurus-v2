@@ -34,7 +34,7 @@ export function MonthlyActivityChart({ monthly, filter }: MonthlyActivityChartPr
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" role="region" aria-label="Activité mensuelle, graphique défilant" tabIndex={0}>
       <div className="min-w-[640px]">
         <BarChart
           skipAnimation

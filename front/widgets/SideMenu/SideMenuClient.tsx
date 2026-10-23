@@ -25,6 +25,7 @@ interface SideMenuClientProps {
 
 export function SideMenuClient({ navLinks }: SideMenuClientProps) {
   const [open, setOpen] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const push = useGuardedPush();
   const pathname = usePathname();
 
@@ -35,12 +36,15 @@ export function SideMenuClient({ navLinks }: SideMenuClientProps) {
     icon: iconMap[link.path] ?? Calendar,
     label: link.label,
     active: isActive(link.path),
-    onClick: () => push(link.path),
+    onClick: () => { push(link.path); setMobileOpen(false); },
   }));
 
   return (
     <SideMenuView
       open={open}
+      mobileOpen={mobileOpen}
+      onMobileToggle={() => setMobileOpen((value) => !value)}
+      onMobileClose={() => setMobileOpen(false)}
       onToggle={() => setOpen((o) => !o)}
       navItems={navItems}
     />

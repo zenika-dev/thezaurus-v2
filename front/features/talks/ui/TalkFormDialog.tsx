@@ -1,13 +1,13 @@
 "use client";
 
 import { useId, type ReactNode } from "react";
-import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle,
+import { Box, Button, CircularProgress,
   FormControl, FormHelperText, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
 import "dayjs/locale/fr";
 import { Bot } from "lucide-react";
-import { DatePickerProvider } from "@/shared/ui";
+import { DatePickerProvider, FormDialog } from "@/shared/ui";
 import { TalkStatus } from "@/shared/api";
 import { type TalkData, SpeakerAutocomplete, agencyLabels, formatLabels, languageLabels,
   visibilityLabels, talkStatusConfig } from "@/entities/talk";
@@ -60,18 +60,21 @@ export function TalkFormDialog({ open, title, description, value, onChange, onCl
     </FormControl>
   );
   return <DatePickerProvider>
-    <Dialog open={open} onClose={pending ? undefined : onClose} maxWidth="md" fullWidth
-      aria-labelledby={`${id}-title`} slotProps={{ paper: { className: "dark:bg-slate-900 dark:bg-none" } }}>
-      <DialogTitle id={`${id}-title`} className="pb-0! flex justify-between items-center">
-        <span>{title}</span>
+    <FormDialog open={open} onClose={pending ? () => {} : onClose} maxWidth="md" fullWidth
+      titleId={`${id}-title`} title={title} showCloseButton={!pending} customActions
+      actions={<>
+        <Button variant="outlined" disabled={pending} onClick={onClose}>Annuler</Button>
+        <div className="flex-1" />
+        {secondaryActions}
+        <Button variant="contained" disabled={disabled} type="submit" form={formId}>{submitLabel}</Button>
+      </>} headerAction={
         <Button variant="outlined" size="small" onClick={onReview} disabled={disabled || assistantLoading}
-          startIcon={assistantLoading ? <CircularProgress size={16} className="text-purple-600" />
-            : <Bot size={18} className="text-purple-600 dark:text-purple-400" />}
-          className="normal-case border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/50">
+          startIcon={assistantLoading ? <CircularProgress size={16} className="text-link" />
+            : <Bot size={18} className="text-link" />}
+          className="normal-case">
           {assistantLoading ? "Traitement IA en cours..." : "Relire avec l’Assistant talk"}
-        </Button>
-      </DialogTitle>
-      <DialogContent>
+        </Button>}>
+
         {feedback}
         <p className="text-sm text-text-muted mb-6">{description}</p>
         <Box component="form" id={formId} noValidate onSubmit={event => {
@@ -81,7 +84,7 @@ export function TalkFormDialog({ open, title, description, value, onChange, onCl
           <TextField label="Titre du talk" value={value.title} onChange={event => onChange("title", event.target.value)}
             required fullWidth disabled={disabled} placeholder="Ex: Building Resilient Microservices"
             error={!!errors.title} helperText={errors.title} />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <SpeakerAutocomplete label="Speaker" required disabled={disabled}
               value={value.speakers.map(speaker => ({ name: speaker.name, email: speaker.email ?? "" }))}
               onChange={speakers => onChange("speakers", speakers)} error={!!errors.speakers} helperText={errors.speakers} />
@@ -93,7 +96,7 @@ export function TalkFormDialog({ open, title, description, value, onChange, onCl
             error={!!errors.description} helperText={errors.description} />
           <Box component="fieldset" sx={{ border: "none", p: 0, m: 0 }}>
             <Box component="legend" sx={{ display: "none" }}>Paramètres du talk</Box>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {renderSelectField("format", "Format", formatLabels, true)}
               {renderSelectField("visibility", "Visibilité", visibilityLabels, true)}
               {renderSelectField("language", "Langue", languageLabels)}
@@ -111,7 +114,7 @@ export function TalkFormDialog({ open, title, description, value, onChange, onCl
               const status = TalkStatus.find(status => status === event.target.value);
               if (status) onChange("status", status);
             }}>{TalkStatus.map(status => <MenuItem key={status} value={status}>{talkStatusConfig[status].label}</MenuItem>)}</TextField>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <TextField label="Slides" value={value.slides ?? ""} disabled={disabled} fullWidth
                 onChange={event => onChange("slides", event.target.value)} error={!!errors.slides} helperText={errors.slides} />
               <TextField label="Replay" value={value.replay ?? ""} disabled={disabled} fullWidth
@@ -122,13 +125,6 @@ export function TalkFormDialog({ open, title, description, value, onChange, onCl
               error={!!errors.audience} helperText={errors.audience} slotProps={{ htmlInput: { min: 0, step: 1 } }} />
           </>}
         </Box>
-      </DialogContent>
-      <DialogActions className="px-6! pb-6! pt-5!">
-        <Button variant="outlined" disabled={pending} onClick={onClose}>Annuler</Button>
-        <div className="flex-1" />
-        {secondaryActions}
-        <Button variant="contained" disabled={disabled} type="submit" form={formId}>{submitLabel}</Button>
-      </DialogActions>
-    </Dialog>
+    </FormDialog>
   </DatePickerProvider>;
 }

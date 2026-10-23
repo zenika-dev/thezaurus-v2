@@ -3,12 +3,12 @@
 import { useEffect, useId, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, MenuItem, TextField } from "@mui/material";
+import { Alert, Button, IconButton, InputAdornment, MenuItem, TextField } from "@mui/material";
 import { ExternalLink } from "lucide-react";
 import { DatePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { DatePickerProvider } from "@/shared/ui";
+import { DatePickerProvider, FormDialog } from "@/shared/ui";
 import { isValidUrl } from "@/shared/lib";
 import { agencyLabels } from "@/shared/lib/offices";
 import { ContributorAutocomplete, type ContributorFormData } from "@/entities/user";
@@ -78,9 +78,21 @@ export function BlogPostFormDialog({ post, defaultAuthor, defaultOffice, onClose
   });
 
   return <DatePickerProvider>
-    <Dialog open onClose={pending ? undefined : onClose} maxWidth="md" fullWidth aria-labelledby={titleId}>
-      <DialogTitle id={titleId}>{post ? "Détails de l’article de blog" : "Nouvel article de blog"}</DialogTitle>
-      <DialogContent>
+    <FormDialog open onClose={() => { if (!pending) onClose(); }} maxWidth="md" titleId={titleId}
+      title={post ? "Détails de l’article de blog" : "Nouvel article de blog"}
+      showCloseButton={!pending} customActions actions={<>
+        {post && onDelete && <Button color="error" disabled={pending} onClick={async () => {
+          if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce post ?")) return;
+          setSaveError(null);
+          setIsDeleting(true);
+          try { await onDelete(post.id); onClose(); }
+          catch { setSaveError("La suppression a échoué. Vous pouvez réessayer."); }
+          finally { setIsDeleting(false); }
+        }}>Supprimer</Button>}
+        <div className="flex-1" />
+        <Button onClick={onClose} disabled={pending}>Annuler</Button>
+        <Button type="submit" form={formId} variant="contained" disabled={pending}>{post ? "Enregistrer" : "Créer le post"}</Button>
+      </>}>
         <form id={formId} onSubmit={save} noValidate className="flex flex-col gap-4 pt-2">
           <Controller name="status" control={control} render={({ field }) =>
             <TextField {...field} select label="Statut" disabled={pending}>
@@ -121,25 +133,11 @@ export function BlogPostFormDialog({ post, defaultAuthor, defaultOffice, onClose
                 error={!!errors[name]} helperText={errors[name]?.message}
                 slotProps={{ input: { endAdornment: isValidUrl(field.value) && <InputAdornment position="end">
                   <IconButton component="a" href={field.value} target="_blank" rel="noopener noreferrer"
-                    aria-label={`Ouvrir : ${label}`} size="small"><ExternalLink size={16} /></IconButton>
+                    aria-label={`Ouvrir : ${label}`} size="small" className="text-link p-0.5"><ExternalLink size={16} /></IconButton>
                 </InputAdornment> } }} />} />)}
           </div>
           {saveError && <Alert severity="error">{saveError}</Alert>}
         </form>
-      </DialogContent>
-      <DialogActions className="px-6! pb-6!">
-        {post && onDelete && <Button color="error" disabled={pending} onClick={async () => {
-          if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce post ?")) return;
-          setSaveError(null);
-          setIsDeleting(true);
-          try { await onDelete(post.id); onClose(); }
-          catch { setSaveError("La suppression a échoué. Vous pouvez réessayer."); }
-          finally { setIsDeleting(false); }
-        }}>Supprimer</Button>}
-        <div className="flex-1" />
-        <Button onClick={onClose} disabled={pending}>Annuler</Button>
-        <Button type="submit" form={formId} variant="contained" disabled={pending}>{post ? "Enregistrer" : "Créer le post"}</Button>
-      </DialogActions>
-    </Dialog>
+    </FormDialog>
   </DatePickerProvider>;
 }

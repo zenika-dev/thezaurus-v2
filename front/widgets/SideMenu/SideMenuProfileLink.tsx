@@ -7,9 +7,10 @@ import { SideMenuNavItem } from "./SideMenuNavItem";
 
 interface SideMenuProfileLinkProps {
   open: boolean;
+  onNavigate: () => void;
 }
 
-export function SideMenuProfileLink({ open }: SideMenuProfileLinkProps) {
+export function SideMenuProfileLink({ open, onNavigate }: SideMenuProfileLinkProps) {
   const push = useGuardedPush();
   const pathname = usePathname();
 
@@ -19,7 +20,7 @@ export function SideMenuProfileLink({ open }: SideMenuProfileLinkProps) {
       label="Mon profil"
       open={open}
       active={pathname.startsWith("/profile")}
-      onClick={() => push("/profile")}
+      onClick={() => { push("/profile"); onNavigate(); }}
     />
   );
 }

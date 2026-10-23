@@ -8,6 +8,7 @@ import {
   formatLocation,
 } from "@/entities/conference";
 import { StatusTag, TypeTag } from "@/features/conferences/ui";
+import { FilterChip, Surface } from "@/shared/ui";
 import { useState } from "react";
 import dayjs from "dayjs";
 import {
@@ -42,27 +43,6 @@ export function ConferencesList() {
     return true;
   });
 
-  const FilterBadge = ({
-    label,
-    active,
-    onClick,
-  }: {
-    label: string;
-    active: boolean;
-    onClick: () => void;
-  }) => (
-    <button
-      onClick={onClick}
-      className={`inline-flex items-center gap-1 px-3 py-1 rounded-2xl text-xs font-sans border cursor-pointer transition-colors ${
-        active
-          ? "bg-primary text-white border-primary"
-          : "bg-surface-hover text-text border-transparent hover:bg-border-strong"
-      }`}
-    >
-      {label}
-    </button>
-  );
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-6 flex-wrap">
@@ -70,7 +50,7 @@ export function ConferencesList() {
           <Funnel size={14} className="text-text-muted shrink-0" />
           <span className="text-xs text-text-muted mr-2">Année :</span>
           {(["All", "This Year", "Next Year"] as const).map((year) => (
-            <FilterBadge
+            <FilterChip
               key={year}
               label={
                 year === "All"
@@ -87,7 +67,7 @@ export function ConferencesList() {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-text-muted mr-2">Statut CFP :</span>
           {(["All", "Open", "Closed"] as const).map((status) => (
-            <FilterBadge
+            <FilterChip
               key={status}
               label={status === "All" ? "Tous" : status}
               active={statusFilter === status}
@@ -102,7 +82,7 @@ export function ConferencesList() {
               setStatusFilter("All");
               setYearFilter("All");
             }}
-            className="flex text-xs items-center font-sans gap-1 cursor-pointer text-primary border border-primary/20 px-3 py-1 rounded-2xl bg-primary/10 transition-colors no-underline hover:bg-primary/20 hover:text-primary"
+            className="flex text-xs items-center font-sans gap-1 cursor-pointer text-link border border-primary/20 px-3 py-1 rounded-2xl bg-primary/10 transition-colors no-underline hover:bg-primary/20 hover:text-link"
           >
             Réinitialiser
           </button>
@@ -113,7 +93,7 @@ export function ConferencesList() {
             href={`https://developers.events/#/${currentYear}/cfp`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex text-xs items-center gap-1 text-primary px-3 py-1.5 rounded-2xl transition-colors no-underline hover:bg-primary/10 hover:text-primary"
+            className="flex text-xs items-center gap-1 text-link px-3 py-1.5 rounded-2xl transition-colors no-underline hover:bg-primary/10 hover:text-link"
           >
             developers.events <ExternalLinkIcon size={14} />
           </a>
@@ -140,14 +120,14 @@ export function ConferencesList() {
                 : false;
 
             return (
-              <div
+              <Surface
                 key={`${conference.id}-${statusFilter}-${yearFilter}`}
-                className="p-6 flex flex-col gap-2 rounded-2xl border border-primary animate-fade-in-up transition-shadow hover:shadow-md"
+                className="p-6 flex flex-col gap-2 animate-fade-in-up transition-shadow hover:shadow-md"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex flex-col gap-2">
-                    <span className="font-bold text-text">
+                <div className="flex flex-wrap justify-between items-start gap-4">
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                    <span className="font-bold text-text wrap-anywhere">
                       {conference.name}
                     </span>
                     <div className="flex flex-col gap-1.5 text-xs text-text-muted">
@@ -180,7 +160,7 @@ export function ConferencesList() {
                     <StatusTag status={conference.cfpStatus} />
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-xs mt-2 text-text-muted">
+                <div className="flex flex-wrap gap-2 items-center justify-between text-xs mt-2 text-text-muted">
                   <span>
                     {conference.submittedTalksAmount} talk
                     {conference.submittedTalksAmount !== 1 ? "s" : ""} soumis
@@ -191,7 +171,7 @@ export function ConferencesList() {
                         href={conference.cfpLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`flex items-center gap-1 text-primary no-underline hover:underline ${isClosedByDate ? "text-text-muted hover:none" : ""}`}
+                        className={`flex items-center gap-1 text-link no-underline hover:underline ${isClosedByDate ? "text-text-muted hover:no-underline" : ""}`}
                       >
                         {conference.cfpStatus === "Open"
                           ? isNotYetOpenByDate
@@ -205,7 +185,7 @@ export function ConferencesList() {
                     </>
                   )}
                 </div>
-              </div>
+              </Surface>
             );
           },
         )}
