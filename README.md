@@ -89,6 +89,10 @@ Pour approfondir, consultez les guides disponibles dans le dossier [`docs/`](doc
   - Configuration de l'application Slack depuis le manifest
   - Exposition locale avec ngrok
   - Commandes slash (`/talk`)
+- 🖼️ **[Guide du bucket GCP des photos](docs/CloudStorage.md)** :
+  - Création du bucket privé et droits du compte de service
+  - Configuration de l’API et vérification après déploiement
+  - Émulateur GCS local, photos de profil et autorisation IA
 - 📧 **[Guide des rappels post-talk](docs/FeedbackReminders.md)** :
   - Configuration SMTP (local Mailpit et production)
   - Job quotidien et conditions d'envoi

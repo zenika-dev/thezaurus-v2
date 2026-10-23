@@ -9,4 +9,6 @@ export { contributorSchema, type ContributorFormData } from "./schema";
 export { areContributorsEqual, normalizeText } from "./lib/contributor";
 export { isContributor } from "./lib/isContributor";
 export { getInitials } from "./lib/initials";
+export { ProfileAvatar } from "./ui/ProfileAvatar";
+export { ProfilePhotoEditor } from "./ui/ProfilePhotoEditor";
 export { useUsersSearchQuery, useUsersSearchQuery as default } from "./model/useUsersSearchQuery";

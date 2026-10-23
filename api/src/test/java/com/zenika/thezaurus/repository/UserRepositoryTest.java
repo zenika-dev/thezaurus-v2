@@ -7,10 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.api.core.ApiFutures;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
+import com.google.cloud.firestore.Transaction;
 import com.google.cloud.firestore.WriteResult;
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.User;
@@ -195,6 +197,8 @@ public class UserRepositoryTest {
 
     private DocumentReference documentReferenceFor(String email) {
         DocumentReference reference = Mockito.mock(DocumentReference.class);
+        Mockito.when(reference.update(Mockito.anyString(), Mockito.any()))
+                .thenReturn(ApiFutures.immediateFuture(Mockito.mock(WriteResult.class)));
         Mockito.when(reference.update(Mockito.anyMap()))
                 .thenReturn(ApiFutures.immediateFuture(Mockito.mock(WriteResult.class)));
         Mockito.when(collection.document(email)).thenReturn(reference);
@@ -244,6 +248,38 @@ public class UserRepositoryTest {
         assertEquals(Set.of("name"), written.keySet());
         assertEquals("Jane Doe", written.get("name"));
         Mockito.verify(reference, Mockito.never()).set(Mockito.any());
+    }
+
+    @Test
+    public void photoConsentAndRoleUpdatesPreserveUnrelatedFields() throws Exception {
+        DocumentReference reference = documentReferenceFor("jane@zenika.com");
+        repository.updateAiPhotoAllowed("jane@zenika.com", true);
+        repository.updateCustomPhoto("jane@zenika.com", "custom");
+        repository.updateRoles("jane@zenika.com", List.of(Role.DT));
+        Mockito.verify(reference).update("aiPhotoAllowed", true);
+        Mockito.verify(reference).update("customPhotoObject", "custom");
+        Mockito.verify(reference).update("roles", List.of(Role.DT));
+        Mockito.verify(reference, Mockito.never()).set(Mockito.any());
+    }
+
+    @Test
+    public void googleSynchronizationChecksTheCurrentPhotoInsideTheTransaction() throws Exception {
+        DocumentReference reference = documentReferenceFor("jane@zenika.com");
+        Transaction transaction = Mockito.mock(Transaction.class);
+        DocumentSnapshot snapshot = Mockito.mock(DocumentSnapshot.class);
+        Mockito.when(transaction.get(reference)).thenReturn(ApiFutures.immediateFuture(snapshot));
+        Mockito.when(repository.firestore.runTransaction(Mockito.<Transaction.Function<Void>>any()))
+                .thenAnswer(invocation -> {
+                    Transaction.Function<Void> function = invocation.getArgument(0);
+                    return ApiFutures.immediateFuture(function.updateCallback(transaction));
+                });
+        Mockito.when(snapshot.toObject(User.class))
+                .thenReturn(User.builder().customPhotoObject("custom").build());
+        repository.syncGooglePhoto("jane@zenika.com", "https://lh3.googleusercontent.com/new");
+        Mockito.verify(transaction, Mockito.never()).update(Mockito.eq(reference), Mockito.anyString(), Mockito.any());
+        Mockito.when(snapshot.toObject(User.class)).thenReturn(User.builder().build());
+        repository.syncGooglePhoto("jane@zenika.com", "https://lh3.googleusercontent.com/new");
+        Mockito.verify(transaction).update(reference, "googlePhotoUrl", "https://lh3.googleusercontent.com/new");
     }
 
     @Test

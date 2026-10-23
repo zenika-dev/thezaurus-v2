@@ -1,4 +1,19 @@
 services:
+  gcs:
+    image: fsouza/fake-gcs-server:1.56.1
+    container_name: thezaurus-gcs-emulator
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - mkdir -p /data/thezaurus-photos-local && exec /bin/fake-gcs-server -scheme http -port 4443 -backend filesystem -filesystem-root /storage -data /data -external-url http://gcs:4443
+    ports:
+      - "127.0.0.1:4443:4443"
+    volumes:
+      - gcs-data:/storage
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:4443/storage/v1/b/thezaurus-photos-local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
   # Boîte SMTP locale : tous les emails restent consultables dans Mailpit.
   mailpit:
     image: axllent/mailpit:v1.27.4
@@ -37,6 +52,8 @@ services:
   api:
     environment:
       - QUARKUS_PROFILE=dev
+      - PROFILE_PHOTOS_BUCKET=thezaurus-photos-local
+      - GCS_EMULATOR_HOST=http://gcs:4443
       - FIRESTORE_HOST_OVERRIDE=firestore:9000
       - SMTP_HOST=${SMTP_HOST:-mailpit}
       - SMTP_PORT=${SMTP_PORT:-1025}
@@ -52,6 +69,8 @@ services:
       - FEEDBACK_REMINDER_TIME_ZONE=${FEEDBACK_REMINDER_TIME_ZONE:-Europe/Paris}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-dummy-client-id}
     depends_on:
+      gcs:
+        condition: service_healthy
       mailpit:
         condition: service_healthy
       firestore:
@@ -94,3 +113,6 @@ services:
           path: ./front/package.json
         - action: rebuild
           path: ./front/package-lock.json
+
+volumes:
+  gcs-data:

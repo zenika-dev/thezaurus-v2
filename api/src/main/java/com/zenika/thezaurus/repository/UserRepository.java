@@ -23,6 +23,45 @@ public class UserRepository {
 
     private static final String COLLECTION_NAME = "users";
 
+    public void updateAiPhotoAllowed(String email, boolean allowed) throws ExecutionException, InterruptedException {
+        firestore
+                .collection(COLLECTION_NAME)
+                .document(email)
+                .update("aiPhotoAllowed", allowed)
+                .get();
+    }
+
+    public void updateCustomPhoto(String email, String object) throws ExecutionException, InterruptedException {
+        firestore
+                .collection(COLLECTION_NAME)
+                .document(email)
+                .update("customPhotoObject", object)
+                .get();
+    }
+
+    /** La transaction empêche un login concurrent de rétablir Google après un chargement. */
+    public void syncGooglePhoto(String email, String url) throws ExecutionException, InterruptedException {
+        DocumentReference reference = firestore.collection(COLLECTION_NAME).document(email);
+        firestore
+                .runTransaction(transaction -> {
+                    User user = transaction.get(reference).get().toObject(User.class);
+                    if (user != null && !user.hasCustomPhoto()) {
+                        transaction.update(reference, "googlePhotoUrl", url);
+                    }
+                    return null;
+                })
+                .get();
+    }
+
+    public void updateRoles(String email, List<com.zenika.thezaurus.model.Role> roles)
+            throws ExecutionException, InterruptedException {
+        firestore
+                .collection(COLLECTION_NAME)
+                .document(email)
+                .update("roles", roles)
+                .get();
+    }
+
     public void updateOffice(String email, String office) throws ExecutionException, InterruptedException {
         firestore
                 .collection(COLLECTION_NAME)

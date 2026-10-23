@@ -50,6 +50,7 @@ Avant de déployer, préparez les variables de production requises :
 | `GOOGLE_CLOUD_PROJECT_ID` | Identifiant du projet GCP cible | `thezaurus-494709` |
 | `GCP_REGION` | Région de déploiement Cloud Run | `europe-west1` |
 | `FIRESTORE_DATABASE_ID` | Base Firestore cible | `thezaurus-prod` *(ou `thezaurus-dev` pour la pré-prod)* |
+| `PROFILE_PHOTOS_BUCKET` | Bucket GCS privé des photos personnalisées ; configuration et droits dans [CloudStorage.md](CloudStorage.md) | Bucket distinct par environnement |
 | `FIRESTORE_COLLECTION_PREFIX` | Préfixe des collections Firestore | `prod` *(ou `dev`)* |
 | `GOOGLE_CLIENT_ID` | ID client OAuth Google | `xxxx.apps.googleusercontent.com` |
 | `GOOGLE_CLIENT_SECRET` | Secret client OAuth Google | `GOCSPX-xxxx` |
