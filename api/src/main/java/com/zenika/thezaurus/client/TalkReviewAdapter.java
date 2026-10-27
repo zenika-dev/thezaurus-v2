@@ -79,9 +79,9 @@ public class TalkReviewAdapter {
             Thread.currentThread().interrupt();
             LOG.warn("Thread interrupted while calling Reasoning Engine AI Agent", e);
         } catch (IOException e) {
-            LOG.warnf("I/O error calling Reasoning Engine AI Agent: %s", e.getMessage());
+            LOG.warn("I/O error calling Reasoning Engine AI Agent", e);
         } catch (Exception e) {
-            LOG.warnf("Unexpected error calling Reasoning Engine AI Agent: %s", e.getMessage(), e);
+            LOG.warn("Unexpected error calling Reasoning Engine AI Agent", e);
         }
 
         return Optional.empty();
