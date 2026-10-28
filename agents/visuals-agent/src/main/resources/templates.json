@@ -1,0 +1,76 @@
+[
+  {
+    "name": "generate-image-speaker-event",
+    "description": "Génère un visuel de communication pour annoncer un talk (1 speaker) à une conférence",
+    "category": "TALK",
+    "templatePath": "templates/talk-single.png",
+    "fields": [
+      "NAME",
+      "TITLE",
+      "CONFERENCE",
+      "PHOTO",
+      "CONF_PHOTO"
+    ],
+    "prompt": "I would like to create an image from the template image available in this file %TEMPLATE% integrating these elements: - replace 'Speaker name' by %NAME% - replace 'Talk title' by %TITLE%. Please center this title and use 2 lines at maximum. - integrate the target conference name %CONFERENCE% (and replace the yellow square by the logo of the conference from the %CONF_PHOTO% file if provided). - replace the white square by the speaker photo from this %PHOTO% file if provided. Please don't modify the name of the speaker, the conference name, and the title of the talk."
+  },
+  {
+    "name": "generate-image-2-speaker-event",
+    "description": "Génère un visuel de communication pour annoncer un talk en binôme (2 speakers) à une conférence",
+    "category": "TALK",
+    "templatePath": "templates/talk-duo.png",
+    "fields": [
+      "NAME",
+      "NAME2",
+      "TITLE",
+      "CONFERENCE",
+      "PHOTO",
+      "PHOTO2",
+      "CONF_PHOTO"
+    ],
+    "prompt": "I would like to create an image from the template image available in this file %TEMPLATE% integrating these elements: - replace the first 'Speaker Name' by %NAME% - replace the second 'Speaker Name' by %NAME2% - replace 'Talk title' by %TITLE%. Please center this title and use 2 lines at maximum. - integrate the target conference name %CONFERENCE% (and replace the conference square by the conference logo from %CONF_PHOTO% if provided). - replace the first white square by the first speaker photo from %PHOTO% if provided. - replace the second white square by the second speaker photo from %PHOTO2% if provided. Please don't modify the names of the speakers, the conference name, and the title of the talk."
+  },
+  {
+    "name": "generate-image-3-speaker-event",
+    "description": "Génère un visuel de communication pour annoncer un talk en trinôme (3 speakers) à une conférence",
+    "category": "TALK",
+    "templatePath": "templates/talk-trio.png",
+    "fields": [
+      "NAME",
+      "NAME2",
+      "NAME3",
+      "TITLE",
+      "CONFERENCE",
+      "PHOTO",
+      "PHOTO2",
+      "PHOTO3",
+      "CONF_PHOTO"
+    ],
+    "prompt": "I would like to create an image from the template image available in this file %TEMPLATE% integrating these elements: - integrate the target conference name %CONFERENCE% (and replace the yellow square by the conference photo from %CONF_PHOTO% if provided) - replace the first 'Speaker Name' by %NAME% - replace the white square with %PHOTO% if provided - replace the second 'Speaker Name' by %NAME2% - replace the blue square with %PHOTO2% if provided - replace the third 'Speaker Name' by %NAME3% - replace the green square with %PHOTO3% if provided - replace 'Talk title' by %TITLE%. Please don't modify the names of the speakers, the conference name, and the title of the talk."
+  },
+  {
+    "name": "generate-image-blog-post",
+    "description": "Génère un visuel de communication pour un article de blog (1 auteur)",
+    "category": "BLOG",
+    "templatePath": "templates/blog-single.png",
+    "fields": [
+      "NAME",
+      "TITLE",
+      "PHOTO"
+    ],
+    "prompt": "I would like to create an image from the template image available in this file %TEMPLATE% integrating these elements: - replace 'Writer Name' by %NAME% - replace 'Post title' by %TITLE%. Please center this title and use 2 lines at maximum. - replace the second white square by the photo from this %PHOTO% file if provided. Please don't modify the name of the author and the title of the blog post."
+  },
+  {
+    "name": "generate-image-2-blog-post",
+    "description": "Génère un visuel de communication pour un article de blog (2 co-auteurs)",
+    "category": "BLOG",
+    "templatePath": "templates/blog-duo.png",
+    "fields": [
+      "NAME",
+      "NAME2",
+      "TITLE",
+      "PHOTO",
+      "PHOTO2"
+    ],
+    "prompt": "I would like to create an image from the template image available in this file %TEMPLATE% integrating these elements: - replace the text 'Name' by %NAME% - replace the text 'Name2' by %NAME2% - replace the text 'Post title' by %TITLE%. Please center this title and use 2 lines at maximum. - replace the first white square by the first author photo from %PHOTO% if provided. - replace the second white square by the second author photo from %PHOTO2% if provided. Please don't modify the names of the authors and the title of the blog post and the ratio of the photos."
+  }
+]
