@@ -3,7 +3,6 @@ package com.zenika.thezaurus.resource;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.User;
@@ -15,7 +14,6 @@ import io.restassured.http.ContentType;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 @QuarkusTest
@@ -77,9 +75,7 @@ public class UserAdminResourceTest {
                 .body("email", is("jane@zenika.com"))
                 .body("roles", hasItems(Role.Names.CONSULTANT, Role.Names.DT));
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        Mockito.verify(userRepository).update(Mockito.eq("jane@zenika.com"), captor.capture());
-        assertEquals(List.of(Role.CONSULTANT, Role.DT), captor.getValue().roles());
+        Mockito.verify(userRepository).updateRoles("jane@zenika.com", List.of(Role.CONSULTANT, Role.DT));
     }
 
     @Test
@@ -101,7 +97,7 @@ public class UserAdminResourceTest {
                 .body("email", is("jane@zenika.com"));
 
         Mockito.verify(userRepository).findByEmail("jane@zenika.com");
-        Mockito.verify(userRepository).update(Mockito.eq("jane@zenika.com"), Mockito.any(User.class));
+        Mockito.verify(userRepository).updateRoles("jane@zenika.com", List.of(Role.DT));
     }
 
     @Test

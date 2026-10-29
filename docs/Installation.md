@@ -36,6 +36,9 @@ cp .env-template .env
 | `FIRESTORE_COLLECTION_PREFIX` | — | api | Préfixe des collections (ex : `dev` → `dev_talks`). Défaut : `dev`. |
 | `GCP_REGION` | déploiement | api, front | Région GCP de déploiement Cloud Run (défaut : `europe-west1`). |
 | `GCLOUD_ADC` | Windows (mode prod) | Docker Compose | Chemin du fichier *Application Default Credentials* monté dans le conteneur API. Automatique sur Linux/Mac (`~/.config/gcloud/...`) ; sous Windows : `C:/Users/<vous>/AppData/Roaming/gcloud/application_default_credentials.json`. |
+| **Photos GCS** | | | |
+| `PROFILE_PHOTOS_BUCKET` | production | api | Nom du bucket privé, sans `gs://`. Voir [CloudStorage.md](CloudStorage.md). Compose dev utilise automatiquement le bucket émulé. |
+| `GCS_EMULATOR_HOST` | dev hors Docker | api | Adresse de l’émulateur : `http://localhost:4443` par défaut ; Compose utilise `http://gcs:4443`. |
 | **Bot Slack** (optionnel) | | | |
 | `SLACK_BOT_TOKEN` | — | api | Bot User OAuth Token (`xoxb-...`). Absent = bot désactivé. Voir [SlackBot.md](./SlackBot.md). |
 | `SLACK_SIGNING_SECRET` | — | api | Vérification de l'origine des requêtes Slack. |
@@ -69,11 +72,14 @@ cp .env-template .env
 Par défaut, `docker compose up` combine `docker-compose.yml` et `docker-compose.override.yml`. Cela démarre :
 - L'émulateur Firestore local (port 9000, données en mémoire).
 - L'API Quarkus en profil `dev` pointant sur l'émulateur.
+- Un émulateur GCS dédié, sans credentials cloud, avec le bucket `thezaurus-photos-local` et les photos persistées dans le volume Docker `gcs-data`.
 - Le frontend Next.js en mode développement avec rechargement à chaud (*watch*).
 
 ```bash
 docker compose up --build
 ```
+
+Le parcours de test des photos et de l’autorisation IA est décrit dans [ProfilePhotos.md](ProfilePhotos.md#test-en-local).
 
 ### 2. Mode Prod (Vrai Firestore GCP & Front optimisé)
 
@@ -105,6 +111,7 @@ Une fois la stack démarrée, les services suivants sont accessibles :
 | **Emulator UI (Firebase)** | [http://localhost:4000/firestore/local-dev/data](http://localhost:4000/firestore/local-dev/data) | Console visuelle Firestore (mode dev uniquement) |
 | **Mailpit (Emails locaux)** | [http://localhost:8025](http://localhost:8025) | Interface de visualisation des emails envoyés (mode dev uniquement) |
 | **Émulateur Firestore** | `http://localhost:9000` | Port gRPC / REST de l'émulateur (mode dev uniquement) |
+| **Émulateur GCS** | [http://localhost:4443/storage/v1/b/thezaurus-photos-local/o](http://localhost:4443/storage/v1/b/thezaurus-photos-local/o) | API du bucket local des photos (mode dev uniquement) |
 
 ### Inspection des données de l'émulateur (mode dev)
 

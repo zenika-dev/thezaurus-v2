@@ -24,7 +24,7 @@ import lombok.Builder;
  *       et {@link #notifiesOnSlack()}.</li>
  * </ul>
  */
-@Builder
+@Builder(toBuilder = true)
 public record User(
         @NotBlank String name,
         @Email String email,
@@ -32,7 +32,18 @@ public record User(
         @JsonIgnore List<Role> roles,
         @JsonIgnore Boolean emailNotificationsEnabled,
         @JsonIgnore Boolean slackNotificationsEnabled,
-        @JsonIgnore String office) {
+        @JsonIgnore String office,
+        @JsonIgnore Boolean aiPhotoAllowed,
+        @JsonIgnore String customPhotoObject,
+        @JsonIgnore String googlePhotoUrl) {
+
+    public boolean allowsAiPhoto() {
+        return Boolean.TRUE.equals(aiPhotoAllowed);
+    }
+
+    public boolean hasCustomPhoto() {
+        return customPhotoObject != null && !customPhotoObject.isBlank();
+    }
 
     public boolean notifiesByEmail() {
         return Boolean.TRUE.equals(emailNotificationsEnabled);
@@ -43,14 +54,14 @@ public record User(
     }
 
     public User withName(String name) {
-        return new User(name, email, slackUserId, roles, emailNotificationsEnabled, slackNotificationsEnabled, office);
+        return toBuilder().name(name).build();
     }
 
     public User withRoles(List<Role> roles) {
-        return new User(name, email, slackUserId, roles, emailNotificationsEnabled, slackNotificationsEnabled, office);
+        return toBuilder().roles(roles).build();
     }
 
     public User withSlackUserId(String slackUserId) {
-        return new User(name, email, slackUserId, roles, emailNotificationsEnabled, slackNotificationsEnabled, office);
+        return toBuilder().slackUserId(slackUserId).build();
     }
 }

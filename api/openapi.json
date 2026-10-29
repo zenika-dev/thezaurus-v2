@@ -339,6 +339,89 @@
         } ]
       }
     },
+    "/api/admin/users/{email}/photo" : {
+      "put" : {
+        "parameters" : [ {
+          "name" : "email",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "image/jpeg" : {
+              "schema" : {
+                "type" : "string",
+                "format" : "binary"
+              }
+            },
+            "image/png" : {
+              "schema" : {
+                "type" : "string",
+                "format" : "binary"
+              }
+            },
+            "image/webp" : {
+              "schema" : {
+                "type" : "string",
+                "format" : "binary"
+              }
+            },
+            "application/octet-stream" : {
+              "schema" : {
+                "type" : "string",
+                "format" : "binary"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "summary" : "Upload Photo",
+        "tags" : [ "User Admin Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN" ]
+        } ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "email",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "summary" : "Reset Photo",
+        "tags" : [ "User Admin Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN" ]
+        } ]
+      }
+    },
     "/api/admin/users/{email}/roles" : {
       "put" : {
         "parameters" : [ {
@@ -441,6 +524,39 @@
         } ]
       }
     },
+    "/api/me/profile/ai-photo" : {
+      "put" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AiPhotoPreference"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Consent",
+        "tags" : [ "Profile Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN", "DT", "CONSULTANT" ]
+        } ]
+      }
+    },
     "/api/me/profile/notification-preferences" : {
       "put" : {
         "requestBody" : {
@@ -521,6 +637,106 @@
         } ]
       }
     },
+    "/api/me/profile/photo" : {
+      "put" : {
+        "requestBody" : {
+          "content" : {
+            "image/jpeg" : {
+              "schema" : {
+                "type" : "string",
+                "format" : "binary"
+              }
+            },
+            "image/png" : {
+              "schema" : {
+                "type" : "string",
+                "format" : "binary"
+              }
+            },
+            "image/webp" : {
+              "schema" : {
+                "type" : "string",
+                "format" : "binary"
+              }
+            },
+            "application/octet-stream" : {
+              "schema" : {
+                "type" : "string",
+                "format" : "binary"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "summary" : "Upload Photo",
+        "tags" : [ "Profile Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN", "DT", "CONSULTANT" ]
+        } ]
+      },
+      "delete" : {
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "summary" : "Reset Photo",
+        "tags" : [ "Profile Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN", "DT", "CONSULTANT" ]
+        } ]
+      }
+    },
+    "/api/me/profile/photo/google" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GooglePhotoSync"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Sync Google Photo",
+        "tags" : [ "Profile Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN", "DT", "CONSULTANT" ]
+        } ]
+      }
+    },
     "/api/users" : {
       "get" : {
         "parameters" : [ {
@@ -554,6 +770,37 @@
         },
         "summary" : "List Users",
         "tags" : [ "User Controller" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN", "DT", "CONSULTANT" ]
+        } ]
+      }
+    },
+    "/api/users/{email}/photo" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "email",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "image/png" : { }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "summary" : "Read",
+        "tags" : [ "Profile Photo Resource" ],
         "security" : [ {
           "SecurityScheme" : [ "ADMIN", "DT", "CONSULTANT" ]
         } ]
@@ -1427,6 +1674,14 @@
   },
   "components" : {
     "schemas" : {
+      "AiPhotoPreference" : {
+        "type" : "object",
+        "properties" : {
+          "allowed" : {
+            "type" : "boolean"
+          }
+        }
+      },
       "BlogPost" : {
         "type" : "object",
         "properties" : {
@@ -1667,6 +1922,14 @@
           }
         }
       },
+      "GooglePhotoSync" : {
+        "type" : "object",
+        "properties" : {
+          "idToken" : {
+            "type" : "string"
+          }
+        }
+      },
       "Location" : {
         "type" : "object",
         "properties" : {
@@ -1863,6 +2126,12 @@
           },
           "office" : {
             "$ref" : "#/components/schemas/Office"
+          },
+          "aiPhotoAllowed" : {
+            "type" : "boolean"
+          },
+          "customPhoto" : {
+            "type" : "boolean"
           }
         }
       },

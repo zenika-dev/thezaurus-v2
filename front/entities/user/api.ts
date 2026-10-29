@@ -19,6 +19,8 @@ function mapBackendToFrontend(profile: BackendProfileView): UserProfile {
       slack: profile.notificationPreferences?.slack ?? false,
     },
     slackAvailable: profile.slackAvailable ?? false,
+    aiPhotoAllowed: profile.aiPhotoAllowed ?? false,
+    customPhoto: profile.customPhoto ?? false,
   };
 }
 
