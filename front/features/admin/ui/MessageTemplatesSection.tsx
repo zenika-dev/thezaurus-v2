@@ -33,7 +33,7 @@ export function MessageTemplatesSection({ onDirtyChange }: { onDirtyChange?: (di
   if (catalog.isPending) return <p role="status">Chargement des modèles…</p>;
   if (catalog.isError) return <Alert severity="error" action={<Button onClick={() => catalog.refetch()}>Réessayer</Button>}>{errorMessage(catalog.error)}</Alert>;
   if (!selected) return <Alert severity="info">Aucun modèle disponible.</Alert>;
-  return <Paper variant="outlined" className="border-border! rounded-2xl! p-5! sm:p-6! bg-surface!">
+  return <Paper variant="outlined" className="border border-primary rounded-2xl p-4 sm:p-6">
     <div className="mb-6">
       <TextField select label="Modèle" value={selected.id} disabled={busy} fullWidth onChange={(event) => {
         if (event.target.value === selected.id) return;
@@ -174,9 +174,9 @@ function TemplateForm({ initial, definition, onDirtyChange, onBusyChange }: Temp
         <h3 id="preview-heading" className="text-lg font-semibold">Aperçu</h3>
         {contexts.isError && <Alert severity="error" action={<Button onClick={() => contexts.refetch()}>Réessayer</Button>}>Impossible de charger les éléments pour l’aperçu.</Alert>}
         {context && <Autocomplete options={contextOptions} getOptionLabel={(option) => option.label ?? ""} getOptionKey={(option) => option.id ?? option.label ?? ""} isOptionEqualToValue={(a, b) => a.id === b.id} value={contextOptions.find((option) => option.id === contextId) ?? null} onChange={(_, option) => setContextId(option?.id ?? "")} loading={contexts.isPending} disabled={!!pending} noOptionsText="Aucun élément dans les pages chargées" loadingText="Chargement…" renderInput={(params) => <TextField {...params} label={context.label} />} />}
-        {context && contexts.hasNextPage && <Button className="self-start!" disabled={!!pending || contexts.isFetchingNextPage} onClick={() => contexts.fetchNextPage()}>{contexts.isFetchingNextPage ? "Chargement…" : "Charger plus d’éléments"}</Button>}
+        {context && contexts.hasNextPage && <Button className="self-start" disabled={!!pending || contexts.isFetchingNextPage} onClick={() => contexts.fetchNextPage()}>{contexts.isFetchingNextPage ? "Chargement…" : "Charger plus d’éléments"}</Button>}
         <Button
-          className="self-start!"
+          className="self-start"
           variant="outlined"
           disabled={!!pending || (!!context && !contextId) || (hasSubject && !subject.trim()) || !bodyHtml.trim()}
           onClick={renderPreview}

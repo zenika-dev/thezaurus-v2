@@ -8,9 +8,10 @@ import { SideMenuNavItem } from "./SideMenuNavItem";
 
 interface SideMenuAdminLinkProps {
   open: boolean;
+  onNavigate: () => void;
 }
 
-export function SideMenuAdminLink({ open }: SideMenuAdminLinkProps) {
+export function SideMenuAdminLink({ open, onNavigate }: SideMenuAdminLinkProps) {
   const push = useGuardedPush();
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -26,7 +27,7 @@ export function SideMenuAdminLink({ open }: SideMenuAdminLinkProps) {
       label="Administration"
       open={open}
       active={pathname.startsWith("/admin")}
-      onClick={() => push("/admin")}
+      onClick={() => { push("/admin"); onNavigate(); }}
     />
   );
 }

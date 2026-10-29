@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SessionProvider } from "next-auth/react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { BlogPostsList } from "@/features/blog-posts/ui/BlogPostsList";
 import { TalkTable } from "@/features/talks/ui/TalkTable";
 
@@ -93,17 +93,23 @@ describe("BlogPosts Pagination", () => {
   });
 
   it("réinitialise simultanément le statut et le filtre personnel lors du clic sur Réinitialiser", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => {
+    const requestedUrls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      requestedUrls.push(url);
+      const filtered = url.includes("personal=true") || url.includes("status=");
       return Response.json({
-        items: [],
-        total: 0,
+        items: filtered ? [] : [
+          { id: "post-1", title: "Article sans filtre", writers: [], status: "IDEA", tags: [], creationDate: "01-01-2026" },
+        ],
+        total: filtered ? 0 : 1,
         page: 0,
         pageSize: 10,
-        totalPages: 0,
+        totalPages: filtered ? 0 : 1,
       });
     }));
 
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60_000 } } });
+    onTestFinished(() => client.clear());
     render(
       <SessionProvider session={{ user: { name: "Alice", email: "alice@zenika.com", roles: ["ADMIN"] }, expires: "2099-01-01" }}>
         <QueryClientProvider client={client}>
@@ -115,11 +121,18 @@ describe("BlogPosts Pagination", () => {
     );
 
     const user = userEvent.setup();
+    expect(await screen.findByText("Article sans filtre")).toBeInTheDocument();
     const personalBtn = await screen.findByRole("button", { name: "Mes articles" });
     await user.click(personalBtn);
 
     const draftBtn = await screen.findByRole("button", { name: "Idée" });
     await user.click(draftBtn);
+
+    await waitFor(() => {
+      expect(requestedUrls.at(-1)).toContain("personal=true");
+      expect(requestedUrls.at(-1)).toContain("status=IDEA");
+      expect(screen.queryByText("Article sans filtre")).not.toBeInTheDocument();
+    });
 
     const resetBtn = await screen.findByRole("button", { name: "Réinitialiser" });
     await user.click(resetBtn);
@@ -128,6 +141,8 @@ describe("BlogPosts Pagination", () => {
       expect(screen.getByRole("button", { name: "Mes articles" })).toHaveAttribute("aria-pressed", "false");
       expect(screen.getByRole("button", { name: "Tous" })).toHaveAttribute("aria-pressed", "true");
       expect(screen.queryByRole("button", { name: "Réinitialiser" })).not.toBeInTheDocument();
+      // La liste initiale peut être restaurée depuis le cache sans nouvelle requête.
+      expect(screen.getByText("Article sans filtre")).toBeInTheDocument();
     });
   });
 });

@@ -1,3 +1,4 @@
+import { statusTones } from "@/shared/lib/status-tones";
 import type {
   BackendLocation,
   ConferenceReach,
@@ -38,9 +39,9 @@ export interface ConferenceData {
 }
 
 export const conferenceCFPStatusConfig: Record<ConferenceCFPStatus, { text: string; bg: string; darkText: string; darkBg: string }> = {
-  Open: { text: "#245E12", bg: "#DCFCE7", darkText: "#47FFB4", darkBg: "#0D542B" },
-  Closed: { text: "#000000", bg: "#F7F7F7", darkText: "#FFFFFF", darkBg: "#5E5E5E" },
-  None: { text: "#888888", bg: "transparent", darkText: "#888888", darkBg: "transparent" },
+  Open: { ...statusTones.success },
+  Closed: { ...statusTones.neutral },
+  None: { ...statusTones.neutral },
 };
 
 /**
@@ -48,9 +49,9 @@ export const conferenceCFPStatusConfig: Record<ConferenceCFPStatus, { text: stri
  * `ConferenceType` côté Java fait échouer la compilation ici tant qu'elle n'a pas de couleur.
  */
 export const conferenceTypeConfig: Record<ConferenceType, { text: string; bg: string; darkText: string; darkBg: string }> = {
-  "Marketing / business": { text: "#000000", bg: "#F7F7F7", darkText: "#FFFFFF", darkBg: "#5E5E5E" },
-  "Technique stratégique": { text: "#9A0530", bg: "#FFEDD4", darkText: "#FFDD58", darkBg: "#7E2A0C" },
-  "Technique généraliste": { text: "#0132D1", bg: "#DBEAFE", darkText: "#94E5FF", darkBg: "#1C398E" },
-  "Technique": { text: "#245E12", bg: "#DCFCE7", darkText: "#47FFB4", darkBg: "#0D542B" },
-  "Hors scope": { text: "#681AC1", bg: "#F3E8FF", darkText: "#FFB9FF", darkBg: "#59168B" },
+  "Marketing / business": { ...statusTones.neutral },
+  "Technique stratégique": { ...statusTones.idea },
+  "Technique généraliste": { ...statusTones.info },
+  "Technique": { ...statusTones.success },
+  "Hors scope": { ...statusTones.replayed },
 };

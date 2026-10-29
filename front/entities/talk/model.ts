@@ -1,3 +1,4 @@
+import { statusTones } from "@/shared/lib/status-tones";
 import { TalkFormat, TalkStatus, Visibility } from "@/shared/api";
 export { agencyLabels } from "@/shared/lib/offices";
 import type {
@@ -72,10 +73,10 @@ export const languageLabels: Record<string, string> = {
  * `TalkStatus` côté Java fait échouer la compilation ici tant qu'elle n'a pas de libellé.
  */
 export const talkStatusConfig: Record<TalkStatus, { label: string; text: string; bg: string; darkText: string; darkBg: string }> = {
-  DRAFT:     { label: "Draft",     text: "#000000", bg: "#F7F7F7", darkText: "#FFFFFF", darkBg: "#5E5E5E" },
-  PLANNED:   { label: "Idea",      text: "#9A0530", bg: "#FFEDD4", darkText: "#FFDD58", darkBg: "#7E2A0C" },
-  SUBMITTED: { label: "Submitted", text: "#0132D1", bg: "#DBEAFE", darkText: "#94E5FF", darkBg: "#1C398E" },
-  ACCEPTED:  { label: "Accepted",  text: "#245E12", bg: "#DCFCE7", darkText: "#47FFB4", darkBg: "#0D542B" },
-  REJECTED:  { label: "Rejected",  text: "#9A0530", bg: "#FFE4E6", darkText: "#FFB3BA", darkBg: "#7E1A2C" },
-  DONE:      { label: "Replayed",  text: "#681AC1", bg: "#F3E8FF", darkText: "#FFB9FF", darkBg: "#59168B" },
+  DRAFT:     { label: "Draft",     ...statusTones.neutral },
+  PLANNED:   { label: "Idea",      ...statusTones.idea },
+  SUBMITTED: { label: "Submitted", ...statusTones.info },
+  ACCEPTED:  { label: "Accepted",  ...statusTones.success },
+  REJECTED:  { label: "Rejected",  ...statusTones.danger },
+  DONE:      { label: "Replayed",  ...statusTones.replayed },
 };

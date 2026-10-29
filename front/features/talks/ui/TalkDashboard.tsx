@@ -1,11 +1,11 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import Button from "@mui/material/Button";
+
 import { Plus } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTalksMutations } from "@/features/talks/model/useTalksMutations";
-import { DataErrorBoundary } from "@/shared/ui";
+import { DataErrorBoundary, PageHeader, CreateButton } from "@/shared/ui";
 import { TalkTable } from "./TalkTable";
 import { TalkTableSkeleton } from "./TalkDashboardSkeleton";
 
@@ -21,24 +21,16 @@ export function TalkDashboard() {
   const handleSubmit = createTalk;
 
   return (
-    <div className="p-8 pb-0 flex flex-col min-h-full">
+    <div className="p-4 sm:p-6 lg:p-8 pb-0 flex flex-col min-h-full">
       {/* Header — always rendered, independent of data */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-[34px] leading-[1.235] font-bold text-text m-0 tracking-[0.25px]">Talks</h1>
-          <p className="text-[14px] leading-[1.43] text-text-muted m-0 tracking-[0.15px]">
-            Gérez le cycle de vie des talks, de l&apos;idée au replay.
-          </p>
-        </div>
-        <Button
-          variant="contained"
+      <PageHeader title="Talks" subtitle={<>Gérez le cycle de vie des talks, de l&apos;idée au replay.</>} action={
+        <CreateButton
           onClick={() => setOpen(true)}
-          className="gap-2! font-bold! py-2! shadow-none! rounded-[20px]! bg-[linear-gradient(135deg,#ed213c_0%,#BF1D67_100%)]! transition-transform! duration-200! hover:shadow-none! hover:-translate-y-[2px]!"
         >
           <Plus size={16} />
           New Talk
-        </Button>
-      </div>
+        </CreateButton>
+      } />
 
       {/* Data section — can load/fail independently */}
       <Suspense fallback={<TalkTableSkeleton />}>

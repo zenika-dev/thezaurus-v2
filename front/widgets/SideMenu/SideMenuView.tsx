@@ -1,8 +1,7 @@
 "use client";
 
-import { Drawer, styled } from "@mui/material";
-import Divider from "@mui/material/Divider";
-import List from "@mui/material/List";
+import { Box, Drawer, IconButton, Divider, List, Typography, useMediaQuery } from "@mui/material";
+import { Menu, X } from "lucide-react";
 import { SideMenuHeader } from "./SideMenuHeader";
 import { SideMenuNavList } from "./SideMenuNavList";
 import { type NavItemConfig } from "./SideMenuNavItem";
@@ -10,59 +9,46 @@ import { SideMenuProfileLink } from "./SideMenuProfileLink";
 import { SideMenuAdminLink } from "./SideMenuAdminLink";
 import { SideMenuThemeToggle } from "./SideMenuThemeToggle";
 
-const DRAWER_WIDTH = 255;
-const COLLAPSED_WIDTH = 88;
-
-const StyledDrawer = styled(Drawer, { shouldForwardProp: (p) => p !== "open" })(
-  ({ theme, open }) => ({
-    width: open ? DRAWER_WIDTH : COLLAPSED_WIDTH,
-    flexShrink: 0,
-    whiteSpace: "nowrap",
-    boxSizing: "border-box",
-    transition: theme.transitions.create("width", {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-    "& .MuiDrawer-paper": {
-      width: open ? DRAWER_WIDTH : COLLAPSED_WIDTH,
-      display: "flex",
-      flexDirection: "column",
-      transition: theme.transitions.create(["width", "background-color"], {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.enteringScreen,
-      }),
-      overflow: "visible",
-      borderRight: "1px solid var(--color-border)",
-      background: theme.palette.background.paper,
-      boxShadow: "none",
-    },
-  }),
-);
-
 export interface SideMenuViewProps {
   open: boolean;
   onToggle: () => void;
+  mobileOpen: boolean;
+  onMobileToggle: () => void;
+  onMobileClose: () => void;
   navItems: NavItemConfig[];
 }
 
-export function SideMenuView({ open, onToggle, navItems }: SideMenuViewProps) {
-  return (
-    <StyledDrawer
-      variant="permanent"
-      open={open}
-      slots={{ docked: "aside" }}
-      slotProps={{
-        docked: { "aria-label": "Navigation latérale" } as React.HTMLAttributes<HTMLElement>,
-      }}
-    >
-      <SideMenuHeader open={open} onToggle={onToggle} />
-      <SideMenuNavList open={open} items={navItems} />
-      <Divider sx={{ mx: 2, borderColor: "var(--color-border)" }} />
+export function SideMenuView({ open, onToggle, mobileOpen, onMobileToggle, onMobileClose, navItems }: SideMenuViewProps) {
+  const mobile = useMediaQuery("(max-width: 767px)");
+  const content = (expanded: boolean, temporary: boolean) => (
+    <>
+      {temporary ? (
+        <Box sx={{ height: 64, px: 2, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider" }}>
+          <Typography sx={{ fontWeight: 800 }}>Thezaurus</Typography>
+          <IconButton aria-label="Fermer la navigation" onClick={onMobileClose}><X size={22} /></IconButton>
+        </Box>
+      ) : <SideMenuHeader open={expanded} onToggle={onToggle} />}
+      <SideMenuNavList open={expanded} items={navItems} />
+      <Divider sx={{ mx: 2 }} />
       <List sx={{ py: 0.5 }}>
-        <SideMenuProfileLink open={open} />
-        <SideMenuAdminLink open={open} />
+        <SideMenuProfileLink open={expanded} onNavigate={onMobileClose} />
+        <SideMenuAdminLink open={expanded} onNavigate={onMobileClose} />
       </List>
-      <SideMenuThemeToggle open={open} />
-    </StyledDrawer>
+      <List disablePadding><SideMenuThemeToggle open={expanded} /></List>
+    </>
+  );
+  return (
+    <>
+      <Box component="header" sx={{ "@media (min-width: 768px)": { display: "none" }, height: 64, flexShrink: 0, display: "flex", alignItems: "center", gap: 1, px: 2, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider" }}>
+        <IconButton aria-label="Ouvrir la navigation" aria-expanded={mobileOpen} aria-controls={mobileOpen ? "mobile-navigation" : undefined} onClick={onMobileToggle}><Menu size={24} /></IconButton>
+        <Typography sx={{ fontWeight: 800 }}>Thezaurus</Typography>
+      </Box>
+      <Drawer variant="temporary" open={mobile && mobileOpen} onClose={onMobileClose} slotProps={{ paper: { id: "mobile-navigation", "aria-label": "Navigation latérale", sx: { width: 280, maxWidth: "calc(100vw - 32px)", borderRadius: 0 } } }}>
+        {content(true, true)}
+      </Drawer>
+      <Drawer variant="permanent" open={open} sx={{ display: "none", "@media (min-width: 768px)": { display: "block" }, width: open ? 255 : 88, flexShrink: 0, transition: "width 200ms", "& .MuiDrawer-paper": { width: open ? 255 : 88, transition: "width 200ms", overflow: "visible", borderRadius: 0, boxShadow: "none", borderRight: 1, borderColor: "divider" } }}>
+        {content(open, false)}
+      </Drawer>
+    </>
   );
 }

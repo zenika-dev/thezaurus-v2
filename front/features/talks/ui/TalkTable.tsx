@@ -8,7 +8,7 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
+import { Surface } from "@/shared/ui";
 import { Eye } from "lucide-react";
 import { TalkStatus } from "@/shared/api";
 import { agencyLabels, talkStatusConfig } from "@/entities/talk";
@@ -61,12 +61,15 @@ export function TalkTable() {
       </div>
 
       <TableContainer
-        component={Paper}
+        component={Surface}
         variant="outlined"
-        className="border! border-primary! rounded-2xl! overflow-hidden! bg-surface! mb-4"
+        className="overflow-x-auto mb-4"
+        tabIndex={0}
+        role="region"
+        aria-label="Tableau des talks, défilement horizontal"
       >
-        <Table>
-          <TableHead className="bg-surface-muted!">
+        <Table sx={{ minWidth: 760 }}>
+          <TableHead className="bg-surface-muted">
             <TableRow>
               <TableCell><strong>Titre</strong></TableCell>
               <TableCell><strong>Speaker</strong></TableCell>
@@ -80,7 +83,7 @@ export function TalkTable() {
           <TableBody>
             {talks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" className="py-8! text-text-muted!">
+                <TableCell colSpan={7} align="center" className="py-8 text-text-muted">
                   Aucun talk ne correspond à ces critères.
                 </TableCell>
               </TableRow>
@@ -88,13 +91,13 @@ export function TalkTable() {
               talks.map((talk) => (
                 <TableRow key={talk.id} hover>
                   <TableCell>
-                    <span
-                      role="button"
+                    <button
+                      type="button"
                       onClick={() => setSelectedTalkId(talk.id)}
-                      className="text-primary underline font-medium hover:text-primary-dark text-sm cursor-pointer"
+                      className="text-link underline font-medium hover:text-link text-sm cursor-pointer text-left bg-transparent border-0 p-0"
                     >
                       {talk.title}
-                    </span>
+                    </button>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -123,7 +126,7 @@ export function TalkTable() {
                         onClick={() => setSelectedTalkId(talk.id)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs
                           border border-border text-text bg-surface font-sans
-                          hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+                          hover:bg-primary/10 hover:text-link transition-colors cursor-pointer"
                       >
                         <Eye size={12} />
                         <span>Détail</span>

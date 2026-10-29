@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BlogPostStatus } from "@/shared/api";
-import { ContributionFilters, PaginationBar } from "@/shared/ui";
+import { ContributionFilters, PaginationBar, Surface } from "@/shared/ui";
 import { SpeakerChip } from "@/entities/user";
 import { blogPostStatusConfig } from "@/entities/post";
 import dynamic from "next/dynamic";
@@ -53,14 +53,13 @@ export function BlogPostsList() {
 
       <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr))] mb-4">
         {posts.map((post) => (
-          <div
+          <Surface
             key={post.id}
-            onClick={() => setSelectedPostId(post.id)}
-            className="p-4 flex flex-col justify-between rounded-2xl border border-primary
-              cursor-pointer transition-colors duration-200 hover:bg-surface-muted min-h-[110px]"
+            className="p-4 flex flex-col justify-between rounded-2xl
+              transition-colors duration-200 hover:bg-surface-muted min-h-[110px]"
           >
             <div className="flex justify-between items-start gap-2">
-              <span className="font-bold text-text">{post.title}</span>
+              <button type="button" onClick={() => setSelectedPostId(post.id)} className="font-bold text-text text-left bg-transparent border-0 p-0 cursor-pointer wrap-anywhere">{post.title}</button>
               <div className="shrink-0">
                 <StatusTag status={post.status} />
               </div>
@@ -77,14 +76,14 @@ export function BlogPostsList() {
                 {post.tags.slice(0, 5).map((tag) => (
                   <span
                     key={tag}
-                    className="px-1.5 py-0.5 rounded-2xl text-[0.7rem] bg-[rgba(117,117,117,0.12)] text-[#475569] dark:bg-[rgba(255,255,255,0.1)] dark:text-[#94a3b8] font-medium"
+                    className="px-2 py-0.5 rounded-full text-xs bg-surface-muted text-text-muted font-medium"
                   >
                     {tag}
                   </span>
                 ))}
               </div>
             </div>
-          </div>
+          </Surface>
         ))}
 
         {posts.length === 0 && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useSession } from "next-auth/react";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -19,40 +19,24 @@ import TextField from "@mui/material/TextField";
 import { Funnel, Plus, Search, X } from "lucide-react";
 import { Role, type BackendUserAdminView } from "@/shared/api";
 import { SpeakerChip } from "@/entities/user";
+import { statusTones } from "@/shared/lib/status-tones";
+import { Badge, FilterChip } from "@/shared/ui";
 import { useAdminUsers } from "@/features/admin";
 import { PaginationBar } from "@/shared/ui";
 
-const ROLE_BADGE_STYLES: Record<Role, { label: string; className: string }> = {
-  ADMIN: {
-    label: "Admin",
-    className: "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30",
-  },
-  DT: {
-    label: "DT",
-    className: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30",
-  },
-  CONSULTANT: {
-    label: "Consultant",
-    className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
-  },
-};
+const ROLE_BADGES = {
+  ADMIN: { label: "Admin", tone: statusTones.danger },
+  DT: { label: "DT", tone: statusTones.info },
+  CONSULTANT: { label: "Consultant", tone: statusTones.success },
+} satisfies Record<Role, { label: string; tone: typeof statusTones[keyof typeof statusTones] }>;
 
 const ALL_ROLES: Role[] = [...Role];
 
-function RoleBadge({ role }: { role: Role }) {
-  const config = ROLE_BADGE_STYLES[role] ?? {
-    label: role,
-    className: "bg-gray-500/10 text-gray-700 dark:text-gray-300 border-gray-500/30",
-  };
-  return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${config.className}`}
-    >
-      {config.label}
-    </span>
-  );
+/** Static roles and removable roles share the same badge; only the action changes. */
+function RoleBadge({ role, children }: { role: Role; children?: ReactNode }) {
+  const { label, tone } = ROLE_BADGES[role];
+  return <Badge color={tone.text} bg={tone.bg} darkColor={tone.darkText} darkBg={tone.darkBg}>{label}{children}</Badge>;
 }
-
 export function UserRolesTable() {
   const { data: session } = useSession();
   const currentUserEmail = session?.user?.email?.toLowerCase() ?? "";
@@ -128,26 +112,6 @@ export function UserRolesTable() {
     }
   };
 
-  const FilterBadge = ({
-    label,
-    active,
-    onClick,
-  }: {
-    label: string;
-    active: boolean;
-    onClick: () => void;
-  }) => (
-    <button
-      onClick={onClick}
-      className={`inline-flex items-center gap-1 px-3 py-1 rounded-2xl text-xs font-sans border cursor-pointer transition-colors ${
-        active
-          ? "bg-primary text-white border-primary"
-          : "bg-surface-hover text-text border-transparent hover:bg-border-strong"
-      }`}
-    >
-      {label}
-    </button>
-  );
 
   const availableRolesForMenu = useMemo(() => {
     if (!menuAnchor) return [];
@@ -160,7 +124,7 @@ export function UserRolesTable() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <TextField
             size="small"
-            placeholder="Rechercher par nom ou email..."
+            label="Rechercher par nom ou email"
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -174,7 +138,7 @@ export function UserRolesTable() {
                     <Search size={16} className="text-text-muted" />
                   </InputAdornment>
                 ),
-                className: "bg-surface rounded-xl! text-sm",
+
               },
             }}
           />
@@ -183,7 +147,7 @@ export function UserRolesTable() {
             <Funnel size={14} className="text-text-muted shrink-0" />
             <span className="text-xs text-text-muted mr-1">Rôle :</span>
             {(["All", ...Role] as const).map((role) => (
-              <FilterBadge
+              <FilterChip
                 key={role}
                 label={role === "All" ? "Tous" : role}
                 active={roleFilter === role}
@@ -199,7 +163,7 @@ export function UserRolesTable() {
                   setRoleFilter("All");
                   setPage(1);
                 }}
-                className="flex text-xs items-center font-sans gap-1 cursor-pointer text-primary border border-primary/20 px-3 py-1 rounded-2xl bg-primary/10 transition-colors hover:bg-primary/20"
+                className="flex min-h-11 text-xs items-center font-sans gap-1 cursor-pointer text-link border border-primary/20 px-3 py-1 rounded-2xl bg-primary/10 transition-colors hover:bg-primary/20"
               >
                 Réinitialiser
               </button>
@@ -211,10 +175,14 @@ export function UserRolesTable() {
       <TableContainer
         component={Paper}
         variant="outlined"
-        className="border! border-primary! rounded-2xl! overflow-hidden! bg-surface! mb-4"
+        className="border border-primary rounded-2xl mb-4"
+        sx={{ overflowX: "auto", maxWidth: "100%" }}
+        tabIndex={0}
+        role="region"
+        aria-label="Rôles utilisateurs, tableau défilant"
       >
-        <Table>
-          <TableHead className="bg-surface-muted!">
+        <Table sx={{ minWidth: 680 }}>
+          <TableHead className="bg-surface-muted">
             <TableRow>
               <TableCell>
                 <strong>Utilisateur</strong>
@@ -230,7 +198,7 @@ export function UserRolesTable() {
           <TableBody>
             {paginatedUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} align="center" className="py-8! text-text-muted!">
+                <TableCell colSpan={3} align="center" className="py-8 text-text-muted">
                   Aucun utilisateur ne correspond à ces critères.
                 </TableCell>
               </TableRow>
@@ -250,7 +218,7 @@ export function UserRolesTable() {
                           className="text-xs h-7"
                         />
                         {isCurrentUser && (
-                          <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-link border border-primary/20">
                             Vous
                           </span>
                         )}
@@ -260,21 +228,11 @@ export function UserRolesTable() {
                     <TableCell>
                       <div className="flex items-center flex-wrap gap-1.5">
                         {user.roles.map((role) => {
-                          const config = ROLE_BADGE_STYLES[role] ?? {
-                            label: role,
-                            className:
-                              "bg-gray-500/10 text-gray-700 dark:text-gray-300 border-gray-500/30",
-                          };
+                          const config = ROLE_BADGES[role];
                           const canRemove = !isCurrentUser && user.roles.length > 1;
 
                           return (
-                            <span
-                              key={role}
-                              className={`group inline-flex items-center gap-1 pl-2.5 ${
-                                canRemove ? "pr-1" : "pr-2.5"
-                              } py-0.5 rounded-full text-xs font-medium border ${config.className}`}
-                            >
-                              <span>{config.label}</span>
+                            <RoleBadge key={role} role={role}>
                               {canRemove && (
                                 <Tooltip title={`Retirer le rôle ${config.label}`} arrow>
                                   <button
@@ -284,14 +242,14 @@ export function UserRolesTable() {
                                       handleRemoveRole(user, role);
                                     }}
                                     disabled={isUpdating}
-                                    className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-inherit opacity-60 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/20 transition-all cursor-pointer border-0 p-0 bg-transparent"
-                                    aria-label={`Retirer le rôle ${config.label}`}
+                                    className="inline-flex items-center justify-center min-w-11 min-h-11 rounded-full text-inherit opacity-60 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/20 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border-0 p-0 bg-transparent"
+                                    aria-label={`Retirer le rôle ${config.label} de ${user.name}`}
                                   >
-                                    <X size={11} strokeWidth={2.5} />
+                                    <X size={16} strokeWidth={2.5} />
                                   </button>
                                 </Tooltip>
                               )}
-                            </span>
+                            </RoleBadge>
                           );
                         })}
 
@@ -307,8 +265,11 @@ export function UserRolesTable() {
                             <button
                               type="button"
                               onClick={(e) => handleOpenAddMenu(e, user)}
+                              aria-label={`Ajouter un rôle à ${user.name}`}
+                              aria-haspopup="menu"
+                              aria-expanded={menuAnchor?.user.email === user.email}
                               disabled={isUpdating}
-                              className="inline-flex items-center gap-1 pl-2 pr-2.5 py-0.5 rounded-full text-xs font-medium border border-dashed border-border hover:border-primary hover:text-primary hover:bg-primary/5 text-text-muted transition-colors cursor-pointer bg-transparent"
+                              className="inline-flex min-h-11 items-center gap-1 pl-2 pr-2.5 py-0.5 rounded-full text-xs font-medium border border-dashed border-border disabled:opacity-40 disabled:cursor-not-allowed hover:border-primary hover:text-link hover:bg-primary/5 text-text-muted transition-colors cursor-pointer bg-transparent"
                             >
                               <Plus size={12} strokeWidth={2.5} />
                               <span>Rôle</span>
@@ -346,7 +307,7 @@ export function UserRolesTable() {
         onClose={handleCloseAddMenu}
         slotProps={{
           paper: {
-            className: "dark:bg-slate-900 dark:bg-none border border-border rounded-xl! shadow-lg!",
+            sx: { border: 1, borderColor: "divider", borderRadius: "12px" },
           },
         }}
       >
@@ -354,7 +315,8 @@ export function UserRolesTable() {
           <MenuItem
             key={role}
             onClick={() => menuAnchor && handleAddRole(menuAnchor.user, role)}
-            className="text-xs font-semibold gap-2 py-2! px-3!"
+            className="text-sm font-semibold gap-2"
+            sx={{ minHeight: 44 }}
           >
             <RoleBadge role={role} />
             <span className="text-xs text-text-muted">

@@ -28,17 +28,20 @@ export function SideMenuThemeToggle({ open }: SideMenuThemeToggleProps) {
     <ListItem disablePadding sx={{ display: "block", mt: "auto", pb: 2 }}>
       <Tooltip title={isDark ? "Passer en mode clair" : "Passer en mode sombre"} placement="right" disableHoverListener={open}>
         <ListItemButton
+          component="button"
+          aria-label={isDark ? "Passer en mode clair" : "Passer en mode sombre"}
           onClick={() => setTheme(isDark ? "light" : "dark")}
           sx={[
             {
               minHeight: 48,
+              width: "calc(100% - 32px)",
               px: 2.5,
               mx: 2,
               borderRadius: "12px",
               color: "text.primary",
               transition: "all 0.2s ease-in-out",
               "&:hover": {
-                bgcolor: "var(--color-surface-hover)",
+                bgcolor: "var(--app-surface-hover)",
               },
             },
             open ? { justifyContent: "initial" } : { justifyContent: "center", mx: "auto", width: 48 },
@@ -53,7 +56,7 @@ export function SideMenuThemeToggle({ open }: SideMenuThemeToggleProps) {
             {isDark ? <Moon size={20} /> : <Sun size={20} />}
           </ListItemIcon>
           <ListItemText
-            primary={isDark ? "Light mode" : "Dark mode"}
+            primary={isDark ? "Mode clair" : "Mode sombre"}
             sx={[
               { margin: 0 },
               open ? { opacity: 1 } : { opacity: 0, display: "none" },

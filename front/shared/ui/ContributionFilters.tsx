@@ -1,25 +1,8 @@
 "use client";
 
 import { Funnel } from "lucide-react";
-
-function FilterButton({ label, active, onClick }: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={`inline-flex items-center gap-1 px-3 py-1 rounded-2xl text-xs font-sans border cursor-pointer transition-colors ${
-        active ? "bg-primary text-white border-primary" : "bg-surface-hover text-text border-transparent hover:bg-border-strong"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
+import Button from "@mui/material/Button";
+import { FilterChip } from "./FilterChip";
 
 interface ContributionFiltersProps<S extends string> {
   statuses: readonly S[];
@@ -37,7 +20,7 @@ export function ContributionFilters<S extends string>({
 }: ContributionFiltersProps<S>) {
   return (
     <div className="flex items-center gap-6 flex-wrap mb-6">
-      <FilterButton
+      <FilterChip
         active={personalOnly}
         onClick={() => onPersonalChange(!personalOnly)}
         label={personalLabel}
@@ -46,7 +29,7 @@ export function ContributionFilters<S extends string>({
         <Funnel size={14} className="text-text-muted shrink-0" />
         <span className="text-xs text-text-muted mr-2">Statut :</span>
         {(["All", ...statuses] as const).map((value) => (
-          <FilterButton
+          <FilterChip
             key={value}
             active={status === value}
             onClick={() => onStatusChange(value)}
@@ -55,7 +38,7 @@ export function ContributionFilters<S extends string>({
         ))}
       </div>
       {(status !== "All" || personalOnly) && (
-        <button
+        <Button
           type="button"
           onClick={() => {
             if (onReset) {
@@ -65,10 +48,10 @@ export function ContributionFilters<S extends string>({
               onPersonalChange(false);
             }
           }}
-          className="text-xs cursor-pointer text-primary border border-primary/20 px-3 py-1 rounded-2xl bg-primary/10 hover:bg-primary/20"
+          variant="outlined" size="small"
         >
           Réinitialiser
-        </button>
+        </Button>
       )}
     </div>
   );

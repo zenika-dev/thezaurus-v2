@@ -1,16 +1,10 @@
+import { PageHeaderSkeleton, SectionCardSkeleton } from "@/shared/ui";
+
 export function ProfileSectionsSkeleton() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 max-w-3xl">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div
-          key={i}
-          className="rounded border border-gray-200 dark:border-[#2d2d2d] p-6 animate-pulse"
-        >
-          <div className="h-6 bg-gray-200 dark:bg-[#121212] rounded w-40 mb-2" />
-          <div className="h-4 bg-gray-200 dark:bg-[#121212] rounded w-[70%] mb-6" />
-          <div className="h-5 bg-gray-200 dark:bg-[#121212] rounded w-[45%] mb-3" />
-          <div className="h-5 bg-gray-200 dark:bg-[#121212] rounded w-[35%]" />
-        </div>
+        <SectionCardSkeleton key={i} rows={2} />
       ))}
     </div>
   );
@@ -18,13 +12,8 @@ export function ProfileSectionsSkeleton() {
 
 export function ProfileSkeleton() {
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6 animate-pulse">
-        <div className="flex flex-col gap-2">
-          <div className="h-9 bg-gray-200 dark:bg-[#121212] rounded w-36" />
-        </div>
-        <div className="h-9 bg-gray-200 dark:bg-[#121212] rounded w-36" />
-      </div>
+    <div className="p-4 sm:p-6 lg:p-8">
+      <PageHeaderSkeleton />
       <ProfileSectionsSkeleton />
     </div>
   );
