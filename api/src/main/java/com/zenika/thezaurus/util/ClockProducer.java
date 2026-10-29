@@ -5,6 +5,7 @@ import jakarta.inject.Singleton;
 import java.time.Clock;
 import java.time.ZoneId;
 
+// Fournit une horloge injectable (remplaçable dans les tests).
 @Singleton
 public class ClockProducer {
     @Produces
