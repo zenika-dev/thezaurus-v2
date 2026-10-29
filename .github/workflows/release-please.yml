@@ -19,3 +19,6 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          # Lit config + manifeste sur la branche du push (sinon : branche par défaut).
+          # À retirer une fois mergé sur main.
+          target-branch: ${{ github.ref_name }}
