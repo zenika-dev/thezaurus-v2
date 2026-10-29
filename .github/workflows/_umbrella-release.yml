@@ -1,0 +1,62 @@
+name: (interne) Umbrella release
+
+# Release GitHub globale qui regroupe les versions de l'api, du front et de l'agent.
+# Les releases par service (api-v*, front-v*, agent-v*) restent créées par semantic-release ;
+# celle-ci reprend leurs notes, lues dans les commits de release.
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Version globale (AAAA.MM.JJ-<sha court>, cf. _version.yml)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  umbrella:
+    name: Release globale
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      # Tags complets : chaque service est retrouvé par son dernier tag (api-v*, front-v*, agent-v*).
+      # On prend la tête de branche pour inclure les tags et commits poussés par semantic-release.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Créer la release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          # Hors main, la release globale est une pré-release (comme les releases des services).
+          PRERELEASE: ${{ github.ref_name != 'main' }}
+        run: |
+          # Les notes de chaque service viennent du commit de release pointé par son tag
+          # (corps de « chore(release): … » = notes semantic-release, titre « # <tag> (date) » compris).
+          # Lues depuis git : elles restent disponibles même si une release GitHub a été supprimée.
+          : > notes.md
+          for service in api front agent; do
+            tag=$(git describe --tags --abbrev=0 --match "${service}-v*" 2>/dev/null) || continue
+            notes=$(git log -1 --format=%b "${tag}")
+            if [ -n "${notes}" ]; then
+              # Titres décalés d'un niveau : chaque service devient une section de la release globale.
+              echo "${notes}" | sed 's/^# /## /' >> notes.md
+            else
+              echo "::warning::Pas de notes dans le commit de ${tag}"
+              echo "## ${tag}" >> notes.md
+            fi
+            echo >> notes.md
+          done
+          cat notes.md >> "$GITHUB_STEP_SUMMARY"
+
+          gh release create "v${VERSION}" \
+            --target "$(git rev-parse HEAD)" \
+            --title "Release ${VERSION}" \
+            --notes-file notes.md \
+            --prerelease="${PRERELEASE}"

@@ -1,0 +1,6 @@
+{
+  "name": "api",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "Délimite le package api pour semantic-release-monorepo (seuls les commits touchant api/ sont analysés)"
+}

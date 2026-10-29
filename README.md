@@ -97,6 +97,10 @@ Pour approfondir, consultez les guides disponibles dans le dossier [`docs/`](doc
   - Architecture multi-conteneurs Cloud Run (Ingress & Backend)
   - Prérequis et variables d'environnement de production
   - Commandes de déploiement et consultation des logs
+- 🤝 **[Guide de contribution](CONTRIBUTING.md)** :
+  - Convention de commit (Conventional Commits) et impact sur les versions
+  - Titre des pull requests
+  - Lancement manuel d'une release
 
 ---
 

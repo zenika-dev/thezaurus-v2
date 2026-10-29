@@ -1,12 +1,19 @@
 name: Release
 
-# Chaîne de prod : tests → images → déploiement Cloud Run.
-# Une image n'est construite (et poussée) que si les tests du même commit sont verts.
+# Chaîne de prod : tests → release (tags, releases GitHub, CHANGELOG) → images / agent → déploiement.
+# Rien n'est publié ni déployé si un test du même commit échoue.
 on:
-  push:
-     
-    branches: [main ]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    # Cocher les deux pour tout livrer.
+    inputs:
+      api_front:
+        description: "API et front"
+        type: boolean
+        default: true
+      agent:
+        description: "Agent (talks-agent)"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -16,29 +23,77 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Tests des services cochés, en parallèle.
   ci:
+    if: ${{ inputs.api_front || inputs.agent }}
     uses: ./.github/workflows/ci.yml
+    with:
+      api_front: ${{ inputs.api_front }}
+      agent: ${{ inputs.agent }}
+
+  # Une release par service (tags api-vX.Y.Z / front-vX.Y.Z / agent-vX.Y.Z), sur main
+  # (et en pré-release sur feat/manual-release pour les tests, cf. .releaserc.json).
+  # Les services sont publiés à la suite dans ce seul job : en parallèle, le second
+  # serait en retard sur le commit de CHANGELOG poussé par le premier.
+  release:
+    name: Semantic release
+    needs: [ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    outputs:
+      api_version: ${{ steps.release.outputs.api_version }}
+      front_version: ${{ steps.release.outputs.front_version }}
+      agent_version: ${{ steps.release.outputs.agent_version }}
+    steps:
+      # Le commit testé par ci, avec tout l'historique et les tags (calcul des versions).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Services à publier
+        id: services
+        env:
+          API_FRONT: ${{ inputs.api_front }}
+          AGENT: ${{ inputs.agent }}
+        run: |
+          services=()
+          [ "${API_FRONT}" = "true" ] && services+=(api front)
+          [ "${AGENT}" = "true" ] && services+=(agent)
+          echo "list=${services[*]}" >> "$GITHUB_OUTPUT"
+
+      - uses: ./.github/actions/semantic-release
+        id: release
+        with:
+          services: ${{ steps.services.outputs.list }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   version:
     uses: ./.github/workflows/_version.yml
 
+  # Image taguée avec la version semantic-release du service (ex. 1.2.0).
+  # Sans version (aucune release encore publiée), pas d'image.
   image-api:
-    needs: [ci, version]
+    needs: [release]
+    if: ${{ inputs.api_front && needs.release.outputs.api_version != '' }}
     uses: ./.github/workflows/_image-api.yml
     permissions:
       contents: read
       id-token: write
     with:
-      version: ${{ needs.version.outputs.version }}
+      version: ${{ needs.release.outputs.api_version }}
 
   image-front:
-    needs: [ci, version]
+    needs: [release]
+    if: ${{ inputs.api_front && needs.release.outputs.front_version != '' }}
     uses: ./.github/workflows/_image-front.yml
     permissions:
       contents: read
       id-token: write
     with:
-      version: ${{ needs.version.outputs.version }}
+      version: ${{ needs.release.outputs.front_version }}
 
   # Images référencées par digest (immuables) : ce qui est déployé est exactement
   # ce qui a été construit, même si un tag est réécrit entre-temps.
@@ -53,3 +108,28 @@ jobs:
       version: ${{ needs.version.outputs.version }}
       api_image: ${{ needs.image-api.outputs.image }}
       front_image: ${{ needs.image-front.outputs.image }}
+
+  # En parallèle des images et du déploiement Cloud Run.
+  deploy-agent:
+    needs: [release]
+    if: ${{ inputs.agent && needs.release.outputs.agent_version != '' }}
+    uses: ./.github/workflows/_deploy-agent.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      version: ${{ needs.release.outputs.agent_version }}
+
+  # Release GitHub globale (vAAAA.MM.JJ-<sha>) qui regroupe les notes api/front/agent.
+  # Seulement une fois la prod à jour : au moins un déploiement réussi, aucun en échec.
+  umbrella-release:
+    needs: [version, release, deploy-production, deploy-agent]
+    if: >-
+      ${{ !cancelled()
+        && !contains(needs.*.result, 'failure')
+        && (needs.deploy-production.result == 'success' || needs.deploy-agent.result == 'success') }}
+    uses: ./.github/workflows/_umbrella-release.yml
+    permissions:
+      contents: write
+    with:
+      version: ${{ needs.version.outputs.version }}
