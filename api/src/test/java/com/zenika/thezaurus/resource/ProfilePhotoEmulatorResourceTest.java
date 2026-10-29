@@ -53,10 +53,10 @@ class ProfilePhotoEmulatorResourceTest {
                 new AtomicReference<>(User.builder().email(email).name("Local").build());
         when(users.findByEmail(email)).thenAnswer(invocation -> current.get());
         doAnswer(invocation -> {
-                    current.updateAndGet(user -> user.toBuilder()
-                            .customPhotoObject(invocation.getArgument(1))
-                            .build());
-                    return null;
+                    return current.getAndUpdate(user -> user.toBuilder()
+                                    .customPhotoObject(invocation.getArgument(1))
+                                    .build())
+                            .customPhotoObject();
                 })
                 .when(users)
                 .updateCustomPhoto(eq(email), anyString());

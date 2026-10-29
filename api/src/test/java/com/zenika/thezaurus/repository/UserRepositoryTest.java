@@ -254,12 +254,48 @@ public class UserRepositoryTest {
     public void photoConsentAndRoleUpdatesPreserveUnrelatedFields() throws Exception {
         DocumentReference reference = documentReferenceFor("jane@zenika.com");
         repository.updateAiPhotoAllowed("jane@zenika.com", true);
-        repository.updateCustomPhoto("jane@zenika.com", "custom");
         repository.updateRoles("jane@zenika.com", List.of(Role.DT));
         Mockito.verify(reference).update("aiPhotoAllowed", true);
-        Mockito.verify(reference).update("customPhotoObject", "custom");
         Mockito.verify(reference).update("roles", List.of(Role.DT));
         Mockito.verify(reference, Mockito.never()).set(Mockito.any());
+    }
+
+    @Test
+    public void customPhotoExchangeReturnsTheObjectFromTheCommittedAttempt() throws Exception {
+        DocumentReference reference = documentReferenceFor("jane@zenika.com");
+        Transaction transaction = Mockito.mock(Transaction.class);
+        DocumentSnapshot current = Mockito.mock(DocumentSnapshot.class);
+        Mockito.when(transaction.get(reference)).thenReturn(ApiFutures.immediateFuture(current));
+        Mockito.when(current.getString("customPhotoObject")).thenReturn("old", "concurrent-photo");
+        Mockito.when(repository.firestore.runTransaction(Mockito.<Transaction.Function<String>>any()))
+                .thenAnswer(invocation -> {
+                    Transaction.Function<String> function = invocation.getArgument(0);
+                    // Firestore abandonne la première tentative après une écriture concurrente.
+                    function.updateCallback(transaction);
+                    return ApiFutures.immediateFuture(function.updateCallback(transaction));
+                });
+
+        assertEquals("concurrent-photo", repository.updateCustomPhoto("jane@zenika.com", "new"));
+        Mockito.verify(transaction, Mockito.times(2)).get(reference);
+        Mockito.verify(transaction, Mockito.times(2)).update(reference, "customPhotoObject", "new");
+        Mockito.verifyNoMoreInteractions(transaction);
+        Mockito.verify(reference, Mockito.never()).update(Mockito.anyString(), Mockito.any());
+    }
+
+    @Test
+    public void resettingWithoutACustomPhotoReturnsNoObjectToDelete() throws Exception {
+        DocumentReference reference = documentReferenceFor("jane@zenika.com");
+        Transaction transaction = Mockito.mock(Transaction.class);
+        DocumentSnapshot current = Mockito.mock(DocumentSnapshot.class);
+        Mockito.when(transaction.get(reference)).thenReturn(ApiFutures.immediateFuture(current));
+        Mockito.when(repository.firestore.runTransaction(Mockito.<Transaction.Function<String>>any()))
+                .thenAnswer(invocation -> {
+                    Transaction.Function<String> function = invocation.getArgument(0);
+                    return ApiFutures.immediateFuture(function.updateCallback(transaction));
+                });
+
+        assertNull(repository.updateCustomPhoto("jane@zenika.com", ""));
+        Mockito.verify(transaction).update(reference, "customPhotoObject", "");
     }
 
     @Test
