@@ -88,6 +88,8 @@ PROFILE_PHOTOS_BUCKET=mon-projet-thezaurus-photos-prod
 
 Avec le déploiement Docker Compose du projet, renseigner cette variable dans l’environnement de déploiement ou son fichier `.env`, puis suivre [Deploiement.md](Deploiement.md). `docker-compose.yml` la transmet à l’API.
 
+Avec le déploiement GitHub Actions, définir la variable `PROFILE_PHOTOS_BUCKET` dans chaque environnement GitHub cible (Settings → Environments → environnement → Variables). Le workflow `_deploy.yml` vérifie sa présence et l’injecte dans le conteneur API du manifeste Cloud Run. Une configuration manuelle du service Cloud Run est écrasée au déploiement suivant.
+
 Vérifier que le profil de production est actif et qu’aucune surcharge `QUARKUS_GOOGLE_CLOUD_STORAGE_HOST_OVERRIDE` ne pointe vers un émulateur. Le conteneur frontend n’a besoin ni du nom du bucket ni d’identifiants GCS.
 
 ## 5. Vérifier le fonctionnement

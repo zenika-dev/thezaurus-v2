@@ -40,6 +40,8 @@ Suivre le [guide de configuration du bucket GCP](CloudStorage.md) : création de
 
 Ces commandes sont des instructions de déploiement ; l’implémentation ne crée pas de ressource cloud. Les objets portent des noms aléatoires sous `profile-photos/`. Les réponses photo passent par le backend authentifié et ne sont pas mises en cache. Les anciens objets sont supprimés après remplacement ou réinitialisation ; si ce nettoyage échoue, le backend journalise l’échec sans annuler le choix enregistré.
 
+Le remplacement et la réinitialisation échangent la référence de la photo dans une transaction Firestore. Le nettoyage utilise la référence retournée par la transaction validée, même si un admin et la personne concernée modifient simultanément la photo. Les objets GCS sont supprimés après la transaction, jamais pendant une tentative susceptible d’être rejouée.
+
 ## Contrats backend
 
 - `PUT /api/me/profile/photo` : corps binaire JPEG, PNG ou WebP ; remplace uniquement sa photo personnalisée.

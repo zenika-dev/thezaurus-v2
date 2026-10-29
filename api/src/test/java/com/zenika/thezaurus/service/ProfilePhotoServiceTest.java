@@ -123,6 +123,28 @@ class ProfilePhotoServiceTest {
     }
 
     @Test
+    void overlappingUploadsDeleteThePhotoActuallyReplaced() throws Exception {
+        var current = new java.util.concurrent.atomic.AtomicReference<>("old");
+        var objects = new java.util.HashSet<>(java.util.Set.of("old"));
+        when(storage.save(any(), eq("image/png"))).thenReturn("first", "second");
+        doAnswer(invocation -> current.getAndSet(invocation.getArgument(1)))
+                .when(users)
+                .updateCustomPhoto(eq(user.email()), anyString());
+        doAnswer(invocation -> objects.remove(invocation.getArgument(0)))
+                .when(storage)
+                .delete(anyString());
+        User snapshot = user.toBuilder().customPhotoObject("old").build();
+
+        objects.add("first");
+        service.upload(snapshot, new ByteArrayInputStream(image("png")));
+        objects.add("second");
+        service.upload(snapshot, new ByteArrayInputStream(image("png")));
+
+        assertEquals(java.util.Set.of("second"), objects);
+        assertEquals("second", current.get());
+    }
+
+    @Test
     void decodesAcceptedFormatsWithoutCropping() throws Exception {
         for (String format : List.of("png", "jpeg")) {
             var photo = ProfilePhotoService.normalize(image(format));
@@ -198,14 +220,16 @@ class ProfilePhotoServiceTest {
     }
 
     @Test
-    void resetOnlyChangesCustomPhotoAndDeletesStoredObject() throws Exception {
+    void resetDeletesTheCurrentPhotoDespiteAStaleSnapshotAndPreservesConsent() throws Exception {
+        when(users.updateCustomPhoto(user.email(), "")).thenReturn("concurrent-photo");
         service.reset(user.toBuilder()
                 .customPhotoObject("custom")
                 .aiPhotoAllowed(true)
                 .build());
         verify(users).updateCustomPhoto(user.email(), "");
         verifyNoMoreInteractions(users);
-        verify(storage).delete("custom");
+        verify(storage).delete("concurrent-photo");
+        verify(storage, never()).delete("custom");
     }
 
     @Test

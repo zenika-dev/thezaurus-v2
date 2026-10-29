@@ -31,11 +31,15 @@ public class UserRepository {
                 .get();
     }
 
-    public void updateCustomPhoto(String email, String object) throws ExecutionException, InterruptedException {
-        firestore
-                .collection(COLLECTION_NAME)
-                .document(email)
-                .update("customPhotoObject", object)
+    /** Échange atomique : retourne l'objet réellement remplacé pour son nettoyage après commit. */
+    public String updateCustomPhoto(String email, String object) throws ExecutionException, InterruptedException {
+        DocumentReference reference = firestore.collection(COLLECTION_NAME).document(email);
+        return firestore
+                .runTransaction(transaction -> {
+                    String previous = transaction.get(reference).get().getString("customPhotoObject");
+                    transaction.update(reference, "customPhotoObject", object);
+                    return previous;
+                })
                 .get();
     }
 

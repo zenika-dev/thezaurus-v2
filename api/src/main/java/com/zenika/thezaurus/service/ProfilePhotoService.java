@@ -99,18 +99,19 @@ public class ProfilePhotoService {
     public void upload(User user, InputStream input) throws IOException, ExecutionException, InterruptedException {
         Photo photo = normalize(input.readNBytes(MAX_BYTES + 1));
         String object = storage.save(photo.bytes(), photo.contentType());
+        String previous;
         try {
-            users.updateCustomPhoto(user.email(), object);
+            previous = users.updateCustomPhoto(user.email(), object);
         } catch (ExecutionException | InterruptedException | RuntimeException e) {
             deleteQuietly(object);
             throw e;
         }
-        deleteQuietly(user.customPhotoObject());
+        deleteQuietly(previous);
     }
 
     public void reset(User user) throws ExecutionException, InterruptedException {
-        users.updateCustomPhoto(user.email(), "");
-        deleteQuietly(user.customPhotoObject());
+        String previous = users.updateCustomPhoto(user.email(), "");
+        deleteQuietly(previous);
     }
 
     public void syncGoogle(User user, String url) throws ExecutionException, InterruptedException {
