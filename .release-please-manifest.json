@@ -1,5 +1,5 @@
 {
-  "api": "1.0.0",
+  "api": "1.0.1",
   "front": "0.1.0",
   "agents/talks-agent": "0.1.0"
 }
