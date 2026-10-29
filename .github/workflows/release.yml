@@ -3,9 +3,7 @@ name: Release
 # Chaîne de prod : tests → images → déploiement Cloud Run.
 # Une image n'est construite (et poussée) que si les tests du même commit sont verts.
 on:
-  push:
-     
-    branches: [main ]
+ 
   workflow_dispatch: {}
 
 permissions:

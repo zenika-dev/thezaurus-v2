@@ -1,0 +1,21 @@
+name: Release Please
+
+# Une PR de release par composant (api, front, agent), versionnée à partir
+# des commits conventionnels qui touchent son dossier.
+on:
+  push:
+    branches: [main, feat/release-please]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
