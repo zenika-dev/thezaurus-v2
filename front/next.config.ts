@@ -5,6 +5,7 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
+// Configuration Next.js, enveloppée par le bundle analyzer (ANALYZE=true).
 const nextConfig: NextConfig = {
   output: "standalone",
 };
