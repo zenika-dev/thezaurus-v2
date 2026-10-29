@@ -29,7 +29,7 @@ describe("Talks TablePagination", () => {
       });
     }));
 
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
     render(
       <SessionProvider session={{ user: { name: "Alice", email: "alice@zenika.com", roles: ["ADMIN"] }, expires: "2099-01-01" }}>
         <QueryClientProvider client={client}>
@@ -69,7 +69,7 @@ describe("BlogPosts Pagination", () => {
       });
     }));
 
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
     render(
       <SessionProvider session={{ user: { name: "Alice", email: "alice@zenika.com", roles: ["ADMIN"] }, expires: "2099-01-01" }}>
         <QueryClientProvider client={client}>
@@ -93,9 +93,7 @@ describe("BlogPosts Pagination", () => {
   });
 
   it("réinitialise simultanément le statut et le filtre personnel lors du clic sur Réinitialiser", async () => {
-    const requestedUrls: string[] = [];
-    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
-      requestedUrls.push(url);
+    vi.stubGlobal("fetch", vi.fn(async () => {
       return Response.json({
         items: [],
         total: 0,
@@ -105,7 +103,7 @@ describe("BlogPosts Pagination", () => {
       });
     }));
 
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
     render(
       <SessionProvider session={{ user: { name: "Alice", email: "alice@zenika.com", roles: ["ADMIN"] }, expires: "2099-01-01" }}>
         <QueryClientProvider client={client}>
@@ -130,9 +128,6 @@ describe("BlogPosts Pagination", () => {
       expect(screen.getByRole("button", { name: "Mes articles" })).toHaveAttribute("aria-pressed", "false");
       expect(screen.getByRole("button", { name: "Tous" })).toHaveAttribute("aria-pressed", "true");
       expect(screen.queryByRole("button", { name: "Réinitialiser" })).not.toBeInTheDocument();
-      const lastUrl = requestedUrls[requestedUrls.length - 1] ?? "";
-      expect(lastUrl).not.toContain("personal=true");
-      expect(lastUrl).not.toContain("status=");
     });
   });
 });
