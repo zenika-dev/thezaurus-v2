@@ -195,9 +195,9 @@ export function ConferencesList() {
                       >
                         {conference.cfpStatus === "Open"
                           ? isNotYetOpenByDate
-                            ? `CFP ouvre le ${cfpOpeningDateJs!.format("DD-MM-YYYY")}`
+                            ? `CFP ouvre le ${cfpOpeningDateJs!.format("DD/MM/YYYY")}`
                             : cfpClosingDateJs && cfpClosingDateJs.isValid()
-                              ? `CFP ouvert jusqu'au ${cfpClosingDateJs.format("DD-MM-YYYY")}`
+                              ? `CFP ouvert jusqu'au ${cfpClosingDateJs.format("DD/MM/YYYY")}`
                               : "CFP ouvert"
                           : "CFP fermé"}{" "}
                         <ExternalLinkIcon size={14} />
