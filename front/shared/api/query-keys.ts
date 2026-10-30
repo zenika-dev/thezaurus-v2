@@ -20,6 +20,7 @@ export const queryKeys = {
   profile: {
     all: ["profile"] as const,
     me: () => ["profile", "me"] as const,
+    contributions: () => ["profile", "contributions"] as const,
   },
   users: {
     all: ["users"] as const,
