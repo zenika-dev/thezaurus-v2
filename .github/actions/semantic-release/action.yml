@@ -1,12 +1,11 @@
 name: Semantic release
 description: >-
-  Lance semantic-release pour chaque service, l'un après l'autre : chaque release pousse
-  un commit de CHANGELOG, le service suivant doit partir de ce commit.
+  Lance semantic-release pour chaque service (tag + release GitHub, aucun commit poussé).
   Le dépôt doit être cloné avec tout l'historique et les tags (fetch-depth: 0).
 
 inputs:
   services:
-    description: Services à publier, séparés par des espaces (api, front, agent)
+    description: Services à publier, séparés par des espaces (api, front, agents)
     required: true
   dry-run:
     description: "true : calcule les versions sans rien publier (aperçu sur PR)"
@@ -17,7 +16,7 @@ inputs:
     required: false
     default: ""
   github-token:
-    description: Token qui pousse tags, releases GitHub et commits de CHANGELOG
+    description: Token qui pousse tags et releases GitHub
     required: true
 
 outputs:
@@ -27,9 +26,9 @@ outputs:
   front_version:
     description: Version du front (nouvelle release, sinon dernière publiée)
     value: ${{ steps.release.outputs.front_version }}
-  agent_version:
+  agents_version:
     description: Version de l'agent (nouvelle release, sinon dernière publiée)
-    value: ${{ steps.release.outputs.agent_version }}
+    value: ${{ steps.release.outputs.agents_version }}
 
 runs:
   using: composite
@@ -50,7 +49,7 @@ runs:
       shell: bash
       run: npm audit signatures
 
-    # Chaque service a son .releaserc.json ; les chemins (CHANGELOG.md) sont relatifs au service.
+    # Chaque service a son .releaserc.json, dans le dossier du même nom.
     # La version vient du fichier .next-version écrit par @semantic-release/exec (y compris en dry-run).
     - name: Release
       id: release
@@ -68,14 +67,11 @@ runs:
         fi
 
         for service in ${SERVICES}; do
-          dir="${service}"
-          [ "${service}" = agent ] && dir=agents
+          rm -f "${service}/.next-version"
+          (cd "${service}" && ../node_modules/.bin/semantic-release "${args[@]}")
 
-          rm -f "${dir}/.next-version"
-          (cd "${dir}" && ../node_modules/.bin/semantic-release "${args[@]}")
-
-          if [ -f "${dir}/.next-version" ]; then
-            version=$(<"${dir}/.next-version")
+          if [ -f "${service}/.next-version" ]; then
+            version=$(<"${service}/.next-version")
           else
             # Pas de nouvelle release : on garde la dernière version publiée (tag api-vX.Y.Z → X.Y.Z).
             tag=$(git describe --tags --abbrev=0 --match "${service}-v*" 2>/dev/null || true)

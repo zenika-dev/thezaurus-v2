@@ -3,7 +3,7 @@ name: (interne) Deploy talks-agent
 # Déploie talks-agent sur Agent Runtime avec agents-cli.
 # agents-cli construit une image à partir du Dockerfile (serveur app/fast_api_app.py)
 # et met à jour l'instance existante identifiée par AGENT_ENGINE_ID.
-# Les tests et la release (tag agent-vX.Y.Z) ont déjà eu lieu dans release.yml.
+# Les tests et la release (tag agents-vX.Y.Z) ont déjà eu lieu dans release.yml.
 on:
   workflow_call:
     inputs:
