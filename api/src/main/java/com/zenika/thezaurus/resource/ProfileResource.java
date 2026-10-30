@@ -1,9 +1,11 @@
 package com.zenika.thezaurus.resource;
 
+import com.zenika.thezaurus.model.ContributionStatistics;
 import com.zenika.thezaurus.model.Office;
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.repository.UserRepository;
+import com.zenika.thezaurus.service.ContributionStatisticsService;
 import com.zenika.thezaurus.service.CurrentUserService;
 import com.zenika.thezaurus.service.GooglePhotoIdentityService;
 import com.zenika.thezaurus.service.ProfilePhotoService;
@@ -37,6 +39,15 @@ public class ProfileResource {
 
     @Inject
     CurrentUserService currentUser;
+
+    @Inject
+    ContributionStatisticsService statistics;
+
+    @GET
+    @Path("/contributions")
+    public ContributionStatistics contributions() throws ExecutionException, InterruptedException {
+        return statistics.forUser(me().email());
+    }
 
     @Inject
     UserRepository userRepository;

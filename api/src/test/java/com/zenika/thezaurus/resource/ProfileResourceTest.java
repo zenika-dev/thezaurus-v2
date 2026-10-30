@@ -6,9 +6,12 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.zenika.thezaurus.model.ContributionStatistics;
+import com.zenika.thezaurus.model.ContributionStatistics.AnnualContributions;
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.repository.UserRepository;
+import com.zenika.thezaurus.service.ContributionStatisticsService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -33,6 +36,47 @@ public class ProfileResourceTest {
 
     @InjectMock
     UserRepository userRepository;
+
+    @InjectMock
+    ContributionStatisticsService statistics;
+
+    @Test
+    @TestSecurity(
+            user = "jane@zenika.com",
+            roles = {Role.Names.CONSULTANT})
+    void contributionsAlwaysUseTheAuthenticatedAccount() throws Exception {
+        Mockito.when(userRepository.findByEmail("jane@zenika.com")).thenReturn(jane(null, false, false));
+        Mockito.when(statistics.forUser("jane@zenika.com"))
+                .thenReturn(new ContributionStatistics(2026, List.of(new AnnualContributions(2026, 2, 3, 1)), 1, 0));
+        given().queryParam("email", "someone-else@zenika.com")
+                .when()
+                .get("/api/me/profile/contributions")
+                .then()
+                .statusCode(200)
+                .body("currentYear", is(2026))
+                .body("years[0].publishedArticles", is(2))
+                .body("years[0].submittedCandidatures", is(3))
+                .body("years[0].acceptedCandidatures", is(1))
+                .body("undatedCandidatures", is(1));
+        Mockito.verify(statistics).forUser("jane@zenika.com");
+        Mockito.verify(statistics, Mockito.never()).forUser("someone-else@zenika.com");
+    }
+
+    @Test
+    @TestSecurity(
+            user = "missing@zenika.com",
+            roles = {Role.Names.CONSULTANT})
+    void contributionsRequireAnExistingAccount() throws Exception {
+        Mockito.when(userRepository.findByEmail("missing@zenika.com")).thenReturn(null);
+        given().when().get("/api/me/profile/contributions").then().statusCode(404);
+        Mockito.verifyNoInteractions(statistics);
+    }
+
+    @Test
+    void contributionsRequireAuthentication() {
+        given().when().get("/api/me/profile/contributions").then().statusCode(401);
+        Mockito.verifyNoInteractions(statistics);
+    }
 
     @Test
     @TestSecurity(

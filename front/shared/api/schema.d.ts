@@ -841,6 +841,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/profile/contributions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Contributions */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ContributionStatistics"];
+                    };
+                };
+                /** @description Not Authorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/profile/notification-preferences": {
         parameters: {
             query?: never;
@@ -2296,6 +2346,16 @@ export interface components {
         AiPhotoPreference: {
             allowed?: boolean;
         };
+        AnnualContributions: {
+            /** Format: int32 */
+            year?: number;
+            /** Format: int32 */
+            publishedArticles?: number;
+            /** Format: int32 */
+            submittedCandidatures?: number;
+            /** Format: int32 */
+            acceptedCandidatures?: number;
+        };
         BlogPost: {
             id?: string;
             title: string;
@@ -2339,6 +2399,15 @@ export interface components {
         ConferenceReach: "Locale" | "Régionale" | "Nationale";
         /** @enum {string} */
         ConferenceType: "Marketing / business" | "Technique stratégique" | "Technique généraliste" | "Technique" | "Hors scope";
+        ContributionStatistics: {
+            /** Format: int32 */
+            currentYear?: number;
+            years?: components["schemas"]["AnnualContributions"][];
+            /** Format: int32 */
+            undatedCandidatures?: number;
+            /** Format: int32 */
+            undatedPublishedArticles?: number;
+        };
         CurrentUserView: {
             email?: string;
             roles?: string[];

@@ -557,6 +557,33 @@
         } ]
       }
     },
+    "/api/me/profile/contributions" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ContributionStatistics"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "summary" : "Contributions",
+        "tags" : [ "Profile Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN", "DT", "CONSULTANT" ]
+        } ]
+      }
+    },
     "/api/me/profile/notification-preferences" : {
       "put" : {
         "requestBody" : {
@@ -1682,6 +1709,27 @@
           }
         }
       },
+      "AnnualContributions" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "publishedArticles" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "submittedCandidatures" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "acceptedCandidatures" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
       "BlogPost" : {
         "type" : "object",
         "properties" : {
@@ -1814,6 +1862,29 @@
       "ConferenceType" : {
         "type" : "string",
         "enum" : [ "Marketing / business", "Technique stratégique", "Technique généraliste", "Technique", "Hors scope" ]
+      },
+      "ContributionStatistics" : {
+        "type" : "object",
+        "properties" : {
+          "currentYear" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "years" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AnnualContributions"
+            }
+          },
+          "undatedCandidatures" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "undatedPublishedArticles" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
       },
       "CurrentUserView" : {
         "type" : "object",
