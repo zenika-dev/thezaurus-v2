@@ -1,0 +1,6 @@
+{
+  "name": "agents",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "Délimite le package agents pour semantic-release-monorepo (seuls les commits touchant agents/ sont analysés)"
+}

@@ -31,3 +31,5 @@ node_modules/
 .DS_Store
 
 .worktrees
+# Version calculée par semantic-release (cf. .releaserc.json)
+.next-version

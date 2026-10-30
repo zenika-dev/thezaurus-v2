@@ -1,11 +1,30 @@
 name: CI
 
-# Sur main, c'est release.yml qui appelle ce workflow (workflow_call) : les tests
-# conditionnent le déploiement et ne tournent pas deux fois par commit.
+# Tests des trois services (l'aperçu des versions d'une PR est dans release-preview.yml).
+# release.yml appelle ce workflow (workflow_call) : les tests conditionnent la release
+# et le déploiement, et ne tournent pas deux fois par commit.
 on:
   pull_request:
   workflow_call:
+    inputs:
+      api_front:
+        description: "Tester l'API et le front"
+        type: boolean
+        default: true
+      agent:
+        description: "Tester l'agent (talks-agent)"
+        type: boolean
+        default: true
   workflow_dispatch:
+    inputs:
+      api_front:
+        description: "API et front"
+        type: boolean
+        default: true
+      agent:
+        description: "Agent (talks-agent)"
+        type: boolean
+        default: true
 
 # Une seule exécution par branche/PR : les runs obsolètes sont annulés,
 # sauf sur main où chaque commit doit être validé jusqu'au bout.
@@ -17,20 +36,22 @@ permissions:
   contents: read
 
 jobs:
+  # Sur une PR, pas d'inputs : tout est testé.
   api:
     name: API (Quarkus)
+    if: ${{ github.event_name == 'pull_request' || inputs.api_front }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
       run:
         working-directory: api
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Setup JDK 21
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           java-version: "21"
           distribution: temurin
@@ -44,7 +65,7 @@ jobs:
       # Résumé des tests Surefire dans le job summary (équivalent du rapport Vitest côté front).
       - name: Résumé des tests API
         if: ${{ !cancelled() }}
-        uses: mikepenz/action-junit-report@v6
+        uses: mikepenz/action-junit-report@6ef3fdcfcd5f0b5d14df3e659ef19b8c6820f93d # v6.6.1
         with:
           report_paths: api/target/surefire-reports/TEST-*.xml
           check_name: API test report
@@ -61,7 +82,7 @@ jobs:
 
       - name: Upload des rapports de tests en cas d'échec
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: api-surefire-reports
           path: api/target/surefire-reports/
@@ -69,26 +90,27 @@ jobs:
 
   front:
     name: Front (Next.js)
+    if: ${{ github.event_name == 'pull_request' || inputs.api_front }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
       run:
         working-directory: front
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       # front/.nvmrc fait foi ; garder le Dockerfile aligné (node:<version>-alpine).
       - name: Setup Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: front/.nvmrc
           cache: npm
           cache-dependency-path: front/package-lock.json
 
       - name: Cache Next.js build
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             front/.next/cache
@@ -120,3 +142,27 @@ jobs:
       # `next build` fait aussi le type-check TypeScript.
       - name: Build
         run: npm run build
+
+  agent:
+    name: Agent (talks-agent)
+    if: ${{ github.event_name == 'pull_request' || inputs.agent }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: agents/talks-agent
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Installer uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          cache-dependency-glob: agents/talks-agent/uv.lock
+
+      - name: Installer les dépendances
+        run: uv sync --locked
+
+      - name: Tests unitaires
+        run: uv run pytest tests/unit

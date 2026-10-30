@@ -93,13 +93,18 @@ describe("BlogPosts Pagination", () => {
   });
 
   it("réinitialise simultanément le statut et le filtre personnel lors du clic sur Réinitialiser", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => {
+    // Le retour sans filtre réutilise la liste en cache (useSuspenseQuery impose un
+    // staleTime ≥ 1 s) : on vérifie donc la liste affichée plutôt que la dernière URL appelée.
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      const filtered = url.includes("personal=true") || url.includes("status=");
       return Response.json({
-        items: [],
-        total: 0,
+        items: [
+          { id: "post-1", title: filtered ? "Article filtré" : "Article non filtré", writers: [], status: "IDEA", tags: [], creationDate: "01-01-2026" },
+        ],
+        total: 1,
         page: 0,
         pageSize: 10,
-        totalPages: 0,
+        totalPages: 1,
       });
     }));
 
@@ -120,6 +125,7 @@ describe("BlogPosts Pagination", () => {
 
     const draftBtn = await screen.findByRole("button", { name: "Idée" });
     await user.click(draftBtn);
+    expect(await screen.findByText("Article filtré")).toBeInTheDocument();
 
     const resetBtn = await screen.findByRole("button", { name: "Réinitialiser" });
     await user.click(resetBtn);
@@ -128,6 +134,8 @@ describe("BlogPosts Pagination", () => {
       expect(screen.getByRole("button", { name: "Mes articles" })).toHaveAttribute("aria-pressed", "false");
       expect(screen.getByRole("button", { name: "Tous" })).toHaveAttribute("aria-pressed", "true");
       expect(screen.queryByRole("button", { name: "Réinitialiser" })).not.toBeInTheDocument();
+      expect(screen.getByText("Article non filtré")).toBeInTheDocument();
+      expect(screen.queryByText("Article filtré")).not.toBeInTheDocument();
     });
   });
 });
