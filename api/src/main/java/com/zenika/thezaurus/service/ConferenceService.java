@@ -2,6 +2,7 @@ package com.zenika.thezaurus.service;
 
 import com.zenika.thezaurus.model.Conference;
 import com.zenika.thezaurus.repository.ConferenceRepository;
+import com.zenika.thezaurus.repository.TalkRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -12,6 +13,21 @@ public class ConferenceService {
 
     @Inject
     ConferenceRepository repository;
+
+    @Inject
+    TalkRepository talkRepository;
+
+    public List<Conference> findAllWithStatistics() throws ExecutionException, InterruptedException {
+        List<Conference> conferences = repository.findAll();
+        if (conferences.isEmpty()) return conferences;
+        var statistics = talkRepository.statisticsByConference();
+        for (Conference conference : conferences) {
+            var counts = statistics.getOrDefault(conference.getId(), new TalkRepository.ConferenceStatistics(0, 0));
+            conference.setSubmittedTalksAmount(counts.submitted());
+            conference.setAcceptedTalksAmount(counts.accepted());
+        }
+        return conferences;
+    }
 
     public List<Conference> findAll() throws ExecutionException, InterruptedException {
         return repository.findAll();

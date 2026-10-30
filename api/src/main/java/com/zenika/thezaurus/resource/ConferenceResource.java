@@ -13,6 +13,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -28,8 +29,9 @@ public class ConferenceResource {
     ConferenceService service;
 
     @GET
-    public List<Conference> list() throws ExecutionException, InterruptedException {
-        return service.findAll();
+    public List<Conference> list(@QueryParam("includeStatistics") boolean includeStatistics)
+            throws ExecutionException, InterruptedException {
+        return includeStatistics ? service.findAllWithStatistics() : service.findAll();
     }
 
     @GET

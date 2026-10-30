@@ -51,6 +51,21 @@ public class ConferenceResourceTest {
     }
 
     @Test
+    public void testListWithStatistics() throws Exception {
+        Conference conference = new Conference("1", "Titre", null);
+        conference.setSubmittedTalksAmount(4);
+        conference.setAcceptedTalksAmount(2);
+        Mockito.when(service.findAllWithStatistics()).thenReturn(java.util.List.of(conference));
+        given().queryParam("includeStatistics", true)
+                .when()
+                .get("/conferences")
+                .then()
+                .statusCode(200)
+                .body("[0].submittedTalksAmount", is(4))
+                .body("[0].acceptedTalksAmount", is(2));
+    }
+
+    @Test
     public void testCreate() throws Exception {
         Conference input = new Conference(null, "New Conf", ConferencePeriod.singleDay("2026-03-12"));
         input.setType(ConferenceType.TECHNIQUE);

@@ -1037,6 +1037,13 @@
     },
     "/conferences" : {
       "get" : {
+        "parameters" : [ {
+          "name" : "includeStatistics",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -1820,6 +1827,10 @@
             "type" : "string"
           },
           "submittedTalksAmount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "acceptedTalksAmount" : {
             "type" : "integer",
             "format" : "int32"
           },

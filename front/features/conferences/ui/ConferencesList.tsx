@@ -101,7 +101,6 @@ export function ConferencesList() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* todo use real conferences */}
         {filteredConferences.map(
           (conference: ConferenceData, index: number) => {
             const cfpOpeningDateJs = conference.cfpOpeningDate
@@ -164,6 +163,11 @@ export function ConferencesList() {
                   <span>
                     {conference.submittedTalksAmount} talk
                     {conference.submittedTalksAmount !== 1 ? "s" : ""} soumis
+                  </span>
+                  <span>
+                    {conference.acceptedTalksAmount ?? 0} talk
+                    {conference.acceptedTalksAmount !== 1 ? "s" : ""} accepté
+                    {conference.acceptedTalksAmount !== 1 ? "s" : ""}
                   </span>
                   {conference.cfpLink && conference.cfpStatus !== "None" && (
                     <>

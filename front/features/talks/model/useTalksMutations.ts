@@ -15,6 +15,7 @@ export function useTalksMutations() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.talks.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.profile.contributions() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conferences.all });
     },
   });
 
@@ -23,6 +24,7 @@ export function useTalksMutations() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.talks.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.profile.contributions() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conferences.all });
     },
   });
 
@@ -31,6 +33,7 @@ export function useTalksMutations() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.talks.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.profile.contributions() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conferences.all });
     },
   });
 

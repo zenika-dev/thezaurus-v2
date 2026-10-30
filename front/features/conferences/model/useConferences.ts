@@ -5,8 +5,8 @@ import { useConferencesMutations } from "./useConferencesMutations";
 
 export function useConferences() {
   const { data: conferences } = useSuspenseQuery({
-    queryKey: queryKeys.conferences.lists(),
-    queryFn: () => conferenceApi.getConferences(),
+    queryKey: [...queryKeys.conferences.lists(), "statistics"],
+    queryFn: () => conferenceApi.getConferencesWithStatistics(),
   });
 
   const mutations = useConferencesMutations();

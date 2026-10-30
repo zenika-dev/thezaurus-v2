@@ -1506,7 +1506,9 @@ export interface paths {
         /** List */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    includeStatistics?: boolean;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -2385,6 +2387,8 @@ export interface components {
             cfpStatus?: string;
             /** Format: int32 */
             submittedTalksAmount?: number;
+            /** Format: int32 */
+            acceptedTalksAmount?: number;
             cfpOpeningDate?: string;
             cfpClosingDate?: string;
             type?: components["schemas"]["ConferenceType"];

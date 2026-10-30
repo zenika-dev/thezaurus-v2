@@ -34,6 +34,7 @@ export interface ConferenceData {
   cfpClosingDate?: string;
   cfpStatus: ConferenceCFPStatus;
   submittedTalksAmount: number;
+  acceptedTalksAmount?: number;
   type: ConferenceType;
   reach: ConferenceReach;
 }

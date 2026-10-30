@@ -73,6 +73,31 @@ public class TalkRepository {
         return result;
     }
 
+    /** One projected query for all conferences; never resolve conference documents here. */
+    public Map<String, ConferenceStatistics> statisticsByConference() throws ExecutionException, InterruptedException {
+        QuerySnapshot snapshot = firestore
+                .collection(getCollectionName())
+                .whereIn("status", List.of("SUBMITTED", "ACCEPTED", "REJECTED", "DONE"))
+                .select("conference.id", "status")
+                .get()
+                .get();
+        Map<String, ConferenceStatistics> statistics = new HashMap<>();
+        for (DocumentSnapshot document : snapshot.getDocuments()) {
+            Object conferenceId = document.get("conference.id");
+            if (!(conferenceId instanceof String id) || id.isBlank()) continue;
+            Object status = document.get("status");
+            boolean accepted = "ACCEPTED".equals(status) || "DONE".equals(status);
+            statistics.merge(
+                    id,
+                    new ConferenceStatistics(1, accepted ? 1 : 0),
+                    (left, right) -> new ConferenceStatistics(
+                            left.submitted() + right.submitted(), left.accepted() + right.accepted()));
+        }
+        return statistics;
+    }
+
+    public record ConferenceStatistics(int submitted, int accepted) {}
+
     public PagedResult<Talk> findPaged(int page, int pageSize, TalkStatus status, String speakerEmail)
             throws ExecutionException, InterruptedException {
         Query query = firestore.collection(getCollectionName());
