@@ -2,6 +2,7 @@ package com.zenika.thezaurus.model;
 
 import jakarta.validation.constraints.NotBlank;
 
+@com.google.cloud.firestore.annotation.IgnoreExtraProperties
 public class Conference {
     private String id;
 
@@ -83,7 +84,6 @@ public class Conference {
         this.submittedTalksAmount = submittedTalksAmount;
     }
 
-    @com.google.cloud.firestore.annotation.Exclude
     public int getAcceptedTalksAmount() {
         return acceptedTalksAmount;
     }

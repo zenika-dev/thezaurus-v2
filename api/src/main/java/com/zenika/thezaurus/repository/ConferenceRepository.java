@@ -7,6 +7,7 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
+import com.google.cloud.firestore.encoding.CustomClassMapper;
 import com.zenika.thezaurus.model.Conference;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -85,7 +86,11 @@ public class ConferenceRepository {
             conference.setId(UUID.randomUUID().toString());
         }
         DocumentReference docRef = firestore.collection(getCollectionName()).document(conference.getId());
-        ApiFuture<WriteResult> result = docRef.create(conference);
+        conference.setSubmittedTalksAmount(0);
+        conference.setAcceptedTalksAmount(0);
+        Map<String, Object> payload = payload(conference);
+        payload.put(ConferenceCounters.VERSION_FIELD, ConferenceCounters.VERSION);
+        ApiFuture<WriteResult> result = docRef.create(payload);
         result.get();
         return conference;
     }
@@ -99,9 +104,53 @@ public class ConferenceRepository {
             if (Boolean.TRUE.equals(existing.getBoolean("deleting"))) {
                 throw new WebApplicationException("Suppression de la conférence en cours", 409);
             }
-            transaction.set(reference, conference);
+            var counts = ConferenceCounters.read(
+                    transaction,
+                    existing,
+                    firestore.collection(getCollectionName().replaceFirst("conferences$", "talks")),
+                    id);
+            conference.setSubmittedTalksAmount(Math.toIntExact(counts.submitted()));
+            conference.setAcceptedTalksAmount(Math.toIntExact(counts.accepted()));
+            Map<String, Object> payload = payload(conference);
+            payload.putAll(counts.fields());
+            transaction.set(reference, payload);
             return conference;
         });
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> payload(Conference conference) {
+        return new java.util.HashMap<>((Map<String, Object>) CustomClassMapper.serialize(conference));
+    }
+
+    /** Per-conference transactional initialization: safe to retry or resume after a partial failure. */
+    public int migrateStatistics() throws ExecutionException, InterruptedException {
+        int migrated = 0;
+        for (DocumentSnapshot document : firestore
+                .collection(getCollectionName())
+                .select(ConferenceCounters.VERSION_FIELD, "deleting")
+                .get()
+                .get()
+                .getDocuments()) {
+            if (ConferenceCounters.initialized(document) || Boolean.TRUE.equals(document.getBoolean("deleting")))
+                continue;
+            DocumentReference reference = document.getReference();
+            boolean changed = FirestoreTransactions.run(firestore, transaction -> {
+                DocumentSnapshot current = transaction.get(reference).get();
+                if (!current.exists()
+                        || ConferenceCounters.initialized(current)
+                        || Boolean.TRUE.equals(current.getBoolean("deleting"))) return false;
+                var counts = ConferenceCounters.read(
+                        transaction,
+                        current,
+                        firestore.collection(getCollectionName().replaceFirst("conferences$", "talks")),
+                        document.getId());
+                ConferenceCounters.write(transaction, reference, counts);
+                return true;
+            });
+            if (changed) migrated++;
+        }
+        return migrated;
     }
 
     /**
@@ -131,6 +180,15 @@ public class ConferenceRepository {
                     return true;
                 }
                 String name = conference.getString("name");
+                if (ConferenceCounters.initialized(conference)) {
+                    var removed = new ConferenceCounters.Counts(0, 0);
+                    for (DocumentSnapshot talk : talks.getDocuments()) {
+                        removed = removed.plus(ConferenceCounters.contribution(talk.get("status")));
+                    }
+                    var counts = new ConferenceCounters.Counts(
+                            conference.getLong("submittedTalksAmount"), conference.getLong("acceptedTalksAmount"));
+                    ConferenceCounters.write(transaction, reference, counts.minus(removed));
+                }
                 for (QueryDocumentSnapshot talk : talks.getDocuments()) {
                     transaction.update(talk.getReference(), "conference", Map.of("name", name));
                 }

@@ -1,45 +1,66 @@
 # Statistiques par conférence
 
-La page des conférences appelle `GET /conferences?includeStatistics=true` une seule fois.
-Chaque carte affiche les talks soumis et acceptés, regroupés par identifiant de conférence.
-Deux conférences homonymes restent distinctes. Les noms libres sans identifiant ne sont pas
-rattachés automatiquement à une conférence.
+Les compteurs `submittedTalksAmount` et `acceptedTalksAmount` sont stockés sur les conférences.
+La page ne lit plus les talks : une seule requête sur les conférences fournit les deux totaux,
+sans N+1. Le paramètre `includeStatistics=true` reste accepté pour compatibilité mais ne
+provoque plus de calcul supplémentaire. Le cache navigateur et son invalidation restent inchangés.
 
 - Soumissions : `SUBMITTED`, `ACCEPTED`, `REJECTED`, `DONE`.
-- Acceptations : `ACCEPTED`, `DONE`.
-- `DRAFT` et `PLANNED` sont exclus. Un talk compte une fois, quel que soit son nombre de speakers.
+- Acceptations : `ACCEPTED` et `DONE`.
+- Brouillons et talks planifiés exclus. Un talk compte une fois, indépendamment des speakers.
+- Rattachement uniquement par identifiant ; les noms libres ne sont pas rapprochés automatiquement.
 
-Il s'agit des statuts actuels, pas d'un historique : repasser un talk en brouillon le retire des
-statistiques. Modifier son rattachement le déplace vers sa nouvelle conférence. Les compteurs
-historiques saisis sur les conférences ne sont pas utilisés pour ce calcul.
+## Maintenance transactionnelle
 
-## Requêtes et coût
+La création, la modification et la suppression d'un talk écrivent le talk et les deltas des
+conférences dans la même transaction Firestore. Un déplacement peut modifier deux conférences.
+Les lectures précèdent toutes les écritures. Les retries relisent les valeurs et ne doublent pas
+les incréments. Supprimer un talk déjà supprimé ne décrémente rien.
 
-Le serveur lit les conférences puis effectue **une requête groupée** sur les talks aux quatre
-statuts concernés, projetée sur `conference.id` et `status`. Il ne désérialise pas les talks
-complets et ne résout aucune conférence depuis ces talks : pas de N+1. Une liste de conférences
-vide évite même cette seconde requête. Les formulaires utilisent la liste ordinaire, sans calcul.
-Le cache React Query existant conserve les résultats pendant 60 secondes ; les mutations de
-talks invalident les conférences, y compris en cas de changement de statut ou de rattachement.
+Une correction de titre ou `ACCEPTED → DONE` ne modifie pas les totaux et n'écrit aucun compteur.
+Un retour à `DRAFT` retire la contribution précédente. Une conférence supprimée n'est jamais
+recréée par le mécanisme de compteur. La suppression d'une conférence décrémente les contributions
+converties en noms libres dans chaque lot avant de supprimer le document.
 
-Pour C conférences et T talks aux statuts concernés, un chargement sans cache lit environ C + T
-documents (avec le minimum de facturation des requêtes vides). La projection réduit le transfert,
-**pas le nombre de lectures facturées**. Aucune écriture, migration, tâche périodique ou nouvel
-index composite n'est nécessaire.
+Les compteurs envoyés par un client sont ignorés à la création d'une conférence et remplacés par
+les valeurs transactionnelles du serveur à l'édition. Le marqueur de migration est conservé.
+Aucune Cloud Function, tâche périodique ou infrastructure supplémentaire n'est nécessaire.
 
-Choix comparés :
+## Migration des données existantes
 
-| Option | Avantage | Coût / compromis |
-| --- | --- | --- |
-| Lecture groupée projetée (retenue) | Deux requêtes, données actuelles, maintenance simple | Lectures proportionnelles aux talks concernés |
-| Deux `count()` par conférence | Les agrégations peuvent coûter moins de lectures | 2C requêtes supplémentaires : N+1 |
-| Compteurs matérialisés et transactionnels | Lecture des seuls documents de conférence | Écritures supplémentaires, reprise des données, synchronisation de tous les chemins de modification et suppression |
+`LegacyDataMigration` exécute `ConferenceRepository.migrateStatistics()` au démarrage, après la
+normalisation des rattachements historiques. La migration est activée par défaut via
+`thezaurus.migrations.startup=true` et désactivée dans les tests Quarkus sans Firestore.
 
-Le code actuel minimise la complexité et les écritures, pas nécessairement la facture.
-Pour une application davantage consultée que modifiée, **les compteurs transactionnels sur les
-conférences sont le meilleur choix de coût récurrent**. Ils évitent également le N+1 : une seule
-requête sur les conférences fournit les deux compteurs. Cette comparaison ne remplace pas encore
-le calcul actuel par ces compteurs.
+Chaque conférence sans `conferenceStatisticsVersion=1` est initialisée dans sa propre transaction :
+lecture de la conférence et de ses talks (projection du seul statut), remplacement des anciens
+compteurs et pose du marqueur. Une conférence vide reçoit deux zéros. Les conférences en cours de
+suppression sont ignorées. Les marqueurs sont projetés au scan initial pour éviter les transactions
+sur les conférences déjà migrées lors des démarrages suivants.
+
+Une interruption laisse les conférences déjà migrées utilisables ; le démarrage suivant reprend
+les autres. Un conflit relance la transaction avec un nouveau snapshot. Si une mutation touche une
+conférence non migrée, elle initialise ses compteurs avant d'appliquer le delta, dans la même
+transaction : aucune fenêtre entre le scan et l'incrément. L'application refuse de démarrer si une
+migration échoue. Le log indique le nombre de conférences initialisées.
+
+**Déploiement : arrêter/drainer les anciennes révisions et tout import écrivant directement les
+talks avant d'activer cette version et sa migration.** Les anciens writers ne maintiennent pas les
+compteurs : une transaction de migration ne peut pas corriger leurs écritures postérieures au
+marquage. Les writers de cette nouvelle version peuvent fonctionner concurremment avec la migration.
+Laisser les migrations activées jusqu'à un démarrage avec zéro conférence migrée. Les imports
+futurs doivent emprunter le repository transactionnel.
+
+La migration est livrée dans le code ; aucune base distante n'a été migrée depuis ce chat.
+
+## Validation
+
+Tests des six statuts à la création, transitions de statut, déplacements, retrait/ajout de
+rattachement, suppression répétée ou orpheline, absence d'écriture sur deltas nuls, protection des
+compteurs contre les payloads clients, rejet des conférences indisponibles, retries, initialisation
+pendant une mutation, migration idempotente, interruption/reprise et conflit pendant migration.
+Le banc transactionnel de test applique les écritures seulement au commit et refuse toute lecture
+après la première écriture. Il simule les retries ; il ne remplace pas un test de charge Firestore.
 
 ## Comparaison chiffrée des compteurs transactionnels
 
@@ -47,15 +68,15 @@ Sur une même période, noter :
 
 - L : nombre réel de chargements backend après cache, tous utilisateurs confondus.
 - C : nombre de conférences affichées.
-- T : nombre de talks lus par la requête actuelle, y compris les talks sans conférence reconnue.
+- T : nombre de talks lus par l’ancienne requête, y compris les talks sans conférence reconnue.
 - RΔ et WΔ : lectures et écritures supplémentaires pour maintenir les compteurs.
 - r et w : prix unitaires respectifs d'une lecture et d'une écriture.
 
 À volumes stables, hors quota gratuit, stockage, réseau, reprise initiale et retries :
 
 ```text
-Actuel    = L × (C + T) × r
-Compteurs = L × C × r + RΔ × r + WΔ × w
+Ancien calcul = L × (C + T) × r
+Compteurs     = L × C × r + RΔ × r + WΔ × w
 
 Les compteurs coûtent moins si : L × T > RΔ + WΔ × (w / r)
 ```
@@ -68,7 +89,7 @@ Exemple fictif, pas une mesure de production : C = 100, T = 1 000, L = 100 charg
 20 mutations/jour modifiant réellement les compteurs. Avec une provision de deux lectures et
 deux écritures supplémentaires par mutation (déplacement ou suppression inclus, hors retries) :
 
-| Opérations par jour | Calcul actuel | Compteurs |
+| Opérations par jour | Ancien calcul | Compteurs retenus |
 | --- | ---: | ---: |
 | Lectures de la page | 110 000 | 10 000 |
 | Lectures supplémentaires de maintenance | 0 | au plus 40 |
@@ -82,44 +103,10 @@ Le rapport 3 correspond notamment aux tarifs standards affichés pour Iowa (0,03
 lectures, 0,09 USD/100 000 écritures), consultés le 30 octobre 2026 ; ce n'est pas une estimation
 du tarif de la base déployée. La région Cloud Run ne prouve pas celle de Firestore.
 
-Si T est faible et les mutations très nombreuses, l'option actuelle peut coûter moins. Le coût
+Si T est faible et les mutations très nombreuses, l’ancienne option peut coûter moins. Le coût
 monétaire marginal peut aussi être nul sous le quota gratuit, quand la base y est éligible.
 Pour chiffrer en euros, il faut la localisation de la base, les tarifs contractuels et les
 volumes réels. La migration ajoute un coût ponctuel à amortir.
-
-## Ce que demanderait une implémentation fiable
-
-Le dépôt dispose déjà d'une transaction dans `TalkRepository.save` : pas besoin de Cloud
-Function, de tâche périodique ni de compteur distribué pour ce niveau d'usage.
-
-1. Stocker les deux totaux sur la conférence, protégés contre les valeurs envoyées par les clients.
-   `acceptedTalksAmount` est actuellement exclu de la persistance Firestore : il faudrait retirer
-   cette exclusion. Le compteur `submittedTalksAmount` historique doit être recalculé.
-2. Dans la transaction du talk, calculer la contribution avant/après par identifiant et statut.
-   Appliquer uniquement les deltas non nuls, avec les deux champs dans la même écriture par
-   conférence. `ACCEPTED → DONE` et une correction de titre ne nécessitent aucune écriture de compteur.
-3. Pour un déplacement, décrémenter l'ancienne conférence et incrémenter la nouvelle dans la
-   même transaction. Lire tous les documents nécessaires avant la première écriture ; conserver
-   les contrôles d'autorisation et la marque `deleting`.
-4. Remplacer la suppression directe du talk par une suppression transactionnelle avec décrément.
-   La lecture préalable du talk doit se faire dans la transaction pour résister à un double appel
-   et aux modifications concurrentes.
-5. Modifier `ConferenceRepository.update` : son `transaction.set(reference, conference)` actuel
-   peut écraser les compteurs. Conserver les valeurs du serveur ou mettre à jour les seuls champs
-   éditables. Une création de conférence initialise les compteurs à zéro.
-6. La suppression de conférence convertit déjà les rattachements par lots avant de supprimer le
-   document. Ne pas recréer la conférence via une écriture de compteur concurrente. Auditer aussi
-   `migrateLegacyConferences`, les imports et toute écriture directe hors repository.
-7. Initialiser les compteurs existants une seule fois sous suspension des mutations, ou par un
-   protocole de migration versionné. Un scan suivi de `set` pendant que les talks changent peut
-   perdre des incréments. Un champ absent ne doit pas être assimilé silencieusement à un zéro fiable.
-8. Tester créations, suppressions répétées, changements de statut, déplacements, modifications
-   concurrentes, retries, reprise de migration et édition des métadonnées de conférence.
-
-La conférence devient un document partagé entre les écritures des talks associés : les
-transactions peuvent être relancées en cas de contention. Ne distribuer les compteurs que si
-des mesures montrent ce besoin ; lire des fragments à chaque affichage annulerait une partie
-du bénéfice recherché.
 
 ## Captures de l'interface
 

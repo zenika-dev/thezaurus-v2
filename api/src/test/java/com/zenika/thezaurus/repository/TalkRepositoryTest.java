@@ -148,6 +148,7 @@ public class TalkRepositoryTest {
         Mockito.when(conferences.document("conf")).thenReturn(conferenceRef);
         Mockito.when(conferenceRef.get()).thenReturn(ApiFutures.immediateFuture(conferenceDoc));
         Mockito.when(conferenceDoc.exists()).thenReturn(true);
+        Mockito.when(conferenceDoc.getLong(ConferenceCounters.VERSION_FIELD)).thenReturn(1L);
         Mockito.when(conferenceDoc.toObject(Conference.class)).thenReturn(new Conference("conf", "Current name", null));
         assertEquals("Current name", repository.findById("talk").conference().getName());
     }
@@ -164,6 +165,7 @@ public class TalkRepositoryTest {
         Mockito.when(conferences.document("conf")).thenReturn(conferenceRef);
         Mockito.when(transaction.get(conferenceRef)).thenReturn(ApiFutures.immediateFuture(conferenceDoc));
         Mockito.when(conferenceDoc.exists()).thenReturn(true);
+        Mockito.when(conferenceDoc.getLong(ConferenceCounters.VERSION_FIELD)).thenReturn(1L);
         Mockito.when(conferenceDoc.toObject(Conference.class)).thenReturn(new Conference("conf", "Current name", null));
         Mockito.when(repository.firestore.runTransaction(
                         Mockito.any(com.google.cloud.firestore.Transaction.Function.class)))
