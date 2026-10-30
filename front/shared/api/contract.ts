@@ -13,6 +13,7 @@ import type { components } from "./schema";
 type Schemas = components["schemas"];
 
 export type BackendAiPhotoPreference = Schemas["AiPhotoPreference"];
+export type BackendAnnualContributions = Schemas["AnnualContributions"];
 export type BackendBlogPost = Schemas["BlogPost"];
 export type BackendBlogPostStatus = Schemas["BlogPostStatus"];
 export type BackendCityCount = Schemas["CityCount"];
@@ -20,6 +21,7 @@ export type BackendConference = Schemas["Conference"];
 export type BackendConferencePeriod = Schemas["ConferencePeriod"];
 export type BackendConferenceReach = Schemas["ConferenceReach"];
 export type BackendConferenceType = Schemas["ConferenceType"];
+export type BackendContributionStatistics = Schemas["ContributionStatistics"];
 export type BackendCurrentUserView = Schemas["CurrentUserView"];
 export type BackendDatePrecision = Schemas["DatePrecision"];
 export type BackendEvent = Schemas["Event"];

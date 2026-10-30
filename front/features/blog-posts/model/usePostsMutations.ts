@@ -14,6 +14,7 @@ export function usePostsMutations() {
     mutationFn: (post: BlogPostData) => createPostAction(post),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.posts.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.contributions() });
     },
   });
 
@@ -21,6 +22,7 @@ export function usePostsMutations() {
     mutationFn: (post: BlogPostData) => updatePostAction(post),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.posts.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.contributions() });
     },
   });
 
@@ -28,6 +30,7 @@ export function usePostsMutations() {
     mutationFn: (id: string) => deletePostAction(id),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.posts.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.contributions() });
     },
   });
 

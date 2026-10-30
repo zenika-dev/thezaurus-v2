@@ -14,6 +14,7 @@ export function useTalksMutations() {
     mutationFn: (talk: TalkData) => createTalkAction(talk),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.talks.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.contributions() });
     },
   });
 
@@ -21,6 +22,7 @@ export function useTalksMutations() {
     mutationFn: (talk: TalkData) => updateTalkAction(talk),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.talks.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.contributions() });
     },
   });
 
@@ -28,6 +30,7 @@ export function useTalksMutations() {
     mutationFn: (id: string) => deleteTalkAction(id),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.talks.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.contributions() });
     },
   });
 
