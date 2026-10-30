@@ -1,8 +1,7 @@
 {
   "extends": "semantic-release-monorepo",
   "branches": [
-    "main",
-    { "name": "feat/manual-release", "prerelease": "test" }
+    "main"
   ],
   "tagFormat": "api-v${version}",
   "plugins": [
