@@ -382,8 +382,9 @@ public class TalkRepository {
                                     .collection(getCollectionName().replaceFirst("talks$", "conferences"))
                                     .document(id))
                             .get();
-                    if (target.exists() && !Boolean.TRUE.equals(target.getBoolean("deleting")))
-                        conference = Map.of("id", id);
+                    // Keep existing attachments visible to the deletion worker, which detaches
+                    // talks and decrements counters atomically. This is not a new attachment.
+                    if (target.exists()) conference = Map.of("id", id);
                 }
                 if (conference == null && embedded.get("name") instanceof String name && !name.isBlank()) {
                     conference = Map.of("name", name.trim());

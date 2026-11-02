@@ -26,7 +26,7 @@ final class ConferenceCounters {
         }
 
         Map<String, Object> fields() {
-            if (submitted < 0 || accepted < 0 || accepted > submitted) {
+            if (submitted < 0 || accepted < 0 || accepted > submitted || submitted > Integer.MAX_VALUE) {
                 throw new IllegalStateException("Compteurs de conférence incohérents");
             }
             return Map.of("submittedTalksAmount", submitted, "acceptedTalksAmount", accepted, VERSION_FIELD, VERSION);
@@ -47,7 +47,15 @@ final class ConferenceCounters {
     }
 
     static boolean initialized(DocumentSnapshot conference) {
-        return Long.valueOf(VERSION).equals(conference.getLong(VERSION_FIELD));
+        Long submitted = conference.getLong("submittedTalksAmount");
+        Long accepted = conference.getLong("acceptedTalksAmount");
+        return Long.valueOf(VERSION).equals(conference.getLong(VERSION_FIELD))
+                && submitted != null
+                && accepted != null
+                && submitted >= 0
+                && accepted >= 0
+                && accepted <= submitted
+                && submitted <= Integer.MAX_VALUE;
     }
 
     static Counts read(Transaction transaction, DocumentSnapshot conference, CollectionReference talks, String id)

@@ -128,7 +128,7 @@ public class ConferenceRepository {
         int migrated = 0;
         for (DocumentSnapshot document : firestore
                 .collection(getCollectionName())
-                .select(ConferenceCounters.VERSION_FIELD, "deleting")
+                .select(ConferenceCounters.VERSION_FIELD, "deleting", "submittedTalksAmount", "acceptedTalksAmount")
                 .get()
                 .get()
                 .getDocuments()) {

@@ -133,7 +133,11 @@ class TransactionalConferenceCountersTest {
             });
         } else {
             Query query = mock(Query.class);
-            when(collection.select(ConferenceCounters.VERSION_FIELD, "deleting"))
+            when(collection.select(
+                            ConferenceCounters.VERSION_FIELD,
+                            "deleting",
+                            "submittedTalksAmount",
+                            "acceptedTalksAmount"))
                     .thenReturn(query);
             when(query.get()).thenAnswer(i -> {
                 List<QueryDocumentSnapshot> docs = data.keySet().stream()
@@ -424,5 +428,27 @@ class TransactionalConferenceCountersTest {
         data.put("test_conferences/a", new HashMap<>(Map.of("name", "A", "deleting", true)));
         assertEquals(0, conferenceRepository.migrateStatistics());
         assertEquals(0, scans);
+    }
+
+    @Test
+    void migrationRepairsVersionedButIncompleteOrInvalidCounters() throws Exception {
+        conference("a", 99, 0);
+        data.get("test_conferences/a").remove("acceptedTalksAmount");
+        conference("b", 0, 2);
+        storedTalk("one", "a", "ACCEPTED");
+        storedTalk("two", "b", "REJECTED");
+        assertEquals(2, conferenceRepository.migrateStatistics());
+        counts("a", 1, 1);
+        counts("b", 1, 0);
+        assertEquals(0, conferenceRepository.migrateStatistics());
+    }
+
+    @Test
+    void mutationRepairsIncompleteCountersBeforeApplyingItsDelta() throws Exception {
+        conference("a", 99, 0);
+        data.get("test_conferences/a").remove("acceptedTalksAmount");
+        storedTalk("talk", "a", "SUBMITTED");
+        repository.update("talk", talk("a", TalkStatus.ACCEPTED), ignored -> true);
+        counts("a", 1, 1);
     }
 }

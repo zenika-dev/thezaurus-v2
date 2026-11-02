@@ -38,6 +38,12 @@ compteurs et pose du marqueur. Une conférence vide reçoit deux zéros. Les con
 suppression sont ignorées. Les marqueurs sont projetés au scan initial pour éviter les transactions
 sur les conférences déjà migrées lors des démarrages suivants.
 
+Le marqueur ne suffit pas à valider une migration : les deux compteurs doivent être présents,
+positifs ou nuls, représentables par le modèle et les acceptations ne peuvent dépasser les
+soumissions. Des valeurs incomplètes ou invalides sont recalculées transactionnellement.
+La normalisation des rattachements historiques conserve les identifiants des conférences en
+cours de suppression ; seul le worker de suppression retire ces rattachements et leurs contributions.
+
 Une interruption laisse les conférences déjà migrées utilisables ; le démarrage suivant reprend
 les autres. Un conflit relance la transaction avec un nouveau snapshot. Si une mutation touche une
 conférence non migrée, elle initialise ses compteurs avant d'appliquer le delta, dans la même
