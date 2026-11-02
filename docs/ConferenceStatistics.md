@@ -116,10 +116,12 @@ volumes réels. La migration ajoute un coût ponctuel à amortir.
 
 ## Captures de l'interface
 
-Captures du vrai front de la branche, le 30 octobre 2026, avec réponses API et session de
+Captures du vrai front de la branche, le 2 novembre 2026, avec réponses API et session de
 démonstration interceptées dans le navigateur. Docker étant arrêté, elles ne constituent pas
 une validation de bout en bout contre Firestore. Les chiffres sont fictifs et ne viennent pas
-de la production. Aucun code de l'interface n'a été modifié pour ces captures.
+de la production. Les compteurs sont dérivés des talks du [scénario de démonstration](screenshots/issue-196/scenario.json),
+avec 24 soumissions dont 9 acceptations, 12 dont 5, une soumission en attente et une conférence vide.
+Aucun code de l'interface n'a été modifié pour ces captures.
 
 - [Bureau, 1440 × 1000](screenshots/issue-196/conferences-desktop.png).
 - [Mobile, 390 × 1100](screenshots/issue-196/conferences-mobile.png).
@@ -127,7 +129,8 @@ de la production. Aucun code de l'interface n'a été modifié pour ces captures
 
 Vérifications automatisées de capture : compteurs pluriels et singuliers visibles, filtre de
 l'année fonctionnel, zéro visible, absence de débordement horizontal en mobile et exactement
-un appel groupé `/conferences?includeStatistics=true`, sans nouvel appel lors des filtres.
+un appel `/conferences`, sans nouvel appel lors des filtres. La liste et les sélecteurs partagent
+désormais la même entrée de cache ; les deux totaux sont toujours présents dans le catalogue.
 
 Références : [facturation Firestore](https://firebase.google.com/docs/firestore/pricing),
 [agrégations Firestore](https://firebase.google.com/docs/firestore/query-data/aggregation-queries).

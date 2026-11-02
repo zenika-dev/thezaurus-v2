@@ -31,7 +31,7 @@ public class ConferenceResource {
     @GET
     public List<Conference> list(@QueryParam("includeStatistics") boolean includeStatistics)
             throws ExecutionException, InterruptedException {
-        return includeStatistics ? service.findAllWithStatistics() : service.findAll();
+        return service.findAll();
     }
 
     @GET

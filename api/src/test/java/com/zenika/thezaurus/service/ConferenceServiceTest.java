@@ -17,7 +17,7 @@ class ConferenceServiceTest {
         conference.setSubmittedTalksAmount(4);
         conference.setAcceptedTalksAmount(2);
         when(service.repository.findAll()).thenReturn(List.of(conference));
-        assertEquals(List.of(conference), service.findAllWithStatistics());
+        assertEquals(List.of(conference), service.findAll());
         verify(service.repository).findAll();
         verifyNoMoreInteractions(service.repository);
     }

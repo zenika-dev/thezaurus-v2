@@ -148,6 +148,7 @@ public class TalkRepositoryTest {
         Mockito.when(conferences.document("conf")).thenReturn(conferenceRef);
         Mockito.when(conferenceRef.get()).thenReturn(ApiFutures.immediateFuture(conferenceDoc));
         Mockito.when(conferenceDoc.exists()).thenReturn(true);
+        Mockito.when(conferenceDoc.getReference()).thenReturn(conferenceRef);
         Mockito.when(conferenceDoc.getLong(ConferenceCounters.VERSION_FIELD)).thenReturn(1L);
         Mockito.when(conferenceDoc.getLong("submittedTalksAmount")).thenReturn(0L);
         Mockito.when(conferenceDoc.getLong("acceptedTalksAmount")).thenReturn(0L);
@@ -167,6 +168,7 @@ public class TalkRepositoryTest {
         Mockito.when(conferences.document("conf")).thenReturn(conferenceRef);
         Mockito.when(transaction.get(conferenceRef)).thenReturn(ApiFutures.immediateFuture(conferenceDoc));
         Mockito.when(conferenceDoc.exists()).thenReturn(true);
+        Mockito.when(conferenceDoc.getReference()).thenReturn(conferenceRef);
         Mockito.when(conferenceDoc.getLong(ConferenceCounters.VERSION_FIELD)).thenReturn(1L);
         Mockito.when(conferenceDoc.getLong("submittedTalksAmount")).thenReturn(0L);
         Mockito.when(conferenceDoc.getLong("acceptedTalksAmount")).thenReturn(0L);

@@ -14,9 +14,9 @@ it("charge les statistiques groupées en un seul appel", async () => {
     { id: "b", name: "Autre", submittedTalksAmount: 0, acceptedTalksAmount: 0 },
   ]));
   vi.stubGlobal("fetch", fetch);
-  const conferences = await conferenceApi.getConferencesWithStatistics();
+  const conferences = await conferenceApi.getConferences();
   expect(fetch).toHaveBeenCalledTimes(1);
-  expect(String(fetch.mock.calls[0]?.[0])).toContain("/conferences?includeStatistics=true");
+  expect(String(fetch.mock.calls[0]?.[0])).toContain("/conferences");
   expect(conferences[0]).toMatchObject({ submittedTalksAmount: 4, acceptedTalksAmount: 2 });
   state.conferences = conferences;
   render(<ConferencesList />);

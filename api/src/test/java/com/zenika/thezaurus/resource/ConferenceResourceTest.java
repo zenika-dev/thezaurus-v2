@@ -55,7 +55,7 @@ public class ConferenceResourceTest {
         Conference conference = new Conference("1", "Titre", null);
         conference.setSubmittedTalksAmount(4);
         conference.setAcceptedTalksAmount(2);
-        Mockito.when(service.findAllWithStatistics()).thenReturn(java.util.List.of(conference));
+        Mockito.when(service.findAll()).thenReturn(java.util.List.of(conference));
         given().queryParam("includeStatistics", true)
                 .when()
                 .get("/conferences")

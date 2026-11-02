@@ -13,11 +13,6 @@ public class ConferenceService {
     @Inject
     ConferenceRepository repository;
 
-    public List<Conference> findAllWithStatistics() throws ExecutionException, InterruptedException {
-        // Kept for compatibility with includeStatistics=true; counters now come from the catalogue itself.
-        return repository.findAll();
-    }
-
     public List<Conference> findAll() throws ExecutionException, InterruptedException {
         return repository.findAll();
     }

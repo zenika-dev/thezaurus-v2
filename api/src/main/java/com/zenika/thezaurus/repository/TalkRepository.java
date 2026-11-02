@@ -254,7 +254,6 @@ public class TalkRepository {
             if (newId != null && newId.isBlank()) newId = null;
             String oldId = stored != null ? ConferenceCounters.conferenceId(stored) : null;
             Map<String, DocumentSnapshot> conferenceDocuments = new HashMap<>();
-            Map<String, DocumentReference> conferenceReferences = new HashMap<>();
             if (selected != null
                     && selected.getId() != null
                     && !selected.getId().isBlank()) {
@@ -271,7 +270,6 @@ public class TalkRepository {
                 current = conference.toObject(Conference.class);
                 storedConference = Map.of("id", selected.getId());
                 conferenceDocuments.put(newId, conference);
-                conferenceReferences.put(newId, conferenceReference);
             } else if (selected != null
                     && selected.getName() != null
                     && !selected.getName().isBlank()) {
@@ -286,7 +284,6 @@ public class TalkRepository {
                 // Never recreate a conference that has already been deleted.
                 if (oldConference.exists()) {
                     conferenceDocuments.put(oldId, oldConference);
-                    conferenceReferences.put(oldId, oldReference);
                 }
             }
             Map<String, ConferenceCounters.Counts> deltas = new HashMap<>();
@@ -324,7 +321,8 @@ public class TalkRepository {
                 payload.put("date", selected.getDate().getStart());
             }
             for (var entry : updatedCounts.entrySet()) {
-                ConferenceCounters.write(transaction, conferenceReferences.get(entry.getKey()), entry.getValue());
+                ConferenceCounters.write(
+                        transaction, conferenceDocuments.get(entry.getKey()).getReference(), entry.getValue());
             }
             if (canEdit == null) transaction.create(reference, payload);
             else transaction.set(reference, payload);

@@ -50,11 +50,6 @@ export const mapBackendToFrontend = (c: BackendConference): ConferenceData => ({
 const toPayload = (c: ConferenceData): BackendConference => c;
 
 export const conferenceApi = {
-  getConferencesWithStatistics: async (): Promise<ConferenceData[]> => {
-    const res = await apiFetch("/conferences?includeStatistics=true");
-    if (!res.ok) throw new Error("Failed to fetch conference statistics");
-    return (await res.json()).map(mapBackendToFrontend);
-  },
   getConferences: async (): Promise<ConferenceData[]> => {
     const res = await apiFetch("/conferences");
     if (!res.ok) throw new Error("Failed to fetch conferences");
