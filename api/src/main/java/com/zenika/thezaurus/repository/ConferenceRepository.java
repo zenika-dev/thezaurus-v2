@@ -34,18 +34,11 @@ public class ConferenceRepository {
     @ConfigProperty(name = "thezaurus.firestore.collection.prefix")
     Optional<String> collectionPrefix;
 
-    private static final String BASE_COLLECTION_NAME = "conferences";
-
     /** Limite Firestore : un WriteBatch accepte au plus 500 opérations. */
     private static final int BATCH_SIZE = 500;
 
     private String getCollectionName() {
-        if (collectionPrefix == null
-                || collectionPrefix.isEmpty()
-                || collectionPrefix.get().trim().isEmpty()) {
-            return BASE_COLLECTION_NAME;
-        }
-        return collectionPrefix.get().trim() + "_" + BASE_COLLECTION_NAME;
+        return FirestoreCollections.conferences(collectionPrefix);
     }
 
     public List<Conference> findAll() throws ExecutionException, InterruptedException {
@@ -105,10 +98,7 @@ public class ConferenceRepository {
                 throw new WebApplicationException("Suppression de la conférence en cours", 409);
             }
             var counts = ConferenceCounters.read(
-                    transaction,
-                    existing,
-                    firestore.collection(getCollectionName().replaceFirst("conferences$", "talks")),
-                    id);
+                    transaction, existing, firestore.collection(FirestoreCollections.talks(collectionPrefix)), id);
             conference.setSubmittedTalksAmount(Math.toIntExact(counts.submitted()));
             conference.setAcceptedTalksAmount(Math.toIntExact(counts.accepted()));
             Map<String, Object> payload = payload(conference);
@@ -137,16 +127,15 @@ public class ConferenceRepository {
             DocumentReference reference = document.getReference();
             boolean changed = FirestoreTransactions.run(firestore, transaction -> {
                 DocumentSnapshot current = transaction.get(reference).get();
-                if (!current.exists()
-                        || ConferenceCounters.initialized(current)
-                        || Boolean.TRUE.equals(current.getBoolean("deleting"))) return false;
-                var counts = ConferenceCounters.read(
+                if (Boolean.TRUE.equals(current.getBoolean("deleting"))) return false;
+                var update = ConferenceCounters.applyDelta(
                         transaction,
                         current,
-                        firestore.collection(getCollectionName().replaceFirst("conferences$", "talks")),
-                        document.getId());
-                ConferenceCounters.write(transaction, reference, counts);
-                return true;
+                        firestore.collection(FirestoreCollections.talks(collectionPrefix)),
+                        document.getId(),
+                        new ConferenceCounters.Counts(0, 0));
+                update.ifPresent(value -> value.write(transaction));
+                return update.isPresent();
             });
             if (changed) migrated++;
         }
@@ -171,7 +160,7 @@ public class ConferenceRepository {
                 if (!conference.exists()) return true;
                 QuerySnapshot talks = transaction
                         .get(firestore
-                                .collection(getCollectionName().replaceFirst("conferences$", "talks"))
+                                .collection(FirestoreCollections.talks(collectionPrefix))
                                 .whereEqualTo("conference.id", id)
                                 .limit(400))
                         .get();
@@ -180,15 +169,17 @@ public class ConferenceRepository {
                     return true;
                 }
                 String name = conference.getString("name");
-                if (ConferenceCounters.initialized(conference)) {
-                    var removed = new ConferenceCounters.Counts(0, 0);
-                    for (DocumentSnapshot talk : talks.getDocuments()) {
-                        removed = removed.plus(ConferenceCounters.contribution(talk.get("status")));
-                    }
-                    var counts = new ConferenceCounters.Counts(
-                            conference.getLong("submittedTalksAmount"), conference.getLong("acceptedTalksAmount"));
-                    ConferenceCounters.write(transaction, reference, counts.minus(removed));
+                var removed = new ConferenceCounters.Counts(0, 0);
+                for (DocumentSnapshot talk : talks.getDocuments()) {
+                    removed = removed.plus(ConferenceCounters.contribution(talk.get("status")));
                 }
+                ConferenceCounters.applyDelta(
+                                transaction,
+                                conference,
+                                firestore.collection(FirestoreCollections.talks(collectionPrefix)),
+                                id,
+                                new ConferenceCounters.Counts(0, 0).minus(removed))
+                        .ifPresent(value -> value.write(transaction));
                 for (QueryDocumentSnapshot talk : talks.getDocuments()) {
                     transaction.update(talk.getReference(), "conference", Map.of("name", name));
                 }

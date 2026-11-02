@@ -27,6 +27,7 @@ export function ConferencesList() {
   const [yearFilter, setYearFilter] = useState<
     "All" | "This Year" | "Next Year"
   >("All");
+  const [sort, setSort] = useState("default");
 
   const currentYear = new Date().getFullYear();
 
@@ -42,6 +43,14 @@ export function ConferencesList() {
     }
     return true;
   });
+  if (sort !== "default") {
+    filteredConferences.sort((left, right) => {
+      const difference = sort === "submitted"
+        ? right.submittedTalksAmount - left.submittedTalksAmount
+        : (right.acceptedTalksAmount ?? 0) - (left.acceptedTalksAmount ?? 0);
+      return difference || left.name.localeCompare(right.name, "fr") || left.id.localeCompare(right.id);
+    });
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -76,11 +85,25 @@ export function ConferencesList() {
           ))}
         </div>
 
-        {(statusFilter !== "All" || yearFilter !== "All") && (
+        <label className="flex items-center gap-2 text-xs text-text-muted">
+          Trier par :
+          <select
+            value={sort}
+            onChange={(event) => setSort(event.target.value)}
+            className="rounded-lg border border-border bg-surface px-2 py-1.5 text-text"
+          >
+            <option value="default">Ordre initial</option>
+            <option value="submitted">Soumissions décroissantes</option>
+            <option value="accepted">Acceptations décroissantes</option>
+          </select>
+        </label>
+
+        {(statusFilter !== "All" || yearFilter !== "All" || sort !== "default") && (
           <button
             onClick={() => {
               setStatusFilter("All");
               setYearFilter("All");
+              setSort("default");
             }}
             className="flex text-xs items-center font-sans gap-1 cursor-pointer text-link border border-primary/20 px-3 py-1 rounded-2xl bg-primary/10 transition-colors no-underline hover:bg-primary/20 hover:text-link"
           >

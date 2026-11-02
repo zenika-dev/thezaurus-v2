@@ -5,6 +5,7 @@ import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Transaction;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 /** All reads (including first-time initialization) must precede writes in the caller's transaction. */
@@ -76,6 +77,22 @@ final class ConferenceCounters {
 
     static void write(Transaction transaction, DocumentReference reference, Counts counts) {
         transaction.update(reference, counts.fields());
+    }
+
+    /** Read phase only: callers must prepare ALL updates before applying any of them. */
+    static Optional<Update> applyDelta(
+            Transaction transaction, DocumentSnapshot conference, CollectionReference talks, String id, Counts delta)
+            throws ExecutionException, InterruptedException {
+        if (!conference.exists() || (delta.isZero() && initialized(conference))) return Optional.empty();
+        return Optional.of(new Update(
+                conference.getReference(),
+                read(transaction, conference, talks, id).plus(delta)));
+    }
+
+    record Update(DocumentReference reference, Counts counts) {
+        void write(Transaction transaction) {
+            ConferenceCounters.write(transaction, reference, counts);
+        }
     }
 
     private ConferenceCounters() {}

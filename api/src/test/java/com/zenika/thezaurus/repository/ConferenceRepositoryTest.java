@@ -55,6 +55,7 @@ public class ConferenceRepositoryTest {
         DocumentSnapshot conferenceDoc = Mockito.mock(DocumentSnapshot.class);
         Mockito.when(collection.document("conf")).thenReturn(conferenceRef);
         Mockito.when(conferenceDoc.exists()).thenReturn(true);
+        Mockito.when(conferenceDoc.getReference()).thenReturn(conferenceRef);
         Mockito.when(conferenceDoc.getString("name")).thenReturn("Devoxx 2026");
         Mockito.when(conferenceDoc.getLong(ConferenceCounters.VERSION_FIELD)).thenReturn(1L);
         Mockito.when(conferenceDoc.getLong("submittedTalksAmount")).thenReturn(1L);

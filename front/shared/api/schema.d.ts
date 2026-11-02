@@ -1506,9 +1506,7 @@ export interface paths {
         /** List */
         get: {
             parameters: {
-                query?: {
-                    includeStatistics?: boolean;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;

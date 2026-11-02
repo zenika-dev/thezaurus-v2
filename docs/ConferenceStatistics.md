@@ -2,8 +2,14 @@
 
 Les compteurs `submittedTalksAmount` et `acceptedTalksAmount` sont stockés sur les conférences.
 La page ne lit plus les talks : une seule requête sur les conférences fournit les deux totaux,
-sans N+1. Le paramètre `includeStatistics=true` reste accepté pour compatibilité mais ne
-provoque plus de calcul supplémentaire. Le cache navigateur et son invalidation restent inchangés.
+sans N+1. Les compteurs font toujours partie de la réponse de `GET /conferences` ; le paramètre
+inutilisé `includeStatistics` a été retiré du backend et du contrat OpenAPI.
+Le cache navigateur et son invalidation restent inchangés.
+
+La liste propose un tri décroissant par soumissions ou acceptations, combinable aux filtres.
+Les égalités sont départagées par nom puis identifiant. Le tri travaille sur une copie filtrée
+du catalogue en mémoire, sans requête supplémentaire ni modification du cache ; Réinitialiser
+rétablit aussi l'ordre initial.
 
 - Soumissions : `SUBMITTED`, `ACCEPTED`, `REJECTED`, `DONE`.
 - Acceptations : `ACCEPTED` et `DONE`.
@@ -16,6 +22,11 @@ La création, la modification et la suppression d'un talk écrivent le talk et l
 conférences dans la même transaction Firestore. Un déplacement peut modifier deux conférences.
 Les lectures précèdent toutes les écritures. Les retries relisent les valeurs et ne doublent pas
 les incréments. Supprimer un talk déjà supprimé ne décrémente rien.
+
+`ConferenceCounters.applyDelta` centralise la préparation des changements (lectures et calculs) ;
+ses mises à jour préparées sont appliquées seulement après toutes les lectures de la transaction.
+Les noms des collections sont définis indépendamment dans `FirestoreCollections`, sans réécriture
+du chemin d'une autre collection.
 
 Une correction de titre ou `ACCEPTED → DONE` ne modifie pas les totaux et n'écrit aucun compteur.
 Un retour à `DRAFT` retire la contribution précédente. Une conférence supprimée n'est jamais

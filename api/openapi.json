@@ -1037,13 +1037,6 @@
     },
     "/conferences" : {
       "get" : {
-        "parameters" : [ {
-          "name" : "includeStatistics",
-          "in" : "query",
-          "schema" : {
-            "type" : "boolean"
-          }
-        } ],
         "responses" : {
           "200" : {
             "description" : "OK",
