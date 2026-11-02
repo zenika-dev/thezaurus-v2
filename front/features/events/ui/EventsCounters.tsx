@@ -25,8 +25,8 @@ export function EventsCounters() {
 export function EventsCountersSkeleton() {
   return (
     <div className="flex items-center gap-2 animate-pulse">
-      <div className="h-6 w-24 rounded-2xl bg-surface-muted" />
-      <div className="h-6 w-24 rounded-2xl bg-surface-muted" />
+      <div className="h-6 w-24 rounded-2xl bg-border-strong" />
+      <div className="h-6 w-24 rounded-2xl bg-border-strong" />
     </div>
   );
 }

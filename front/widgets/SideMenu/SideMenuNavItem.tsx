@@ -33,9 +33,12 @@ export function SideMenuNavItem({
     <ListItem disablePadding sx={{ display: "block", mb: 0.4, px: 1.5 }}>
       <ListItemButton
         onClick={onClick}
+        component="button"
+        aria-label={label}
         aria-current={active ? "page" : undefined}
         sx={{
           minHeight: 44,
+          width: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: open ? "initial" : "center",
@@ -43,15 +46,13 @@ export function SideMenuNavItem({
           borderRadius: 1,
           backgroundColor: active ? "rgba(237, 33, 60, 0.08)" : "transparent",
           color: active
-            ? theme.palette.primary.main
-            : theme.palette.mode === "dark"
-              ? "hsl(var(--sidebar-foreground))"
-              : "#4D4D4D",
+            ? "var(--app-focus)"
+            : theme.palette.text.primary,
           "&:hover": {
             backgroundColor: active
               ? "rgba(237, 33, 60, 0.12)"
               : "rgba(237, 33, 60, 0.04)",
-            color: theme.palette.primary.main,
+            color: "var(--app-focus)",
           },
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
@@ -63,7 +64,7 @@ export function SideMenuNavItem({
             justifyContent: "center",
             display: "flex",
             alignItems: "center",
-            color: active ? theme.palette.primary.main : "inherit",
+            color: active ? "var(--app-focus)" : "inherit",
             transition: "margin 0.25s ease",
           }}
         >

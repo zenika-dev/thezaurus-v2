@@ -1,7 +1,7 @@
 "use client";
 
 import { MapPin } from "lucide-react";
-import { Badge } from "@/shared/ui";
+import { Badge, Surface } from "@/shared/ui";
 import { visibilityColors, visibilityLabels, type EventTypeSummary } from "@/entities/event";
 
 interface EventTypeCardProps {
@@ -13,7 +13,7 @@ export function EventTypeCard({ summary, year }: EventTypeCardProps) {
   const badge = visibilityColors[summary.visibility];
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-[var(--color-primary)] bg-surface p-6 shadow-card">
+    <Surface className="flex flex-col gap-3 p-6 shadow-card">
       <div className="flex items-start justify-between gap-2">
         <h3 className="m-0 text-base font-bold text-text">{summary.name}</h3>
         <Badge color={badge.color} bg={badge.bg} darkColor={badge.darkColor} darkBg={badge.darkBg}>
@@ -37,6 +37,6 @@ export function EventTypeCard({ summary, year }: EventTypeCardProps) {
           </li>
         ))}
       </ul>
-    </div>
+    </Surface>
   );
 }

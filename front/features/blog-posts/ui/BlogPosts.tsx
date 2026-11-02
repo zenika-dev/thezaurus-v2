@@ -1,11 +1,10 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import Button from "@mui/material/Button";
 import { PenLine } from "lucide-react";
 import dynamic from "next/dynamic";
 import { usePostsMutations } from "@/features/blog-posts/model/usePostsMutations";
-import { DataErrorBoundary } from "@/shared/ui";
+import { DataErrorBoundary, PageHeader, CreateButton } from "@/shared/ui";
 import { BlogPostsList } from "./BlogPostsList";
 import { BlogPostsListSkeleton } from "./BlogPostsSkeleton";
 
@@ -19,23 +18,13 @@ export function BlogPosts() {
   const { createPost } = usePostsMutations();
 
   return (
-    <div className="p-8 pb-0 flex flex-col min-h-full">
-      <div className="flex justify-between items-center mb-6 shrink-0">
-        <div>
-          <h1 className="text-[34px] leading-[1.235] font-bold text-text m-0 tracking-[0.25px]">Blog Posts</h1>
-          <p className="text-[14px] leading-[1.43] text-text-muted m-0 tracking-[0.15px]">
-            Gérez les articles de blog Zenika.
-          </p>
-        </div>
-        <Button
-          variant="contained"
-          onClick={() => setOpen(true)}
-          className="gap-2! font-bold! py-2! shadow-none! rounded-[20px]! bg-[linear-gradient(135deg,#ed213c_0%,#BF1D67_100%)]! transition-transform! duration-200! hover:shadow-none! hover:-translate-y-[2px]!"
-        >
+    <div className="p-4 sm:p-6 lg:p-8 pb-0! flex flex-col min-h-full">
+      <PageHeader title="Blog Posts" subtitle="Gérez les articles de blog Zenika." className="shrink-0" action={
+        <CreateButton onClick={() => setOpen(true)}>
           <PenLine size={16} />
           Nouveau billet
-        </Button>
-      </div>
+        </CreateButton>
+      } />
 
       <Suspense fallback={<BlogPostsListSkeleton />}>
         <DataErrorBoundary>
