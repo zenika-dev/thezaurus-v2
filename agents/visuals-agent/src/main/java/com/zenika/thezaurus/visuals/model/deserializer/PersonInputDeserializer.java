@@ -21,24 +21,13 @@ public class PersonInputDeserializer extends JsonDeserializer<PersonInput> {
         }
         if (p.currentToken() == JsonToken.START_OBJECT) {
             JsonNode node = p.getCodec().readTree(p);
-            String name = null;
-            if (node.hasNonNull("name")) {
-                name = node.get("name").asText().trim();
-            } else if (node.hasNonNull("speakerName")) {
-                name = node.get("speakerName").asText().trim();
-            } else if (node.hasNonNull("authorName")) {
-                name = node.get("authorName").asText().trim();
-            }
+            String name = node.hasNonNull("name") ? node.get("name").asText().trim() : null;
 
             String photo = null;
             if (node.hasNonNull("photoBase64")) {
                 photo = node.get("photoBase64").asText().trim();
             } else if (node.hasNonNull("photo")) {
                 photo = node.get("photo").asText().trim();
-            } else if (node.hasNonNull("speakerPhotoBase64")) {
-                photo = node.get("speakerPhotoBase64").asText().trim();
-            } else if (node.hasNonNull("authorPhotoBase64")) {
-                photo = node.get("authorPhotoBase64").asText().trim();
             }
 
             return new PersonInput(name, photo);

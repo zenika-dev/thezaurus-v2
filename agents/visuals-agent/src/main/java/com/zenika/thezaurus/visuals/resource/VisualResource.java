@@ -1,7 +1,9 @@
 package com.zenika.thezaurus.visuals.resource;
 
+import com.zenika.thezaurus.visuals.model.BlogVisualRequest;
+import com.zenika.thezaurus.visuals.model.NightClazzVisualRequest;
+import com.zenika.thezaurus.visuals.model.TalkVisualRequest;
 import com.zenika.thezaurus.visuals.model.VisualGenerationResponse;
-import com.zenika.thezaurus.visuals.model.VisualRequest;
 import com.zenika.thezaurus.visuals.model.VisualStreamEvent;
 import com.zenika.thezaurus.visuals.model.VisualTemplate;
 import com.zenika.thezaurus.visuals.model.VisualType;
@@ -40,53 +42,50 @@ public class VisualResource {
     }
 
     @POST
-    @RunOnVirtualThread
-    public RestResponse<VisualGenerationResponse> generateVisual(@Valid VisualRequest request) {
-        VisualGenerationResponse response = visualGenerationService.generateVisual(request);
-        return RestResponse.ok(response);
-    }
-
-    @POST
     @Path("/talks")
     @RunOnVirtualThread
-    public RestResponse<VisualGenerationResponse> generateTalkVisual(@Valid VisualRequest request) {
-        VisualRequest effectiveRequest = request.type() == null ? request.withType("talk") : request;
-        VisualGenerationResponse response = visualGenerationService.generateVisual(effectiveRequest);
+    public RestResponse<VisualGenerationResponse> generateTalkVisual(@Valid TalkVisualRequest request) {
+        VisualGenerationResponse response = visualGenerationService.generateTalkVisual(request);
         return RestResponse.ok(response);
     }
 
     @POST
     @Path("/blogs")
     @RunOnVirtualThread
-    public RestResponse<VisualGenerationResponse> generateBlogVisual(@Valid VisualRequest request) {
-        VisualRequest effectiveRequest = request.type() == null ? request.withType("blog") : request;
-        VisualGenerationResponse response = visualGenerationService.generateVisual(effectiveRequest);
+    public RestResponse<VisualGenerationResponse> generateBlogVisual(@Valid BlogVisualRequest request) {
+        VisualGenerationResponse response = visualGenerationService.generateBlogVisual(request);
         return RestResponse.ok(response);
     }
 
     @POST
-    @Path("/stream")
-    @Produces(MediaType.SERVER_SENT_EVENTS)
-    @RestStreamElementType(MediaType.APPLICATION_JSON)
-    public Multi<VisualStreamEvent> streamVisual(@Valid VisualRequest request) {
-        return visualGenerationService.streamVisual(request);
+    @Path("/nightclazz")
+    @RunOnVirtualThread
+    public RestResponse<VisualGenerationResponse> generateNightClazzVisual(@Valid NightClazzVisualRequest request) {
+        VisualGenerationResponse response = visualGenerationService.generateNightClazzVisual(request);
+        return RestResponse.ok(response);
     }
 
     @POST
     @Path("/talks/stream")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @RestStreamElementType(MediaType.APPLICATION_JSON)
-    public Multi<VisualStreamEvent> streamTalkVisual(@Valid VisualRequest request) {
-        VisualRequest effectiveRequest = request.type() == null ? request.withType("talk") : request;
-        return visualGenerationService.streamVisual(effectiveRequest);
+    public Multi<VisualStreamEvent> streamTalkVisual(@Valid TalkVisualRequest request) {
+        return visualGenerationService.streamTalkVisual(request);
     }
 
     @POST
     @Path("/blogs/stream")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @RestStreamElementType(MediaType.APPLICATION_JSON)
-    public Multi<VisualStreamEvent> streamBlogVisual(@Valid VisualRequest request) {
-        VisualRequest effectiveRequest = request.type() == null ? request.withType("blog") : request;
-        return visualGenerationService.streamVisual(effectiveRequest);
+    public Multi<VisualStreamEvent> streamBlogVisual(@Valid BlogVisualRequest request) {
+        return visualGenerationService.streamBlogVisual(request);
+    }
+
+    @POST
+    @Path("/nightclazz/stream")
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
+    public Multi<VisualStreamEvent> streamNightClazzVisual(@Valid NightClazzVisualRequest request) {
+        return visualGenerationService.streamNightClazzVisual(request);
     }
 }

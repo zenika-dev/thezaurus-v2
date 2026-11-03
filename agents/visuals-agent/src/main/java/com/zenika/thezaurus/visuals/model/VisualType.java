@@ -5,5 +5,6 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 @RegisterForReflection
 public enum VisualType {
     TALK,
-    BLOG
+    BLOG,
+    NIGHT_CLAZZ
 }
