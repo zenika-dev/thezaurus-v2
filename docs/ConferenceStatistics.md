@@ -157,6 +157,7 @@ Aucun code de l'interface n'a été modifié pour ces captures.
 - [Filtre 2027 et compteurs à zéro](screenshots/issue-196/conferences-zero-filter.png).
 - [Statistiques annuelles, bureau](screenshots/issue-196/statistics-desktop.png).
 - [Statistiques annuelles, mobile](screenshots/issue-196/statistics-mobile.png).
+- [Menu mobile avec Statistiques sélectionné](screenshots/issue-196/statistics-menu-mobile.png).
 
 Vérifications automatisées de capture : compteurs pluriels et singuliers visibles, filtre de
 l'année fonctionnel, zéro visible, absence de débordement horizontal en mobile et exactement
