@@ -1,0 +1,83 @@
+name: Semantic release
+description: >-
+  Lance semantic-release pour chaque service (tag + release GitHub, aucun commit poussé).
+  Le dépôt doit être cloné avec tout l'historique et les tags (fetch-depth: 0).
+
+inputs:
+  services:
+    description: Services à publier, séparés par des espaces (api, front, agents)
+    required: true
+  dry-run:
+    description: "true : calcule les versions sans rien publier (aperçu sur PR)"
+    required: false
+    default: "false"
+  branch:
+    description: Branche simulée en dry-run (semantic-release refuse de tourner sur une PR)
+    required: false
+    default: ""
+  github-token:
+    description: Token qui pousse tags et releases GitHub
+    required: true
+
+outputs:
+  api_version:
+    description: Version de l'API (nouvelle release, sinon dernière publiée)
+    value: ${{ steps.release.outputs.api_version }}
+  front_version:
+    description: Version du front (nouvelle release, sinon dernière publiée)
+    value: ${{ steps.release.outputs.front_version }}
+  agents_version:
+    description: Version de l'agent (nouvelle release, sinon dernière publiée)
+    value: ${{ steps.release.outputs.agents_version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version-file: front/.nvmrc
+        cache: npm
+        cache-dependency-path: package-lock.json
+
+    # semantic-release et ses plugins sont déclarés dans le package.json racine.
+    - name: Install
+      shell: bash
+      run: npm ci
+
+    - name: Vérification des signatures et attestations de provenance
+      shell: bash
+      run: npm audit signatures
+
+    # Chaque service a son .releaserc.json, dans le dossier du même nom.
+    # La version vient du fichier .next-version écrit par @semantic-release/exec (y compris en dry-run).
+    - name: Release
+      id: release
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        SERVICES: ${{ inputs.services }}
+        DRY_RUN: ${{ inputs.dry-run }}
+        BRANCH: ${{ inputs.branch }}
+      run: |
+        args=()
+        if [ "${DRY_RUN}" = "true" ]; then
+          export GITHUB_EVENT_NAME=push GITHUB_REF="refs/heads/${BRANCH}"
+          args=(--dry-run --branches "${BRANCH}")
+        fi
+
+        for service in ${SERVICES}; do
+          rm -f "${service}/.next-version"
+          (cd "${service}" && ../node_modules/.bin/semantic-release "${args[@]}")
+
+          if [ -f "${service}/.next-version" ]; then
+            version=$(<"${service}/.next-version")
+          else
+            # Pas de nouvelle release : on garde la dernière version publiée (tag api-vX.Y.Z → X.Y.Z).
+            tag=$(git describe --tags --abbrev=0 --match "${service}-v*" 2>/dev/null || true)
+            version="${tag#"${service}-v"}"
+          fi
+
+          echo "- ${service} : ${version:-aucune}" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "${service}_version=${version}" >> "$GITHUB_OUTPUT"
+        done

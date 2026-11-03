@@ -1,0 +1,36 @@
+name: Aperçu des versions
+
+# Sur une PR, calcule les versions que semantic-release publiera une fois la PR mergée.
+# Rien n'est publié (ni tag, ni release).
+on:
+  pull_request:
+
+concurrency:
+  group: release-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    name: Aperçu des versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Même en dry-run, semantic-release vérifie qu'il pourrait pousser sur le dépôt.
+    permissions:
+      contents: write
+    steps:
+      # Branche de la PR (et non le commit de merge) avec tout l'historique et les tags.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: ./.github/actions/semantic-release
+        with:
+          services: api front agents
+          dry-run: "true"
+          branch: ${{ github.head_ref }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       version:
-        description: Version à builder (ex. 2026.09.30-abc1234)
+        description: Version semantic-release à builder (ex. 1.2.0)
         required: true
         type: string
     outputs:
@@ -26,13 +26,17 @@ jobs:
     outputs:
       image: ${{ steps.digest.outputs.image }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/gcp-docker-login
         with:
           region: ${{ vars.GCP_REGION }}
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       # Ne jamais reconstruire une version déjà publiée
       - name: Vérifier si l'image existe déjà
@@ -47,12 +51,20 @@ jobs:
 
       # Dockerfile multi-stage : la compilation Maven se fait dans l'image,
       # les tests ont déjà tourné dans ci.yml (dépendance dans release.yml).
+      # Cache des couches dans le cache GitHub Actions : sans changement de dépendances,
+      # l'étape Maven n'est pas rejouée.
       - name: Build et push de l'API
         if: steps.check.outputs.exists != 'true'
-        run: |
-          docker build -t "${IMAGE}:${VERSION}" \
-            -f api/src/main/docker/Dockerfile.jvm ./api
-          docker push "${IMAGE}:${VERSION}"
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ./api
+          file: api/src/main/docker/Dockerfile.jvm
+          tags: ${{ env.IMAGE }}:${{ env.VERSION }}
+          push: true
+          # Manifeste simple (pas d'index OCI avec attestation) : identique au build docker classique
+          provenance: false
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
 
       - name: Récupérer le digest
         id: digest
