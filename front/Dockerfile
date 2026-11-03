@@ -1,4 +1,4 @@
-FROM node:26-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 COPY front/package.json front/package-lock.json ./
 RUN npm ci --ignore-scripts
@@ -11,7 +11,7 @@ RUN npm run generate:api
 EXPOSE 3000
 CMD ["npm", "run", "dev", "--", "-H", "0.0.0.0", "-p", "3000"]
 
-FROM node:26-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY front/ .
@@ -20,7 +20,7 @@ ARG GOOGLE_CLIENT_ID
 ENV GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
 RUN npm run build
 
-FROM node:26-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/public ./public

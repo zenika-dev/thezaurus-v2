@@ -31,8 +31,7 @@ jobs:
       api_front: ${{ inputs.api_front }}
       agent: ${{ inputs.agent }}
 
-  # Une release par service (tags api-vX.Y.Z / front-vX.Y.Z / agents-vX.Y.Z), sur main
-  # (et en pré-release sur feat/manual-release pour les tests, cf. .releaserc.json).
+  # Une release par service (tags api-vX.Y.Z / front-vX.Y.Z / agents-vX.Y.Z), sur main uniquement (cf. .releaserc.json).
   release:
     name: Semantic release
     needs: [ci]
