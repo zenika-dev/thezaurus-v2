@@ -18,7 +18,7 @@ import InputAdornment from "@mui/material/InputAdornment";
 import TextField from "@mui/material/TextField";
 import { Funnel, Plus, Search, X } from "lucide-react";
 import { Role, type BackendUserAdminView } from "@/shared/api";
-import { SpeakerChip } from "@/entities/user";
+import { SpeakerChip, ProfilePhotoEditor } from "@/entities/user";
 import { statusTones } from "@/shared/lib/status-tones";
 import { Badge, FilterChip } from "@/shared/ui";
 import { useAdminUsers } from "@/features/admin";
@@ -193,12 +193,13 @@ export function UserRolesTable() {
               <TableCell>
                 <strong>Rôles</strong>
               </TableCell>
+              <TableCell><strong>Photo</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {paginatedUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} align="center" className="py-8 text-text-muted">
+                <TableCell colSpan={4} align="center" className="py-8 text-text-muted">
                   Aucun utilisateur ne correspond à ces critères.
                 </TableCell>
               </TableRow>
@@ -278,6 +279,7 @@ export function UserRolesTable() {
                         ) : null}
                       </div>
                     </TableCell>
+                    <TableCell><ProfilePhotoEditor email={user.email} admin /></TableCell>
                   </TableRow>
                 );
               })

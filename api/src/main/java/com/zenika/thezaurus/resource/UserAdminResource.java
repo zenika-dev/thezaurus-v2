@@ -3,17 +3,20 @@ package com.zenika.thezaurus.resource;
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.repository.UserRepository;
+import com.zenika.thezaurus.service.ProfilePhotoService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
@@ -34,6 +37,22 @@ public class UserAdminResource {
 
     @Inject
     UserRepository userRepository;
+
+    @Inject
+    ProfilePhotoService photos;
+
+    @PUT
+    @Path("/{email}/photo")
+    @Consumes({"image/jpeg", "image/png", "image/webp", MediaType.APPLICATION_OCTET_STREAM})
+    public void uploadPhoto(@PathParam("email") String email, InputStream input) throws Exception {
+        photos.upload(photos.requireUser(email), input);
+    }
+
+    @DELETE
+    @Path("/{email}/photo")
+    public void resetPhoto(@PathParam("email") String email) throws ExecutionException, InterruptedException {
+        photos.reset(photos.requireUser(email));
+    }
 
     @ConfigProperty(name = "thezaurus.users.max-results", defaultValue = "500")
     int maxResults;
@@ -83,7 +102,7 @@ public class UserAdminResource {
 
         user = user.withRoles(
                 request.roles.stream().map(Role::valueOf).distinct().toList());
-        userRepository.update(email, user);
+        userRepository.updateRoles(email, user.roles());
         return RestResponse.ok(UserAdminView.of(user));
     }
 }

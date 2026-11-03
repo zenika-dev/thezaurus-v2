@@ -58,6 +58,7 @@ jobs:
             GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
             FIRESTORE_DATABASE_ID=${{ vars.FIRESTORE_DATABASE_ID }}
             FIRESTORE_COLLECTION_PREFIX=${{ vars.FIRESTORE_COLLECTION_PREFIX }}
+            PROFILE_PHOTOS_BUCKET=${{ vars.PROFILE_PHOTOS_BUCKET }}
         run: |
           MISSING=0
           for pair in $REQUIRED; do
@@ -88,6 +89,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
           FIRESTORE_DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID }}
           FIRESTORE_COLLECTION_PREFIX: ${{ vars.FIRESTORE_COLLECTION_PREFIX }}
+          PROFILE_PHOTOS_BUCKET: ${{ vars.PROFILE_PHOTOS_BUCKET }}
         run: |
           # Une valeur de label n'accepte ni points ni majuscules
           VERSION_LABEL=$(echo "$VERSION" | tr '.' '-' | tr '[:upper:]' '[:lower:]')
@@ -96,7 +98,7 @@ jobs:
           # seules ces variables sont substituées
           envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE}
                     ${GCP_PROJECT_ID} ${RUNTIME_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
-                    ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX}' \
+                    ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${PROFILE_PHOTOS_BUCKET}' \
             > service.rendered.yaml <<'MANIFEST'
           apiVersion: serving.knative.dev/v1
           kind: Service
@@ -168,6 +170,8 @@ jobs:
                         value: "${FIRESTORE_DATABASE_ID}"
                       - name: FIRESTORE_COLLECTION_PREFIX
                         value: "${FIRESTORE_COLLECTION_PREFIX}"
+                      - name: PROFILE_PHOTOS_BUCKET
+                        value: "${PROFILE_PHOTOS_BUCKET}"
                       - name: GOOGLE_CLIENT_ID
                         value: "${GOOGLE_CLIENT_ID}"
                       - name: SLACK_BOT_TOKEN

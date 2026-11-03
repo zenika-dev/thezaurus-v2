@@ -18,6 +18,8 @@ const baseProfile: UserProfile = {
   email: "jane@zenika.com",
   office: "nantes",
   slackAvailable: true,
+  aiPhotoAllowed: false,
+  customPhoto: false,
   notificationPreferences: {
     email: true,
     slack: false,

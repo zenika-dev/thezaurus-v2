@@ -81,6 +81,19 @@ export const authOptions: NextAuthOptions = {
 
           const data = await res.json();
           token.roles = (data.roles as Role[]) ?? [];
+          // La photo est issue du JWT Google vérifié côté API. Une photo personnalisée
+          // empêche la synchronisation, y compris après une nouvelle connexion.
+          try {
+            const photoRes = await fetch(`${API_BASE}/api/me/profile/photo/google`, {
+              method: "POST",
+              headers: { ...authHeader, "Content-Type": "application/json" },
+              body: JSON.stringify({ idToken: account.id_token }),
+              signal: AbortSignal.timeout(10_000),
+            });
+            if (!photoRes.ok) console.error("Synchronisation de la photo Google impossible");
+          } catch {
+            console.error("Synchronisation de la photo Google impossible");
+          }
         } catch (err) {
           console.error("Erreur récupération des rôles:", err);
           // Fail-closed : sans réponse du backend, aucun rôle — l'accès sera refusé.

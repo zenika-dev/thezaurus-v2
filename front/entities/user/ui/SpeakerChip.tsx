@@ -5,6 +5,7 @@ import Chip from "@mui/material/Chip";
 import Tooltip from "@mui/material/Tooltip";
 import { User } from "lucide-react";
 import { getInitials } from "../lib/initials";
+import { ProfileAvatar } from "./ProfileAvatar";
 
 export interface SpeakerChipProps {
   name: string;
@@ -36,6 +37,7 @@ export function SpeakerChip({
         onDelete={onDelete}
         disabled={disabled}
         avatar={
+          email ? <ProfileAvatar email={email} name={name} size={avatarSize} /> :
           <Avatar
             sx={{
               width: avatarSize,
