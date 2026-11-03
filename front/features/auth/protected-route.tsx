@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert, Button } from "@mui/material";
 import { Suspense, useEffect } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
@@ -27,7 +28,7 @@ function ProtectedRouteContent({
   }, [isSessionExpired]);
 
   if (status === "loading") {
-    return <div className="p-4 text-center">Chargement de la session...</div>;
+    return <div className="p-4 text-center text-text w-full">Chargement de la session...</div>;
   }
 
   if (status === "unauthenticated" || !session?.user || isSessionExpired) {
@@ -49,17 +50,17 @@ function ProtectedRouteContent({
   );
   if (!hasRole) {
     return (
-      <div className="p-4 text-center">
-        <p className="text-red-500">
+      <div className="p-4 text-center text-text w-full">
+        <Alert severity="error">
           Vous n&apos;avez pas les droits nécessaires pour accéder à cette page.
-        </p>
-        <button
+        </Alert>
+        <Button variant="contained"
           type="button"
           onClick={() => signOut()}
-          className="mt-4 rounded bg-gray-200 px-4 py-2 text-sm hover:bg-gray-300"
+          sx={{ mt: 2 }}
         >
           Se reconnecter
-        </button>
+        </Button>
       </div>
     );
   }
@@ -74,7 +75,7 @@ export function ProtectedRoute(props: {
   return (
     <Suspense
       fallback={
-        <div className="p-4 text-center">Chargement de la session...</div>
+        <div className="p-4 text-center text-text w-full">Chargement de la session...</div>
       }
     >
       <ProtectedRouteContent {...props} />

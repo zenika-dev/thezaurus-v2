@@ -3,6 +3,7 @@
 import { useEventsDashboard, type EventFilter } from "@/features/events/model";
 import { MonthlyActivityChart } from "./MonthlyActivityChart";
 import { EventTypeCard } from "./EventTypeCard";
+import { SectionCard } from "@/shared/ui";
 
 interface EventsContentProps {
   filter: EventFilter;
@@ -17,13 +18,12 @@ export function EventsContent({ filter }: EventsContentProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-xl border  border-[var(--color-primary)] bg-surface p-6 shadow-card">
-        <h2 className="m-0 text-lg font-bold text-text">Activité mensuelle</h2>
-        <p className="m-0 mb-2 text-xs text-text-muted">
-          Événements internes vs externes par mois
-        </p>
+      <SectionCard
+        title="Activité mensuelle"
+        description="Événements internes vs externes par mois"
+      >
         <MonthlyActivityChart monthly={dashboard.monthly} filter={filter} />
-      </section>
+      </SectionCard>
 
       {eventTypes.length > 0 && (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">

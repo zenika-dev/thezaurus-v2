@@ -31,12 +31,12 @@ export default function RootLayout({
       className={`${nunito.variable} h-full`}
       suppressHydrationWarning
     >
-      <body className="h-full flex w-full overflow-hidden">
-        <AppRouterCacheProvider>
+      <body className="h-full flex flex-col md:flex-row w-full overflow-hidden">
+        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <Providers>
             <ProtectedRoute allowedRoles={[...Role]}>
               <SideMenu />
-              <main className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-surface">
+              <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto bg-surface">
                 {children}
               </main>
             </ProtectedRoute>

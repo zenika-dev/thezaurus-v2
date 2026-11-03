@@ -41,7 +41,7 @@ export function SpeakerChip({
               width: avatarSize,
               height: avatarSize,
               fontSize: size === "small" ? "0.65rem" : "0.75rem",
-              bgcolor: isInternal ? "primary.main" : "grey.500",
+              bgcolor: isInternal ? "primary.dark" : "grey.700",
               color: "white",
             }}
           >

@@ -2,15 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
-import { DatePickerProvider } from "@/shared/ui";
+import { DatePickerProvider, FormDialog } from "@/shared/ui";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ConferencePeriod } from "@/entities/conference";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
@@ -299,19 +294,13 @@ export function CreateConferenceDialog({
 
   return (
     <DatePickerProvider>
-      <Dialog
-        onClose={handleClose}
+      <FormDialog
         open={open}
+        onClose={handleClose}
         maxWidth="md"
-        fullWidth
-        aria-labelledby={DIALOG_TITLE_ID}
-        slotProps={{ paper: { className: "dark:bg-slate-900 dark:bg-none" } }}
-      >
-        <DialogTitle
-          id={DIALOG_TITLE_ID}
-          className="pb-0! flex! justify-between! items-center!"
-        >
-          Nouvelle conférence
+        titleId={DIALOG_TITLE_ID}
+        title="Nouvelle conférence"
+        headerAction={
           <Controller
             name="cfpStatus"
             control={control}
@@ -329,18 +318,19 @@ export function CreateConferenceDialog({
               </FormControl>
             )}
           />
-        </DialogTitle>
-
-        <DialogContent>
-          <p className="text-sm text-text-muted mb-6">Saisir une conférence</p>
-
-          <Box
-            component="form"
-            id="create-conference-form"
-            onSubmit={handleSubmit(onSave)}
-            noValidate
-            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-          >
+        }
+        subtitle="Saisir une conférence"
+        formId="create-conference-form"
+        submitLabel="Créer la conférence"
+        cancelLabel="Annuler"
+      >
+        <Box
+          component="form"
+          id="create-conference-form"
+          onSubmit={handleSubmit(onSave)}
+          noValidate
+          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+        >
             <TextField
               {...register("name")}
               id="conference-title"
@@ -352,7 +342,7 @@ export function CreateConferenceDialog({
               helperText={errors.name?.message}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Controller
                 name="location"
                 control={control}
@@ -422,8 +412,8 @@ export function CreateConferenceDialog({
                 )}
               />
 
-              <div className="col-span-2 flex flex-col gap-2">
-                <div className="flex gap-4">
+              <div className="sm:col-span-2 flex flex-col gap-2">
+                <div className="flex flex-wrap gap-4">
                   {dateType === "single" && (
                     <DatePicker
                       label="Date"
@@ -519,12 +509,12 @@ export function CreateConferenceDialog({
                   )}
                 </div>
 
-                <div className="flex gap-3 text-xs">
+                <div className="flex flex-wrap gap-3 text-xs">
                   {dateType === "single" && (
                     <>
                       <button
                         type="button"
-                        className="text-primary underline underline-offset-2"
+                        className="text-link underline underline-offset-2"
                         onClick={() => {
                           setDateType("range");
                           setDateError(null);
@@ -534,7 +524,7 @@ export function CreateConferenceDialog({
                       </button>
                       <button
                         type="button"
-                        className="text-primary underline underline-offset-2"
+                        className="text-link underline underline-offset-2"
                         onClick={() => {
                           setDateType("month");
                           setDate(null);
@@ -586,7 +576,7 @@ export function CreateConferenceDialog({
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label="Ouvrir le lien CFP"
-                            className="text-primary! p-0.5!"
+                            className="text-link p-0.5"
                           >
                             <ExternalLinkIcon size={14} aria-hidden="true" />
                           </IconButton>
@@ -696,22 +686,7 @@ export function CreateConferenceDialog({
               />
             </div>
           </Box>
-        </DialogContent>
-
-        <DialogActions className="px-6! pb-6! pt-5!">
-          <Button variant="outlined" onClick={handleClose}>
-            Annuler
-          </Button>
-          <div className="flex-1" />
-          <Button
-            variant="contained"
-            type="submit"
-            form="create-conference-form"
-          >
-            Créer la conférence
-          </Button>
-        </DialogActions>
-      </Dialog>
+      </FormDialog>
     </DatePickerProvider>
   );
 }

@@ -1,3 +1,4 @@
+import { statusTones } from "@/shared/lib/status-tones";
 import type { BlogPostStatus, BackendUser, Office } from "@/shared/api";
 
 /**
@@ -40,9 +41,9 @@ export const blogPostTags: Record<string, string> = {
  * `BlogPostStatus` côté Java fait échouer la compilation ici tant qu'elle n'a pas de libellé.
  */
 export const blogPostStatusConfig: Record<BlogPostStatus, { label: string; text: string; bg: string; darkText: string; darkBg: string }> = {
-  IDEA:      { label: "Idée",      text: "#9A0530", bg: "#FFEDD4", darkText: "#FFDD58", darkBg: "#7E2A0C" },
-  DRAFT:     { label: "En rédaction", text: "#000000", bg: "#F7F7F7", darkText: "#FFFFFF", darkBg: "#5E5E5E" },
-  REVIEW:    { label: "En relecture", text: "#0132D1", bg: "#DBEAFE", darkText: "#94E5FF", darkBg: "#1C398E" },
-  READY_TO_PUBLISH: { label: "Prêt à publier", text: "#681AC1", bg: "#F3E8FF", darkText: "#FFB9FF", darkBg: "#59168B" },
-  PUBLISHED: { label: "Publié", text: "#245E12", bg: "#DCFCE7", darkText: "#47FFB4", darkBg: "#0D542B" },
+  IDEA:      { label: "Idée", ...statusTones.idea },
+  DRAFT:     { label: "En rédaction", ...statusTones.neutral },
+  REVIEW:    { label: "En relecture", ...statusTones.info },
+  READY_TO_PUBLISH: { label: "Prêt à publier", ...statusTones.replayed },
+  PUBLISHED: { label: "Publié", ...statusTones.success },
 };

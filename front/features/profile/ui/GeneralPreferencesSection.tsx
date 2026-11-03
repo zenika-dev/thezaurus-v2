@@ -6,6 +6,7 @@ import { agencyLabels } from "@/shared/lib/offices";
 import { updateOfficeAction } from "@/entities/user/actions";
 import type { UserProfile } from "@/entities/user";
 import { Office, queryKeys } from "@/shared/api";
+import { SectionCard } from "@/shared/ui";
 
 export function GeneralPreferencesSection({ profile }: { profile: UserProfile }) {
   const queryClient = useQueryClient();
@@ -19,15 +20,13 @@ export function GeneralPreferencesSection({ profile }: { profile: UserProfile })
     },
   });
   return (
-    <section
-      aria-labelledby="profile-preferences-title"
-      className="rounded border border-gray-200 dark:border-[#2d2d2d] p-6 flex flex-col gap-4"
+    <SectionCard
+      titleId="profile-preferences-title"
+      title="Préférences générales"
     >
-      <h2 id="profile-preferences-title" className="text-xl font-bold">
-        Préférences générales
-      </h2>
       <TextField
         select
+        fullWidth
         label="Agence"
         value={mutation.isPending ? mutation.variables : profile.office}
         disabled={mutation.isPending}
@@ -45,6 +44,6 @@ export function GeneralPreferencesSection({ profile }: { profile: UserProfile })
       {mutation.isError && (
         <Alert severity="error">La modification a échoué. Vous pouvez réessayer.</Alert>
       )}
-    </section>
+    </SectionCard>
   );
 }
