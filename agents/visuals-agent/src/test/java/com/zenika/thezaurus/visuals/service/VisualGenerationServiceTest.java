@@ -15,10 +15,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zenika.thezaurus.visuals.client.GenAiVisualClient;
 import com.zenika.thezaurus.visuals.client.GenAiVisualClient.GeneratedImage;
 import com.zenika.thezaurus.visuals.client.GenAiVisualClient.InlineMediaPart;
+import com.zenika.thezaurus.visuals.model.BlogVisualRequest;
 import com.zenika.thezaurus.visuals.model.ConferenceInput;
 import com.zenika.thezaurus.visuals.model.PersonInput;
+import com.zenika.thezaurus.visuals.model.TalkVisualRequest;
 import com.zenika.thezaurus.visuals.model.VisualGenerationResponse;
-import com.zenika.thezaurus.visuals.model.VisualRequest;
 import com.zenika.thezaurus.visuals.model.VisualStreamEvent;
 import com.zenika.thezaurus.visuals.model.VisualType;
 import java.nio.charset.StandardCharsets;
@@ -44,19 +45,19 @@ class VisualGenerationServiceTest {
         genAiVisualClient = mock(GenAiVisualClient.class);
         when(genAiVisualClient.generateImage(anyString(), anyString(), anyList()))
                 .thenReturn(new GeneratedImage(FAKE_PNG, "image/png"));
-        service = new VisualGenerationService(templateService, genAiVisualClient, "gemini-4-argon", 50L);
+        service = new VisualGenerationService(templateService, genAiVisualClient, "gemini-2.5-flash-image", 50L);
     }
 
     @Test
     void shouldGenerateTalkVisualWithSpeakerAndConferenceAndTitle() {
-        VisualRequest request = VisualRequest.forTalk(
+        TalkVisualRequest request = new TalkVisualRequest(
                 "Quarkus & Gemini", "Devoxx France", List.of(new PersonInput("Jean-Philippe Baconnais")));
 
-        VisualGenerationResponse response = service.generateVisual(request);
+        VisualGenerationResponse response = service.generateTalkVisual(request);
 
         assertEquals(VisualType.TALK, response.category());
         assertEquals("generate-image-speaker-event", response.templateName());
-        assertEquals("gemini-4-argon", response.model());
+        assertEquals("gemini-2.5-flash-image", response.model());
         assertEquals("image/png", response.mimeType());
         assertEquals(FAKE_BASE64, response.imageBase64());
         assertTrue(response.promptUsed().contains("Quarkus & Gemini"));
@@ -65,20 +66,20 @@ class VisualGenerationServiceTest {
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<InlineMediaPart>> mediaCaptor = ArgumentCaptor.forClass(List.class);
-        verify(genAiVisualClient).generateImage(eq("gemini-4-argon"), anyString(), mediaCaptor.capture());
+        verify(genAiVisualClient).generateImage(eq("gemini-2.5-flash-image"), anyString(), mediaCaptor.capture());
         assertEquals(1, mediaCaptor.getValue().size());
     }
 
     @Test
     void shouldGenerateBlogVisualWithAuthorAndTitle() {
-        VisualRequest request =
-                VisualRequest.forBlog("Les nouveautés de Java 21", List.of(new PersonInput("Jean-Philippe Baconnais")));
+        BlogVisualRequest request =
+                new BlogVisualRequest("Les nouveautés de Java 21", List.of(new PersonInput("Jean-Philippe Baconnais")));
 
-        VisualGenerationResponse response = service.generateVisual(request);
+        VisualGenerationResponse response = service.generateBlogVisual(request);
 
         assertEquals(VisualType.BLOG, response.category());
         assertEquals("generate-image-blog-post", response.templateName());
-        assertEquals("gemini-4-argon", response.model());
+        assertEquals("gemini-2.5-flash-image", response.model());
         assertEquals("image/png", response.mimeType());
         assertEquals(FAKE_BASE64, response.imageBase64());
         assertTrue(response.promptUsed().contains("Les nouveautés de Java 21"));
@@ -89,9 +90,9 @@ class VisualGenerationServiceTest {
     void shouldValidateMandatoryFieldsOnRequests() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> service.generateVisual(new VisualRequest(
-                        "", "talk", new ConferenceInput("Conf"), List.of(new PersonInput("Speaker")), null)));
-        assertThrows(IllegalArgumentException.class, () -> service.generateVisual(null));
+                () -> service.generateTalkVisual(
+                        new TalkVisualRequest("", new ConferenceInput("Conf"), List.of(new PersonInput("Speaker")))));
+        assertThrows(IllegalArgumentException.class, () -> service.generateTalkVisual(null));
     }
 
     @Test
@@ -102,11 +103,11 @@ class VisualGenerationServiceTest {
                     return new GeneratedImage(FAKE_PNG, "image/png");
                 });
 
-        VisualRequest request =
-                VisualRequest.forTalk("Streaming SSE", "Camping des Speakers", List.of(new PersonInput("Jean-Phi")));
+        TalkVisualRequest request =
+                new TalkVisualRequest("Streaming SSE", "Camping des Speakers", List.of(new PersonInput("Jean-Phi")));
 
         List<VisualStreamEvent> events =
-                service.streamVisual(request).collect().asList().await().atMost(Duration.ofSeconds(5));
+                service.streamTalkVisual(request).collect().asList().await().atMost(Duration.ofSeconds(5));
 
         assertTrue(events.size() >= 5, "Doit contenir STARTED, TEMPLATE_LOADED, GENERATING, HEARTBEAT(s), COMPLETED");
         assertEquals(VisualStreamEvent.Status.STARTED, events.get(0).status());
