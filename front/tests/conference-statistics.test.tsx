@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { ConferenceAnnualStatistics } from "@/features/conferences/ui/ConferenceAnnualStatistics";
+import { ConferenceStatistics } from "@/features/conferences/ui/ConferenceStatistics";
 import { mapBackendToFrontend } from "@/entities/conference/api";
 import { conferenceApi, type ConferenceData } from "@/entities/conference";
 import { ConferencesList } from "@/features/conferences/ui/ConferencesList";
@@ -96,7 +97,7 @@ it("affiche un total nul quand aucune conférence n'est disponible", () => {
   expect(within(row).getAllByRole("cell").map(cell => cell.textContent)).toEqual(["0", "0", "0"]);
 });
 
-it("permet de consulter une ancienne année sans modifier le bilan global ni refaire de requête", () => {
+it("conserve les filtres historiques sans afficher le bilan sur la liste ni refaire de requête", () => {
   const fetch = vi.fn<typeof globalThis.fetch>();
   vi.stubGlobal("fetch", fetch);
   state.conferences = [
@@ -109,7 +110,16 @@ it("permet de consulter une ancienne année sans modifier le bilan global ni ref
   expect(screen.queryByText("Future")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /^Closed$/ }));
   expect(screen.queryByText("Historique")).not.toBeInTheDocument();
-  const total = screen.getByRole("row", { name: /^Total / });
-  expect(within(total).getAllByRole("cell").map(cell => cell.textContent)).toEqual(["2", "5", "3"]);
+  expect(screen.queryByRole("region", { name: "Cumuls par année" })).not.toBeInTheDocument();
   expect(fetch).not.toHaveBeenCalled();
+});
+
+it("affiche le bilan sur la page dédiée avec un retour vers la liste", () => {
+  state.conferences = [annualConference("Conférence", "2026-05-01", "2026-05-01", 4, 2)];
+  render(<ConferenceStatistics />);
+  expect(screen.getByRole("heading", { level: 1, name: "Statistiques des conférences" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Cumuls par année" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Retour aux conférences" })).toHaveAttribute("href", "/conferences");
+  expect(within(screen.getByRole("row", { name: /^Total / })).getAllByRole("cell").map(cell => cell.textContent))
+    .toEqual(["1", "4", "2"]);
 });

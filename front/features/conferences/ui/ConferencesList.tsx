@@ -11,7 +11,6 @@ import { StatusTag, TypeTag } from "@/features/conferences/ui";
 import { FilterChip, Surface } from "@/shared/ui";
 import { useState } from "react";
 import dayjs from "dayjs";
-import { ConferenceAnnualStatistics } from "./ConferenceAnnualStatistics";
 import {
   MapPin,
   Calendar,
@@ -55,7 +54,6 @@ export function ConferencesList() {
 
   return (
     <div className="flex flex-col gap-6">
-      <ConferenceAnnualStatistics conferences={conferences} />
       <div className="flex items-center gap-6 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
           <Funnel size={14} className="text-text-muted shrink-0" />

@@ -13,11 +13,15 @@ rétablit aussi l'ordre initial.
 
 ## Cumuls annuels
 
-Le tableau « Cumuls par année » additionne les compteurs de toutes les conférences du catalogue,
+La page dédiée `/conferences/statistics`, accessible via « Statistiques annuelles » depuis la liste,
+présente le tableau « Cumuls par année ». Un lien permet de revenir aux conférences.
+La liste conserve uniquement ses cartes, filtres et tri, sans tableau de synthèse.
+Le tableau additionne les compteurs de toutes les conférences du catalogue,
 par année de début, sans requête ni compteur persisté supplémentaire. Une conférence chevauchant
 deux années n'est comptée qu'une fois. Les conférences sans année connue sont regroupées sur une
 ligne séparée ; les années présentes avec zéro talk restent affichées. Un total général inclut
-aussi les conférences sans date. Le tableau n'est pas affecté par les filtres ou le tri de la liste.
+aussi les conférences sans date. Les deux pages partagent le même cache du catalogue ; naviguer
+entre elles tant que ce cache est frais ne relit pas les données du backend.
 
 Le filtre de la liste propose les années disponibles, y compris les années passées, en plus de
 l'année courante et de la suivante. Il permet de consulter les conférences d'une année du bilan.
@@ -150,11 +154,14 @@ Aucun code de l'interface n'a été modifié pour ces captures.
 - [Bureau, 1440 × 1000](screenshots/issue-196/conferences-desktop.png).
 - [Mobile, 390 × 1100](screenshots/issue-196/conferences-mobile.png).
 - [Filtre 2027 et compteurs à zéro](screenshots/issue-196/conferences-zero-filter.png).
+- [Statistiques annuelles, bureau](screenshots/issue-196/statistics-desktop.png).
+- [Statistiques annuelles, mobile](screenshots/issue-196/statistics-mobile.png).
 
 Vérifications automatisées de capture : compteurs pluriels et singuliers visibles, filtre de
 l'année fonctionnel, zéro visible, absence de débordement horizontal en mobile et exactement
 un appel `/conferences`, sans nouvel appel lors des filtres. La liste et les sélecteurs partagent
-désormais la même entrée de cache ; les deux totaux sont toujours présents dans le catalogue.
+la même entrée de cache ; les deux totaux sont toujours présents dans le catalogue. Le parcours
+liste → statistiques → liste est vérifié avec un seul appel backend et sans débordement horizontal.
 
 Références : [facturation Firestore](https://firebase.google.com/docs/firestore/pricing),
 [agrégations Firestore](https://firebase.google.com/docs/firestore/query-data/aggregation-queries).

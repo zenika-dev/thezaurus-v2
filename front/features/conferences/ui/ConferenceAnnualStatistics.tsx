@@ -29,7 +29,7 @@ export function ConferenceAnnualStatistics({ conferences }: { conferences: reado
       <Surface className="p-4 sm:p-6">
         <h2 id="conference-annual-statistics" className="font-bold text-lg text-text">Cumuls par année</h2>
         <p className="mt-1 mb-4 text-xs text-text-muted">
-          Toutes les conférences, par année de début. Les filtres ci-dessous concernent uniquement la liste.
+          Toutes les conférences, regroupées par année de début.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-text">
