@@ -8,9 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zenika.thezaurus.visuals.client.GenAiVisualClient.InlineMediaPart;
+import com.zenika.thezaurus.visuals.model.BlogVisualRequest;
 import com.zenika.thezaurus.visuals.model.ConferenceInput;
+import com.zenika.thezaurus.visuals.model.NightClazzVisualRequest;
+import com.zenika.thezaurus.visuals.model.PartnerInput;
 import com.zenika.thezaurus.visuals.model.PersonInput;
-import com.zenika.thezaurus.visuals.model.VisualRequest;
+import com.zenika.thezaurus.visuals.model.TalkItemInput;
+import com.zenika.thezaurus.visuals.model.TalkVisualRequest;
 import com.zenika.thezaurus.visuals.model.VisualTemplate;
 import com.zenika.thezaurus.visuals.model.VisualType;
 import java.io.IOException;
@@ -34,34 +38,48 @@ class TemplateServiceTest {
     @Test
     void shouldLoadAllTemplatesAndFilterByCategory() {
         List<VisualTemplate> all = templateService.listTemplates(null);
-        assertEquals(5, all.size());
+        assertEquals(8, all.size());
 
         List<VisualTemplate> talkTemplates = templateService.listTemplates(VisualType.TALK);
-        assertEquals(3, talkTemplates.size());
+        assertEquals(4, talkTemplates.size());
         assertTrue(talkTemplates.stream().allMatch(t -> t.category() == VisualType.TALK));
 
         List<VisualTemplate> blogTemplates = templateService.listTemplates(VisualType.BLOG);
         assertEquals(2, blogTemplates.size());
         assertTrue(blogTemplates.stream().allMatch(t -> t.category() == VisualType.BLOG));
+
+        List<VisualTemplate> nightClazzTemplates = templateService.listTemplates(VisualType.NIGHT_CLAZZ);
+        assertEquals(2, nightClazzTemplates.size());
+        assertTrue(nightClazzTemplates.stream().allMatch(t -> t.category() == VisualType.NIGHT_CLAZZ));
     }
 
     @Test
-    void shouldRouteTalkTemplatesBasedOnSpeakersCount() {
-        VisualRequest single =
-                VisualRequest.forTalk("Quarkus in Action", "Devoxx France", List.of(new PersonInput("Jean Dupont")));
+    void shouldLoadAllClasspathTemplateImagesSuccessfully() {
+        for (VisualTemplate template : templateService.listTemplates(null)) {
+            InlineMediaPart image = templateService.loadTemplateImage(template);
+            assertNotNull(image, "Image introuvable pour le template " + template.name());
+            assertEquals("image/png", image.mimeType());
+            assertTrue(image.data().length > 0, "Image vide pour le template " + template.name());
+        }
+    }
+
+    @Test
+    void shouldRouteTalkTemplatesBasedOnSpeakersCountAndTalksCount() {
+        TalkVisualRequest single =
+                new TalkVisualRequest("Quarkus in Action", "Devoxx France", List.of(new PersonInput("Jean Dupont")));
         assertEquals(
                 TemplateService.DEFAULT_TALK_TEMPLATE,
-                templateService.resolveTemplate(single).name());
+                templateService.resolveTalkTemplate(single).name());
 
-        VisualRequest duo = VisualRequest.forTalk(
+        TalkVisualRequest duo = new TalkVisualRequest(
                 "Quarkus in Action",
                 "Devoxx France",
                 List.of(new PersonInput("Jean Dupont"), new PersonInput("Marie Curie")));
         assertEquals(
                 TemplateService.DEFAULT_TALK_DUO_TEMPLATE,
-                templateService.resolveTemplate(duo).name());
+                templateService.resolveTalkTemplate(duo).name());
 
-        VisualRequest trio = VisualRequest.forTalk(
+        TalkVisualRequest trio = new TalkVisualRequest(
                 "Quarkus in Action",
                 "Devoxx France",
                 List.of(
@@ -70,72 +88,99 @@ class TemplateServiceTest {
                         new PersonInput("Alan Turing")));
         assertEquals(
                 TemplateService.DEFAULT_TALK_TRIO_TEMPLATE,
-                templateService.resolveTemplate(trio).name());
+                templateService.resolveTalkTemplate(trio).name());
+
+        TalkVisualRequest twoTalks = TalkVisualRequest.forTwoTalks(
+                new ConferenceInput("Devoxx France"),
+                List.of(
+                        new TalkItemInput("Premier Talk", "Jean Dupont"),
+                        new TalkItemInput("Second Talk", "Marie Curie")));
+        assertEquals(
+                TemplateService.DEFAULT_TALK_TWO_TALKS_TEMPLATE,
+                templateService.resolveTalkTemplate(twoTalks).name());
     }
 
     @Test
     void shouldRouteBlogTemplatesBasedOnWritersCount() {
-        VisualRequest single = VisualRequest.forBlog("Article Tech", List.of(new PersonInput("Jean Dupont")));
+        BlogVisualRequest single = new BlogVisualRequest("Article Tech", List.of(new PersonInput("Jean Dupont")));
         assertEquals(
                 TemplateService.DEFAULT_BLOG_TEMPLATE,
-                templateService.resolveTemplate(single).name());
+                templateService.resolveBlogTemplate(single).name());
 
-        VisualRequest duo = VisualRequest.forBlog(
+        BlogVisualRequest duo = new BlogVisualRequest(
                 "Article Tech", List.of(new PersonInput("Jean Dupont"), new PersonInput("Marie Curie")));
         assertEquals(
                 TemplateService.DEFAULT_BLOG_DUO_TEMPLATE,
-                templateService.resolveTemplate(duo).name());
+                templateService.resolveBlogTemplate(duo).name());
     }
 
     @Test
-    void shouldAutoDetectTypeWhenOmitted() {
-        // Détection Talk via présence de conference
-        VisualRequest talkReq = new VisualRequest(
-                "Mon Talk", null, new ConferenceInput("Devoxx"), List.of(new PersonInput("Jean")), null);
-        assertEquals(VisualType.TALK, templateService.determineCategory(talkReq));
+    void shouldRouteNightClazzTemplatesBasedOnPartnerPresence() {
+        NightClazzVisualRequest standardNc = new NightClazzVisualRequest(
+                "Soirée IA Générative",
+                "19/11",
+                "18h30-21h",
+                "Zenika Nantes",
+                List.of(new PersonInput("Jean Dupont"), new PersonInput("Marie Curie")));
         assertEquals(
-                TemplateService.DEFAULT_TALK_TEMPLATE,
-                templateService.resolveTemplate(talkReq).name());
+                TemplateService.DEFAULT_NIGHTCLAZZ_TEMPLATE,
+                templateService.resolveNightClazzTemplate(standardNc).name());
 
-        // Détection Blog via présence de writers uniquement
-        VisualRequest blogReq = new VisualRequest("Mon Blog", null, null, null, List.of(new PersonInput("Jean")));
-        assertEquals(VisualType.BLOG, templateService.determineCategory(blogReq));
+        NightClazzVisualRequest partnerNc = NightClazzVisualRequest.withPartner(
+                "Soirée Cloud Native",
+                "26/11",
+                "18h30-21h",
+                "Zenika Nantes",
+                new PersonInput("Jean Dupont"),
+                new PartnerInput("Google Cloud"));
         assertEquals(
-                TemplateService.DEFAULT_BLOG_TEMPLATE,
-                templateService.resolveTemplate(blogReq).name());
+                TemplateService.DEFAULT_NIGHTCLAZZ_PARTNER_TEMPLATE,
+                templateService.resolveNightClazzTemplate(partnerNc).name());
     }
 
     @Test
     void shouldRejectInvalidSpeakerOrWriterCounts() {
-        VisualRequest noSpeakers = VisualRequest.forTalk("Talk", "Devoxx", List.of());
-        assertThrows(IllegalArgumentException.class, () -> templateService.resolveTemplate(noSpeakers));
+        TalkVisualRequest noSpeakers = new TalkVisualRequest("Talk", "Devoxx", List.of());
+        assertThrows(IllegalArgumentException.class, () -> templateService.resolveTalkTemplate(noSpeakers));
 
-        VisualRequest tooManySpeakers = VisualRequest.forTalk(
+        TalkVisualRequest tooManySpeakers = new TalkVisualRequest(
                 "Talk",
                 "Devoxx",
                 List.of(new PersonInput("A"), new PersonInput("B"), new PersonInput("C"), new PersonInput("D")));
-        assertThrows(IllegalArgumentException.class, () -> templateService.resolveTemplate(tooManySpeakers));
+        assertThrows(IllegalArgumentException.class, () -> templateService.resolveTalkTemplate(tooManySpeakers));
 
-        VisualRequest noWriters = VisualRequest.forBlog("Blog", List.of());
-        assertThrows(IllegalArgumentException.class, () -> templateService.resolveTemplate(noWriters));
+        BlogVisualRequest noWriters = new BlogVisualRequest("Blog", List.of());
+        assertThrows(IllegalArgumentException.class, () -> templateService.resolveBlogTemplate(noWriters));
 
-        VisualRequest tooManyWriters = VisualRequest.forBlog(
+        BlogVisualRequest tooManyWriters = new BlogVisualRequest(
                 "Blog", List.of(new PersonInput("A"), new PersonInput("B"), new PersonInput("C")));
-        assertThrows(IllegalArgumentException.class, () -> templateService.resolveTemplate(tooManyWriters));
+        assertThrows(IllegalArgumentException.class, () -> templateService.resolveBlogTemplate(tooManyWriters));
+
+        NightClazzVisualRequest partnerNcWithTwoSpeakers = new NightClazzVisualRequest(
+                "NightClazz",
+                "12/11",
+                "18h30",
+                "Zenika Nantes",
+                List.of(new PersonInput("A"), new PersonInput("B")),
+                new PartnerInput("Partenaire"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> templateService.resolveNightClazzTemplate(partnerNcWithTwoSpeakers));
     }
 
     @Test
     void shouldRejectTalkWithoutConference() {
-        VisualRequest missingConf = new VisualRequest("Talk", "talk", null, List.of(new PersonInput("Jean")), null);
-        assertThrows(IllegalArgumentException.class, () -> templateService.resolveTemplate(missingConf));
+        TalkVisualRequest missingConf =
+                new TalkVisualRequest("Talk", (ConferenceInput) null, List.of(new PersonInput("Jean")));
+        assertThrows(IllegalArgumentException.class, () -> templateService.resolveTalkTemplate(missingConf));
     }
 
     @Test
-    void shouldBuildTalkAndBlogPromptsWithAllPlaceholdersReplaced() {
-        VisualRequest talkRequest = VisualRequest.forTalk(
+    void shouldBuildTalkBlogAndNightClazzPromptsWithAllPlaceholdersReplaced() {
+        TalkVisualRequest talkRequest = new TalkVisualRequest(
                 "Les agents IA avec Quarkus", "Sunny Tech 2026", List.of(new PersonInput("Jean-Phi", "photo-base64")));
-        VisualTemplate talkTemplate = templateService.resolveTemplate(talkRequest);
-        String talkPrompt = templateService.buildPrompt(talkTemplate, talkRequest);
+        VisualTemplate talkTemplate = templateService.resolveTalkTemplate(talkRequest);
+        String talkPrompt = templateService.buildTalkPrompt(talkTemplate, talkRequest);
 
         assertTrue(talkPrompt.contains("Les agents IA avec Quarkus"));
         assertTrue(talkPrompt.contains("Jean-Phi"));
@@ -144,15 +189,47 @@ class TemplateServiceTest {
         assertFalse(talkPrompt.contains("%NAME%"));
         assertFalse(talkPrompt.contains("%CONFERENCE%"));
 
-        VisualRequest blogRequest =
-                VisualRequest.forBlog("Découvrir Google GenAI en Java", List.of(new PersonInput("Jean-Phi")));
-        VisualTemplate blogTemplate = templateService.resolveTemplate(blogRequest);
-        String blogPrompt = templateService.buildPrompt(blogTemplate, blogRequest);
+        TalkVisualRequest twoTalksRequest = TalkVisualRequest.forTwoTalks(
+                new ConferenceInput("Devoxx France 2026"),
+                List.of(
+                        new TalkItemInput("Talk 1 : Quarkus", "Jean-Phi"),
+                        new TalkItemInput("Talk 2 : Gemini", "Marie Curie")));
+        VisualTemplate twoTalksTemplate = templateService.resolveTalkTemplate(twoTalksRequest);
+        String twoTalksPrompt = templateService.buildTalkPrompt(twoTalksTemplate, twoTalksRequest);
+        assertTrue(twoTalksPrompt.contains("Talk 1 : Quarkus"));
+        assertTrue(twoTalksPrompt.contains("Talk 2 : Gemini"));
+        assertTrue(twoTalksPrompt.contains("Jean-Phi"));
+        assertTrue(twoTalksPrompt.contains("Marie Curie"));
+        assertFalse(twoTalksPrompt.contains("%TITLE2%"));
+        assertFalse(twoTalksPrompt.contains("%NAME2%"));
+
+        BlogVisualRequest blogRequest =
+                new BlogVisualRequest("Découvrir Google GenAI en Java", List.of(new PersonInput("Jean-Phi")));
+        VisualTemplate blogTemplate = templateService.resolveBlogTemplate(blogRequest);
+        String blogPrompt = templateService.buildBlogPrompt(blogTemplate, blogRequest);
 
         assertTrue(blogPrompt.contains("Découvrir Google GenAI en Java"));
         assertTrue(blogPrompt.contains("Jean-Phi"));
         assertFalse(blogPrompt.contains("%TITLE%"));
         assertFalse(blogPrompt.contains("%NAME%"));
+
+        NightClazzVisualRequest ncPartnerRequest = NightClazzVisualRequest.withPartner(
+                "Agents IA en Production",
+                "24/11",
+                "18h30-21h",
+                "Zenika Nantes",
+                new PersonInput("Jean-Phi"),
+                new PartnerInput("Google Cloud"));
+        VisualTemplate ncPartnerTemplate = templateService.resolveNightClazzTemplate(ncPartnerRequest);
+        String ncPartnerPrompt = templateService.buildNightClazzPrompt(ncPartnerTemplate, ncPartnerRequest);
+
+        assertTrue(ncPartnerPrompt.contains("Agents IA en Production"));
+        assertTrue(ncPartnerPrompt.contains("24/11"));
+        assertTrue(ncPartnerPrompt.contains("Jean-Phi"));
+        assertTrue(ncPartnerPrompt.contains("Google Cloud"));
+        assertFalse(ncPartnerPrompt.contains("%DATE%"));
+        assertFalse(ncPartnerPrompt.contains("%NAME%"));
+        assertFalse(ncPartnerPrompt.contains("%PARTNER%"));
     }
 
     @Test
@@ -168,7 +245,7 @@ class TemplateServiceTest {
         Path customTemplatesFolder = tempDir.resolve("templates");
         Files.createDirectories(customTemplatesFolder);
         byte[] customBytes = new byte[] {1, 2, 3, 4, 5};
-        Files.write(customTemplatesFolder.resolve("talk-single.png"), customBytes);
+        Files.write(customTemplatesFolder.resolve("conf-1.png"), customBytes);
 
         TemplateService customService = new TemplateService(new ObjectMapper(), Optional.of(tempDir.toString()));
         InlineMediaPart externalMedia = customService.loadTemplateImage(talkTemplate);

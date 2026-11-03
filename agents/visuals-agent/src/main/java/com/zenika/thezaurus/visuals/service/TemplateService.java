@@ -4,9 +4,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zenika.thezaurus.visuals.client.GenAiVisualClient.InlineMediaPart;
 import com.zenika.thezaurus.visuals.model.BlogVisualRequest;
+import com.zenika.thezaurus.visuals.model.NightClazzVisualRequest;
 import com.zenika.thezaurus.visuals.model.PersonInput;
+import com.zenika.thezaurus.visuals.model.TalkItemInput;
 import com.zenika.thezaurus.visuals.model.TalkVisualRequest;
-import com.zenika.thezaurus.visuals.model.VisualRequest;
 import com.zenika.thezaurus.visuals.model.VisualTemplate;
 import com.zenika.thezaurus.visuals.model.VisualType;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -32,8 +33,11 @@ public class TemplateService {
     public static final String DEFAULT_TALK_TEMPLATE = "generate-image-speaker-event";
     public static final String DEFAULT_TALK_DUO_TEMPLATE = "generate-image-2-speaker-event";
     public static final String DEFAULT_TALK_TRIO_TEMPLATE = "generate-image-3-speaker-event";
+    public static final String DEFAULT_TALK_TWO_TALKS_TEMPLATE = "generate-image-2-talks-event";
     public static final String DEFAULT_BLOG_TEMPLATE = "generate-image-blog-post";
     public static final String DEFAULT_BLOG_DUO_TEMPLATE = "generate-image-2-blog-post";
+    public static final String DEFAULT_NIGHTCLAZZ_TEMPLATE = "generate-image-nightclazz";
+    public static final String DEFAULT_NIGHTCLAZZ_PARTNER_TEMPLATE = "generate-image-nightclazz-partner";
 
     private final List<VisualTemplate> templates;
     private final Optional<String> customTemplatesDir;
@@ -76,61 +80,30 @@ public class TemplateService {
                 .findFirst();
     }
 
-    /**
-     * Sélectionne automatiquement le bon template en fonction des données en entrée :
-     * <ul>
-     *   <li>Type ("talk" ou "blog")</li>
-     *   <li>Conférence (requise pour un talk)</li>
-     *   <li>Nombre de speakers (1, 2 ou 3)</li>
-     *   <li>Nombre de rédacteurs / writers (1 ou 2)</li>
-     * </ul>
-     */
-    public VisualTemplate resolveTemplate(VisualRequest request) {
+    public VisualTemplate resolveTalkTemplate(TalkVisualRequest request) {
         if (request == null) {
-            throw new IllegalArgumentException("La requête de visuel ne peut pas être nulle.");
+            throw new IllegalArgumentException("La requête de visuel de talk ne peut pas être nulle.");
         }
-
-        VisualType category = determineCategory(request);
-        return switch (category) {
-            case TALK -> resolveTalkTemplate(request);
-            case BLOG -> resolveBlogTemplate(request);
-        };
-    }
-
-    public VisualType determineCategory(VisualRequest request) {
-        String type = request.type();
-        if (type != null && !type.isBlank()) {
-            String normalized = type.trim();
-            if (normalized.equalsIgnoreCase("talk")) {
-                return VisualType.TALK;
-            }
-            if (normalized.equalsIgnoreCase("blog")) {
-                return VisualType.BLOG;
-            }
-            throw new IllegalArgumentException(
-                    "Type de visuel inconnu : '" + type + "'. Les valeurs supportées sont 'talk' ou 'blog'.");
-        }
-
-        // Déduction automatique si le champ 'type' n'est pas explicite
-        boolean hasConference =
-                request.conference() != null && isNotBlank(request.conference().name());
-        boolean hasSpeakers = request.speakers() != null && !request.speakers().isEmpty();
-        boolean hasWriters = request.writers() != null && !request.writers().isEmpty();
-
-        if ((hasConference || hasSpeakers) && !hasWriters) {
-            return VisualType.TALK;
-        }
-        if (hasWriters && !hasConference && !hasSpeakers) {
-            return VisualType.BLOG;
-        }
-
-        throw new IllegalArgumentException(
-                "Impossible de déduire le type de visuel ('talk' ou 'blog'). Veuillez renseigner le champ 'type'.");
-    }
-
-    public VisualTemplate resolveTalkTemplate(VisualRequest request) {
         if (request.conference() == null || !isNotBlank(request.conference().name())) {
             throw new IllegalArgumentException("Le nom de la conférence est requis pour un visuel de talk.");
+        }
+
+        List<TalkItemInput> talks = sanitizeTalks(request.talks());
+        if (!talks.isEmpty()) {
+            return switch (talks.size()) {
+                case 1 ->
+                    findByName(DEFAULT_TALK_TEMPLATE)
+                            .orElseThrow(
+                                    () -> new IllegalStateException("Template introuvable: " + DEFAULT_TALK_TEMPLATE));
+                case 2 ->
+                    findByName(DEFAULT_TALK_TWO_TALKS_TEMPLATE)
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Template introuvable: " + DEFAULT_TALK_TWO_TALKS_TEMPLATE));
+                default ->
+                    throw new IllegalArgumentException(
+                            "Le nombre de talks pour une conférence doit être compris entre 1 et 2 (reçu : "
+                                    + talks.size() + ").");
+            };
         }
 
         List<PersonInput> speakers = sanitizeList(request.speakers());
@@ -157,12 +130,11 @@ public class TemplateService {
         };
     }
 
-    public VisualTemplate resolveBlogTemplate(VisualRequest request) {
-        List<PersonInput> writers = sanitizeList(request.writers());
-        if (writers.isEmpty()) {
-            writers = sanitizeList(request.speakers());
+    public VisualTemplate resolveBlogTemplate(BlogVisualRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("La requête de visuel de blog ne peut pas être nulle.");
         }
-
+        List<PersonInput> writers = sanitizeList(request.writers());
         if (writers.isEmpty()) {
             throw new IllegalArgumentException(
                     "Au moins un auteur (writer) est requis pour un visuel d'article de blog.");
@@ -183,12 +155,35 @@ public class TemplateService {
         };
     }
 
-    public VisualTemplate resolveTalkTemplate(TalkVisualRequest legacyRequest) {
-        return resolveTalkTemplate(legacyRequest.toVisualRequest());
-    }
+    public VisualTemplate resolveNightClazzTemplate(NightClazzVisualRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("La requête de visuel NightClazz ne peut pas être nulle.");
+        }
+        List<PersonInput> speakers = sanitizeList(request.speakers());
+        if (speakers.isEmpty()) {
+            throw new IllegalArgumentException("Au moins un speaker est requis pour un visuel NightClazz.");
+        }
 
-    public VisualTemplate resolveBlogTemplate(BlogVisualRequest legacyRequest) {
-        return resolveBlogTemplate(legacyRequest.toVisualRequest());
+        boolean hasPartner =
+                request.partner() != null && isNotBlank(request.partner().name());
+        if (hasPartner) {
+            if (speakers.size() != 1) {
+                throw new IllegalArgumentException(
+                        "Le template NightClazz partenaire ne supporte qu'un seul speaker (reçu : " + speakers.size()
+                                + ").");
+            }
+            return findByName(DEFAULT_NIGHTCLAZZ_PARTNER_TEMPLATE)
+                    .orElseThrow(() ->
+                            new IllegalStateException("Template introuvable: " + DEFAULT_NIGHTCLAZZ_PARTNER_TEMPLATE));
+        }
+
+        if (speakers.size() > 2) {
+            throw new IllegalArgumentException(
+                    "Le nombre de speakers pour un NightClazz doit être compris entre 1 et 2 (reçu : " + speakers.size()
+                            + ").");
+        }
+        return findByName(DEFAULT_NIGHTCLAZZ_TEMPLATE)
+                .orElseThrow(() -> new IllegalStateException("Template introuvable: " + DEFAULT_NIGHTCLAZZ_TEMPLATE));
     }
 
     public InlineMediaPart loadTemplateImage(VisualTemplate template) {
@@ -218,25 +213,31 @@ public class TemplateService {
         }
     }
 
-    public String buildPrompt(VisualTemplate template, VisualRequest request) {
-        if (template.category() == VisualType.TALK) {
-            return buildTalkPrompt(template, request);
-        } else {
-            return buildBlogPrompt(template, request);
-        }
-    }
-
-    public String buildTalkPrompt(VisualTemplate template, VisualRequest request) {
+    public String buildTalkPrompt(VisualTemplate template, TalkVisualRequest request) {
+        List<TalkItemInput> talks = sanitizeTalks(request.talks());
         List<PersonInput> speakers = sanitizeList(request.speakers());
+
+        String firstTitle = !talks.isEmpty() ? safeTrim(talks.get(0).title()) : safeTrim(request.title());
+        String secondTitle = talks.size() > 1 ? safeTrim(talks.get(1).title()) : "";
+
+        String firstSpeaker = !talks.isEmpty()
+                ? safeTrim(talks.get(0).speaker().name())
+                : (speakers.size() > 0 ? safeTrim(speakers.get(0).name()) : "");
+        String secondSpeaker = talks.size() > 1
+                ? safeTrim(talks.get(1).speaker().name())
+                : (speakers.size() > 1 ? safeTrim(speakers.get(1).name()) : "");
+        String thirdSpeaker = speakers.size() > 2 ? safeTrim(speakers.get(2).name()) : "";
+
         Map<String, String> values = new HashMap<>();
         values.put("%TEMPLATE%", template.templatePath());
-        values.put("%TITLE%", safeTrim(request.title()));
+        values.put("%TITLE%", firstTitle);
+        values.put("%TITLE2%", secondTitle);
         values.put(
                 "%CONFERENCE%",
                 request.conference() != null ? safeTrim(request.conference().name()) : "");
-        values.put("%NAME%", speakers.size() > 0 ? safeTrim(speakers.get(0).name()) : "");
-        values.put("%NAME2%", speakers.size() > 1 ? safeTrim(speakers.get(1).name()) : "");
-        values.put("%NAME3%", speakers.size() > 2 ? safeTrim(speakers.get(2).name()) : "");
+        values.put("%NAME%", firstSpeaker);
+        values.put("%NAME2%", secondSpeaker);
+        values.put("%NAME3%", thirdSpeaker);
         values.put("%PHOTO%", "speaker-photo-1");
         values.put("%PHOTO2%", "speaker-photo-2");
         values.put("%PHOTO3%", "speaker-photo-3");
@@ -245,11 +246,8 @@ public class TemplateService {
         return replacePlaceholders(template.prompt(), values);
     }
 
-    public String buildBlogPrompt(VisualTemplate template, VisualRequest request) {
+    public String buildBlogPrompt(VisualTemplate template, BlogVisualRequest request) {
         List<PersonInput> writers = sanitizeList(request.writers());
-        if (writers.isEmpty()) {
-            writers = sanitizeList(request.speakers());
-        }
         Map<String, String> values = new HashMap<>();
         values.put("%TEMPLATE%", template.templatePath());
         values.put("%TITLE%", safeTrim(request.title()));
@@ -261,12 +259,24 @@ public class TemplateService {
         return replacePlaceholders(template.prompt(), values);
     }
 
-    public String buildTalkPrompt(VisualTemplate template, TalkVisualRequest legacyRequest) {
-        return buildTalkPrompt(template, legacyRequest.toVisualRequest());
-    }
+    public String buildNightClazzPrompt(VisualTemplate template, NightClazzVisualRequest request) {
+        List<PersonInput> speakers = sanitizeList(request.speakers());
+        Map<String, String> values = new HashMap<>();
+        values.put("%TEMPLATE%", template.templatePath());
+        values.put("%TITLE%", safeTrim(request.title()));
+        values.put("%DATE%", isNotBlank(request.date()) ? safeTrim(request.date()) : "");
+        values.put("%HOUR%", isNotBlank(request.hour()) ? safeTrim(request.hour()) : "18h30-21h");
+        values.put("%LOCATION%", isNotBlank(request.location()) ? safeTrim(request.location()) : "Zenika Nantes");
+        values.put("%NAME%", speakers.size() > 0 ? safeTrim(speakers.get(0).name()) : "");
+        values.put("%NAME2%", speakers.size() > 1 ? safeTrim(speakers.get(1).name()) : "");
+        values.put("%PHOTO%", "speaker-photo-1");
+        values.put("%PHOTO2%", "speaker-photo-2");
+        values.put(
+                "%PARTNER%",
+                request.partner() != null ? safeTrim(request.partner().name()) : "");
+        values.put("%PARTNER_LOGO%", "partner-logo");
 
-    public String buildBlogPrompt(VisualTemplate template, BlogVisualRequest legacyRequest) {
-        return buildBlogPrompt(template, legacyRequest.toVisualRequest());
+        return replacePlaceholders(template.prompt(), values);
     }
 
     public String detectMimeType(String filePath) {
@@ -296,6 +306,18 @@ public class TemplateService {
             return List.of();
         }
         return list.stream().filter(p -> p != null && isNotBlank(p.name())).toList();
+    }
+
+    private static List<TalkItemInput> sanitizeTalks(List<TalkItemInput> talks) {
+        if (talks == null) {
+            return List.of();
+        }
+        return talks.stream()
+                .filter(t -> t != null
+                        && isNotBlank(t.title())
+                        && t.speaker() != null
+                        && isNotBlank(t.speaker().name()))
+                .toList();
     }
 
     private static boolean isNotBlank(String value) {
