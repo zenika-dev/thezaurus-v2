@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { ConferenceAnnualStatistics } from "@/features/conferences/ui/ConferenceAnnualStatistics";
 import { mapBackendToFrontend } from "@/entities/conference/api";
 import { conferenceApi, type ConferenceData } from "@/entities/conference";
 import { ConferencesList } from "@/features/conferences/ui/ConferencesList";
@@ -58,5 +59,57 @@ it("trie les compteurs sans requête, conserve les filtres et réinitialise l'or
   expect(sort).toHaveValue("default");
   before("Alpha", "Bravo"); before("Bravo", "Charlie");
   expect(state.conferences.map(conference => conference.id)).toEqual(["a", "b", "c"]);
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+function annualConference(id: string, start: string, end: string, submitted: number, accepted?: number) {
+  return mapBackendToFrontend({
+    id, name: id, cfpStatus: "Open", date: { start, end, precision: "DAY" },
+    submittedTalksAmount: submitted, acceptedTalksAmount: accepted,
+  });
+}
+
+it("cumule par année de début, conserve les années vides et les conférences sans date", () => {
+  const conferences = [
+    annualConference("historique", "2025-03-01", "2025-03-01", 2, 1),
+    annualConference("première", "2026-04-01", "2026-04-02", 4, 2),
+    annualConference("deuxième", "2026-12-31", "2027-01-01", 3, 1),
+    annualConference("future", "2027-05-01", "2027-05-01", 0, 0),
+    annualConference("sans date", "", "", 1),
+  ];
+  render(<ConferenceAnnualStatistics conferences={conferences} />);
+  const region = within(screen.getByRole("region", { name: "Cumuls par année" }));
+  const cells = (name: RegExp) => within(region.getByRole("row", { name }))
+    .getAllByRole("cell").map(cell => cell.textContent);
+  expect(cells(/^2026 /)).toEqual(["2", "7", "3"]);
+  expect(cells(/^2025 /)).toEqual(["1", "2", "1"]);
+  expect(cells(/^2027 /)).toEqual(["1", "0", "0"]);
+  expect(cells(/^Année non renseignée /)).toEqual(["1", "1", "0"]);
+  expect(cells(/^Total /)).toEqual(["5", "10", "4"]);
+  expect(region.getAllByRole("rowheader").map(cell => cell.textContent))
+    .toEqual(["2027", "2026", "2025", "Année non renseignée", "Total"]);
+});
+
+it("affiche un total nul quand aucune conférence n'est disponible", () => {
+  render(<ConferenceAnnualStatistics conferences={[]} />);
+  const row = screen.getByRole("row", { name: /^Total / });
+  expect(within(row).getAllByRole("cell").map(cell => cell.textContent)).toEqual(["0", "0", "0"]);
+});
+
+it("permet de consulter une ancienne année sans modifier le bilan global ni refaire de requête", () => {
+  const fetch = vi.fn<typeof globalThis.fetch>();
+  vi.stubGlobal("fetch", fetch);
+  state.conferences = [
+    annualConference("Historique", "2023-03-01", "2023-03-01", 2, 1),
+    annualConference("Future", "2027-05-01", "2027-05-01", 3, 2),
+  ];
+  render(<ConferencesList />);
+  fireEvent.click(screen.getByRole("button", { name: "2023" }));
+  expect(screen.getByText("Historique")).toBeInTheDocument();
+  expect(screen.queryByText("Future")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /^Closed$/ }));
+  expect(screen.queryByText("Historique")).not.toBeInTheDocument();
+  const total = screen.getByRole("row", { name: /^Total / });
+  expect(within(total).getAllByRole("cell").map(cell => cell.textContent)).toEqual(["2", "5", "3"]);
   expect(fetch).not.toHaveBeenCalled();
 });

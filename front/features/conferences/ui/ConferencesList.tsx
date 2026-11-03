@@ -11,6 +11,7 @@ import { StatusTag, TypeTag } from "@/features/conferences/ui";
 import { FilterChip, Surface } from "@/shared/ui";
 import { useState } from "react";
 import dayjs from "dayjs";
+import { ConferenceAnnualStatistics } from "./ConferenceAnnualStatistics";
 import {
   MapPin,
   Calendar,
@@ -24,12 +25,14 @@ export function ConferencesList() {
   const [statusFilter, setStatusFilter] = useState<"All" | "Open" | "Closed">(
     "All",
   );
-  const [yearFilter, setYearFilter] = useState<
-    "All" | "This Year" | "Next Year"
-  >("All");
+  const [yearFilter, setYearFilter] = useState<"All" | number>("All");
   const [sort, setSort] = useState("default");
 
   const currentYear = new Date().getFullYear();
+  const years = [...new Set([
+    currentYear, currentYear + 1,
+    ...conferences.map(conference => getConferenceYear(conference.date)).filter(Number.isFinite),
+  ])].sort((left, right) => right - left);
 
   const filteredConferences = conferences.filter((conference) => {
     if (statusFilter !== "All" && conference.cfpStatus !== statusFilter) {
@@ -37,9 +40,7 @@ export function ConferencesList() {
     }
     if (yearFilter !== "All") {
       const confYear = getConferenceYear(conference.date);
-      if (yearFilter === "This Year" && confYear !== currentYear) return false;
-      if (yearFilter === "Next Year" && confYear !== currentYear + 1)
-        return false;
+      if (confYear !== yearFilter) return false;
     }
     return true;
   });
@@ -54,20 +55,15 @@ export function ConferencesList() {
 
   return (
     <div className="flex flex-col gap-6">
+      <ConferenceAnnualStatistics conferences={conferences} />
       <div className="flex items-center gap-6 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
           <Funnel size={14} className="text-text-muted shrink-0" />
           <span className="text-xs text-text-muted mr-2">Année :</span>
-          {(["All", "This Year", "Next Year"] as const).map((year) => (
+          {(["All", ...years] as const).map((year) => (
             <FilterChip
               key={year}
-              label={
-                year === "All"
-                  ? "Toutes"
-                  : year === "This Year"
-                    ? currentYear.toString()
-                    : (currentYear + 1).toString()
-              }
+              label={year === "All" ? "Toutes" : year.toString()}
               active={yearFilter === year}
               onClick={() => setYearFilter(year)}
             />

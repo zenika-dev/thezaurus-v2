@@ -11,6 +11,19 @@ Les égalités sont départagées par nom puis identifiant. Le tri travaille sur
 du catalogue en mémoire, sans requête supplémentaire ni modification du cache ; Réinitialiser
 rétablit aussi l'ordre initial.
 
+## Cumuls annuels
+
+Le tableau « Cumuls par année » additionne les compteurs de toutes les conférences du catalogue,
+par année de début, sans requête ni compteur persisté supplémentaire. Une conférence chevauchant
+deux années n'est comptée qu'une fois. Les conférences sans année connue sont regroupées sur une
+ligne séparée ; les années présentes avec zéro talk restent affichées. Un total général inclut
+aussi les conférences sans date. Le tableau n'est pas affecté par les filtres ou le tri de la liste.
+
+Le filtre de la liste propose les années disponibles, y compris les années passées, en plus de
+l'année courante et de la suivante. Il permet de consulter les conférences d'une année du bilan.
+Il s'agit de l'état actuel des conférences par année d'événement, pas d'un historique par date de
+soumission : une modification de statut ou une suppression se répercute sur les cumuls.
+
 - Soumissions : `SUBMITTED`, `ACCEPTED`, `REJECTED`, `DONE`.
 - Acceptations : `ACCEPTED` et `DONE`.
 - Brouillons et talks planifiés exclus. Un talk compte une fois, indépendamment des speakers.
@@ -127,7 +140,7 @@ volumes réels. La migration ajoute un coût ponctuel à amortir.
 
 ## Captures de l'interface
 
-Captures du vrai front de la branche, le 2 novembre 2026, avec réponses API et session de
+Captures du vrai front de la branche, le 3 novembre 2026, avec réponses API et session de
 démonstration interceptées dans le navigateur. Docker étant arrêté, elles ne constituent pas
 une validation de bout en bout contre Firestore. Les chiffres sont fictifs et ne viennent pas
 de la production. Les compteurs sont dérivés des talks du [scénario de démonstration](screenshots/issue-196/scenario.json),
