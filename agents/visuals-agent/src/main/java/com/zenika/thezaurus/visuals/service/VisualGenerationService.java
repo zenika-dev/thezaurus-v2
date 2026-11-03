@@ -4,14 +4,14 @@ import com.zenika.thezaurus.visuals.client.GenAiVisualClient;
 import com.zenika.thezaurus.visuals.client.GenAiVisualClient.GeneratedImage;
 import com.zenika.thezaurus.visuals.client.GenAiVisualClient.InlineMediaPart;
 import com.zenika.thezaurus.visuals.model.BlogVisualRequest;
+import com.zenika.thezaurus.visuals.model.NightClazzVisualRequest;
 import com.zenika.thezaurus.visuals.model.PersonInput;
+import com.zenika.thezaurus.visuals.model.TalkItemInput;
 import com.zenika.thezaurus.visuals.model.TalkVisualRequest;
 import com.zenika.thezaurus.visuals.model.VisualGenerationResponse;
-import com.zenika.thezaurus.visuals.model.VisualRequest;
 import com.zenika.thezaurus.visuals.model.VisualStreamEvent;
 import com.zenika.thezaurus.visuals.model.VisualStreamEvent.Status;
 import com.zenika.thezaurus.visuals.model.VisualTemplate;
-import com.zenika.thezaurus.visuals.model.VisualType;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
@@ -41,7 +41,7 @@ public class VisualGenerationService {
     public VisualGenerationService(
             TemplateService templateService,
             GenAiVisualClient genAiVisualClient,
-            @ConfigProperty(name = "visuals.gemini.model", defaultValue = "gemini-4-argon") String geminiModel,
+            @ConfigProperty(name = "visuals.gemini.model", defaultValue = "gemini-2.5-flash-image") String geminiModel,
             @ConfigProperty(name = "visuals.sse.heartbeat-interval-ms", defaultValue = "3000")
                     long heartbeatIntervalMs) {
         this.templateService = templateService;
@@ -50,37 +50,100 @@ public class VisualGenerationService {
         this.heartbeatIntervalMs = heartbeatIntervalMs;
     }
 
-    public VisualGenerationResponse generateVisual(VisualRequest request) {
-        validateRequest(request);
+    public VisualGenerationResponse generateTalkVisual(TalkVisualRequest request) {
+        validateTalkRequest(request);
 
-        VisualTemplate template = templateService.resolveTemplate(request);
-        String prompt = templateService.buildPrompt(template, request);
+        VisualTemplate template = templateService.resolveTalkTemplate(request);
+        String prompt = templateService.buildTalkPrompt(template, request);
 
         List<InlineMediaPart> mediaParts = new ArrayList<>();
         mediaParts.add(templateService.loadTemplateImage(template));
 
-        if (template.category() == VisualType.TALK) {
+        if (request.talks() != null && !request.talks().isEmpty()) {
+            for (TalkItemInput talk : request.talks()) {
+                if (talk != null && talk.speaker() != null) {
+                    decodeOptionalBase64Image(talk.speaker().photoBase64()).ifPresent(mediaParts::add);
+                }
+            }
+        } else {
             List<PersonInput> speakers = request.speakers() != null ? request.speakers() : List.of();
             for (PersonInput speaker : speakers) {
                 if (speaker != null) {
                     decodeOptionalBase64Image(speaker.photoBase64()).ifPresent(mediaParts::add);
                 }
             }
-            if (request.conference() != null) {
-                decodeOptionalBase64Image(request.conference().logoBase64()).ifPresent(mediaParts::add);
-            }
-        } else {
-            List<PersonInput> writers =
-                    request.writers() != null && !request.writers().isEmpty()
-                            ? request.writers()
-                            : (request.speakers() != null ? request.speakers() : List.of());
-            for (PersonInput writer : writers) {
-                if (writer != null) {
-                    decodeOptionalBase64Image(writer.photoBase64()).ifPresent(mediaParts::add);
-                }
+        }
+        if (request.conference() != null) {
+            decodeOptionalBase64Image(request.conference().logoBase64()).ifPresent(mediaParts::add);
+        }
+
+        return executeGeneration(template, prompt, mediaParts);
+    }
+
+    public VisualGenerationResponse generateBlogVisual(BlogVisualRequest request) {
+        validateBlogRequest(request);
+
+        VisualTemplate template = templateService.resolveBlogTemplate(request);
+        String prompt = templateService.buildBlogPrompt(template, request);
+
+        List<InlineMediaPart> mediaParts = new ArrayList<>();
+        mediaParts.add(templateService.loadTemplateImage(template));
+
+        List<PersonInput> writers = request.writers() != null ? request.writers() : List.of();
+        for (PersonInput writer : writers) {
+            if (writer != null) {
+                decodeOptionalBase64Image(writer.photoBase64()).ifPresent(mediaParts::add);
             }
         }
 
+        return executeGeneration(template, prompt, mediaParts);
+    }
+
+    public VisualGenerationResponse generateNightClazzVisual(NightClazzVisualRequest request) {
+        validateNightClazzRequest(request);
+
+        VisualTemplate template = templateService.resolveNightClazzTemplate(request);
+        String prompt = templateService.buildNightClazzPrompt(template, request);
+
+        List<InlineMediaPart> mediaParts = new ArrayList<>();
+        mediaParts.add(templateService.loadTemplateImage(template));
+
+        List<PersonInput> speakers = request.speakers() != null ? request.speakers() : List.of();
+        for (PersonInput speaker : speakers) {
+            if (speaker != null) {
+                decodeOptionalBase64Image(speaker.photoBase64()).ifPresent(mediaParts::add);
+            }
+        }
+        if (request.partner() != null) {
+            decodeOptionalBase64Image(request.partner().logoBase64()).ifPresent(mediaParts::add);
+        }
+
+        return executeGeneration(template, prompt, mediaParts);
+    }
+
+    public Multi<VisualStreamEvent> streamTalkVisual(TalkVisualRequest request) {
+        validateTalkRequest(request);
+        VisualTemplate template = templateService.resolveTalkTemplate(request);
+        return streamVisualGeneration(
+                template, () -> generateTalkVisual(request), "Génération du visuel de talk en cours...");
+    }
+
+    public Multi<VisualStreamEvent> streamBlogVisual(BlogVisualRequest request) {
+        validateBlogRequest(request);
+        VisualTemplate template = templateService.resolveBlogTemplate(request);
+        return streamVisualGeneration(
+                template, () -> generateBlogVisual(request), "Génération du visuel de blog en cours...");
+    }
+
+    public Multi<VisualStreamEvent> streamNightClazzVisual(NightClazzVisualRequest request) {
+        validateNightClazzRequest(request);
+        VisualTemplate template = templateService.resolveNightClazzTemplate(request);
+        return streamVisualGeneration(
+                template, () -> generateNightClazzVisual(request), "Génération du visuel de NightClazz en cours...");
+    }
+
+    private VisualGenerationResponse executeGeneration(
+            VisualTemplate template, String prompt, List<InlineMediaPart> mediaParts) {
         GeneratedImage generated = genAiVisualClient.generateImage(geminiModel, prompt, mediaParts);
         String encoded = Base64.getEncoder().encodeToString(generated.data());
 
@@ -92,30 +155,6 @@ public class VisualGenerationService {
                 encoded,
                 prompt,
                 Instant.now());
-    }
-
-    public VisualGenerationResponse generateTalkVisual(TalkVisualRequest request) {
-        return generateVisual(request.toVisualRequest());
-    }
-
-    public VisualGenerationResponse generateBlogVisual(BlogVisualRequest request) {
-        return generateVisual(request.toVisualRequest());
-    }
-
-    public Multi<VisualStreamEvent> streamVisual(VisualRequest request) {
-        validateRequest(request);
-        VisualTemplate template = templateService.resolveTemplate(request);
-        String label = template.category() == VisualType.TALK ? "talk" : "blog";
-        return streamVisualGeneration(
-                template, () -> generateVisual(request), "Génération du visuel de " + label + " en cours...");
-    }
-
-    public Multi<VisualStreamEvent> streamTalkVisual(TalkVisualRequest request) {
-        return streamVisual(request.toVisualRequest());
-    }
-
-    public Multi<VisualStreamEvent> streamBlogVisual(BlogVisualRequest request) {
-        return streamVisual(request.toVisualRequest());
     }
 
     private Multi<VisualStreamEvent> streamVisualGeneration(
@@ -181,12 +220,30 @@ public class VisualGenerationService {
         }
     }
 
-    private void validateRequest(VisualRequest request) {
+    private void validateTalkRequest(TalkVisualRequest request) {
         if (request == null) {
-            throw new IllegalArgumentException("La requête de génération de visuel est requise.");
+            throw new IllegalArgumentException("La requête de génération de visuel de talk est requise.");
+        }
+        if (!request.isTitleValid()) {
+            throw new IllegalArgumentException("Le titre du talk est requis.");
+        }
+    }
+
+    private void validateBlogRequest(BlogVisualRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("La requête de génération de visuel de blog est requise.");
         }
         if (request.title() == null || request.title().isBlank()) {
-            throw new IllegalArgumentException("Le titre est requis.");
+            throw new IllegalArgumentException("Le titre du blog post est requis.");
+        }
+    }
+
+    private void validateNightClazzRequest(NightClazzVisualRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("La requête de génération de visuel NightClazz est requise.");
+        }
+        if (request.title() == null || request.title().isBlank()) {
+            throw new IllegalArgumentException("Le titre du NightClazz est requis.");
         }
     }
 }
