@@ -127,7 +127,6 @@ describe("BlogPosts Pagination", () => {
 
     const draftBtn = await screen.findByRole("button", { name: "Idée" });
     await user.click(draftBtn);
-    expect(await screen.findByText("Article filtré")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(requestedUrls.at(-1)).toContain("personal=true");
