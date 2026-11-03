@@ -5,8 +5,7 @@ import { Suspense, useState } from "react";
 import { ConferencesListSkeleton } from "./ConferencesSkeleton";
 import { ConferencesList } from "./ConferencesList";
 
-import { BarChart3, Plus } from "lucide-react";
-import Link from "next/link";
+import { Plus } from "lucide-react";
 import { useConferencesMutations } from "../model/useConferencesMutations";
 import { ConferenceData } from "@/entities/conference";
 import dynamic from "next/dynamic";
@@ -34,18 +33,12 @@ export function Conferences() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <PageHeader title="Conférences et CFP" subtitle={<>Suivez les conférences et les deadlines de CFP.</>} action={
-        <div className="flex flex-wrap items-center gap-3">
-          <Link href="/conferences/statistics" className="inline-flex items-center gap-2 text-sm text-link hover:underline">
-            <BarChart3 size={16} />
-            Statistiques annuelles
-          </Link>
-          <CreateButton
-            onClick={() => setOpen(true)}
-          >
-            <Plus size={16} />
-            Nouvelle conférence
-          </CreateButton>
-        </div>
+        <CreateButton
+          onClick={() => setOpen(true)}
+        >
+          <Plus size={16} />
+          Nouvelle conférence
+        </CreateButton>
       } />
 
       <Suspense fallback={<ConferencesListSkeleton />}>

@@ -13,9 +13,10 @@ rétablit aussi l'ordre initial.
 
 ## Cumuls annuels
 
-La page dédiée `/conferences/statistics`, accessible via « Statistiques annuelles » depuis la liste,
+La page dédiée `/conferences/statistics`, accessible via « Statistiques » dans le menu de gauche,
 présente le tableau « Cumuls par année ». Un lien permet de revenir aux conférences.
-La liste conserve uniquement ses cartes, filtres et tri, sans tableau de synthèse.
+La liste conserve uniquement ses cartes, filtres et tri, sans tableau de synthèse ni lien supplémentaire
+dans son en-tête. Dans le menu, seule l'entrée Statistiques est active sur la page de statistiques.
 Le tableau additionne les compteurs de toutes les conférences du catalogue,
 par année de début, sans requête ni compteur persisté supplémentaire. Une conférence chevauchant
 deux années n'est comptée qu'une fois. Les conférences sans année connue sont regroupées sur une
