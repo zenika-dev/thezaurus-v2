@@ -1,6 +1,7 @@
 import {
   apiFetch,
   type BackendProfileView,
+  type BackendContributionStatistics,
   type BackendUserAdminView,
   type BackendUserSummary,
   type Role,
@@ -25,6 +26,11 @@ function mapBackendToFrontend(profile: BackendProfileView): UserProfile {
 }
 
 export const profileApi = {
+  getContributions: async (): Promise<BackendContributionStatistics> => {
+    const res = await apiFetch("/api/me/profile/contributions");
+    if (!res.ok) throw new Error("Impossible de charger les statistiques");
+    return res.json();
+  },
   updateOffice: async (office: Office | ""): Promise<void> => {
     const res = await apiFetch("/api/me/profile/office", {
       method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ office }),
