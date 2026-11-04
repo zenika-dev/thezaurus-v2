@@ -8,7 +8,7 @@ import { EventsDashboard, EventsDashboardSkeleton } from "@/features/events";
 
 export const dynamic = "force-dynamic";
 
-const YEAR = 2026;
+
 
 export const metadata: Metadata = {
   title: "Événements",
@@ -24,10 +24,11 @@ export default function HomePage() {
 }
 
 async function EventsLoader() {
+  const year = new Date().getFullYear();
   const queryClient = getQueryClient();
   await queryClient.prefetchQuery({
-    queryKey: queryKeys.events.dashboard(YEAR),
-    queryFn: () => eventApi.getEventsDashboard(YEAR),
+    queryKey: queryKeys.events.dashboard(year),
+    queryFn: () => eventApi.getEventsDashboard(year),
   });
 
   return (
