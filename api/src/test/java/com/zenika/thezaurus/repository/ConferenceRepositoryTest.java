@@ -55,7 +55,11 @@ public class ConferenceRepositoryTest {
         DocumentSnapshot conferenceDoc = Mockito.mock(DocumentSnapshot.class);
         Mockito.when(collection.document("conf")).thenReturn(conferenceRef);
         Mockito.when(conferenceDoc.exists()).thenReturn(true);
+        Mockito.when(conferenceDoc.getReference()).thenReturn(conferenceRef);
         Mockito.when(conferenceDoc.getString("name")).thenReturn("Devoxx 2026");
+        Mockito.when(conferenceDoc.getLong(ConferenceCounters.VERSION_FIELD)).thenReturn(1L);
+        Mockito.when(conferenceDoc.getLong("submittedTalksAmount")).thenReturn(1L);
+        Mockito.when(conferenceDoc.getLong("acceptedTalksAmount")).thenReturn(1L);
         Mockito.when(conferenceRef.delete()).thenReturn(ApiFutures.immediateFuture(null));
         com.google.cloud.firestore.Transaction transaction = Mockito.mock(com.google.cloud.firestore.Transaction.class);
         Mockito.when(transaction.get(conferenceRef)).thenReturn(ApiFutures.immediateFuture(conferenceDoc));
@@ -69,6 +73,7 @@ public class ConferenceRepositoryTest {
         DocumentReference talkRef = Mockito.mock(DocumentReference.class);
         QueryDocumentSnapshot talk = Mockito.mock(QueryDocumentSnapshot.class);
         Mockito.when(talk.getReference()).thenReturn(talkRef);
+        Mockito.when(talk.get("status")).thenReturn("DONE");
         Mockito.when(associated.getDocuments()).thenReturn(List.of(talk));
         Mockito.when(empty.getDocuments()).thenReturn(List.of());
         Mockito.when(transaction.get(query))
@@ -81,6 +86,16 @@ public class ConferenceRepositoryTest {
         repository.delete("conf");
         Mockito.verify(transaction).update(talkRef, "conference", Map.of("name", "Devoxx 2026"));
         Mockito.verify(transaction).delete(conferenceRef);
+        Mockito.verify(transaction)
+                .update(
+                        conferenceRef,
+                        Map.of(
+                                "submittedTalksAmount",
+                                0L,
+                                "acceptedTalksAmount",
+                                0L,
+                                ConferenceCounters.VERSION_FIELD,
+                                1L));
     }
 
     // --- Lecture defensive : un document illisible ne fait pas echouer les autres ---------------

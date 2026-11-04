@@ -4,6 +4,7 @@ const navLinks = [
   { label: "Événements", path: "/" },
   { label: "Talks",       path: "/talks" },
   { label: "Conférences", path: "/conferences" },
+  { label: "Statistiques", path: "/conferences/statistics" },
   { label: "Blog Posts",  path: "/blog-posts" },
 ];
 

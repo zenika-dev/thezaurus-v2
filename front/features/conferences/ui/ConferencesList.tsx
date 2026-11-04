@@ -24,11 +24,14 @@ export function ConferencesList() {
   const [statusFilter, setStatusFilter] = useState<"All" | "Open" | "Closed">(
     "All",
   );
-  const [yearFilter, setYearFilter] = useState<
-    "All" | "This Year" | "Next Year"
-  >("All");
+  const [yearFilter, setYearFilter] = useState<"All" | number>("All");
+  const [sort, setSort] = useState("default");
 
   const currentYear = new Date().getFullYear();
+  const years = [...new Set([
+    currentYear, currentYear + 1,
+    ...conferences.map(conference => getConferenceYear(conference.date)).filter(Number.isFinite),
+  ])].sort((left, right) => right - left);
 
   const filteredConferences = conferences.filter((conference) => {
     if (statusFilter !== "All" && conference.cfpStatus !== statusFilter) {
@@ -36,12 +39,18 @@ export function ConferencesList() {
     }
     if (yearFilter !== "All") {
       const confYear = getConferenceYear(conference.date);
-      if (yearFilter === "This Year" && confYear !== currentYear) return false;
-      if (yearFilter === "Next Year" && confYear !== currentYear + 1)
-        return false;
+      if (confYear !== yearFilter) return false;
     }
     return true;
   });
+  if (sort !== "default") {
+    filteredConferences.sort((left, right) => {
+      const difference = sort === "submitted"
+        ? right.submittedTalksAmount - left.submittedTalksAmount
+        : (right.acceptedTalksAmount ?? 0) - (left.acceptedTalksAmount ?? 0);
+      return difference || left.name.localeCompare(right.name, "fr") || left.id.localeCompare(right.id);
+    });
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -49,16 +58,10 @@ export function ConferencesList() {
         <div className="flex items-center gap-2 flex-wrap">
           <Funnel size={14} className="text-text-muted shrink-0" />
           <span className="text-xs text-text-muted mr-2">Année :</span>
-          {(["All", "This Year", "Next Year"] as const).map((year) => (
+          {(["All", ...years] as const).map((year) => (
             <FilterChip
               key={year}
-              label={
-                year === "All"
-                  ? "Toutes"
-                  : year === "This Year"
-                    ? currentYear.toString()
-                    : (currentYear + 1).toString()
-              }
+              label={year === "All" ? "Toutes" : year.toString()}
               active={yearFilter === year}
               onClick={() => setYearFilter(year)}
             />
@@ -76,11 +79,25 @@ export function ConferencesList() {
           ))}
         </div>
 
-        {(statusFilter !== "All" || yearFilter !== "All") && (
+        <label className="flex items-center gap-2 text-xs text-text-muted">
+          Trier par :
+          <select
+            value={sort}
+            onChange={(event) => setSort(event.target.value)}
+            className="rounded-lg border border-border bg-surface px-2 py-1.5 text-text"
+          >
+            <option value="default">Ordre initial</option>
+            <option value="submitted">Soumissions décroissantes</option>
+            <option value="accepted">Acceptations décroissantes</option>
+          </select>
+        </label>
+
+        {(statusFilter !== "All" || yearFilter !== "All" || sort !== "default") && (
           <button
             onClick={() => {
               setStatusFilter("All");
               setYearFilter("All");
+              setSort("default");
             }}
             className="flex text-xs items-center font-sans gap-1 cursor-pointer text-link border border-primary/20 px-3 py-1 rounded-2xl bg-primary/10 transition-colors no-underline hover:bg-primary/20 hover:text-link"
           >
@@ -101,7 +118,6 @@ export function ConferencesList() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* todo use real conferences */}
         {filteredConferences.map(
           (conference: ConferenceData, index: number) => {
             const cfpOpeningDateJs = conference.cfpOpeningDate
@@ -164,6 +180,11 @@ export function ConferencesList() {
                   <span>
                     {conference.submittedTalksAmount} talk
                     {conference.submittedTalksAmount !== 1 ? "s" : ""} soumis
+                  </span>
+                  <span>
+                    {conference.acceptedTalksAmount ?? 0} talk
+                    {conference.acceptedTalksAmount !== 1 ? "s" : ""} accepté
+                    {conference.acceptedTalksAmount !== 1 ? "s" : ""}
                   </span>
                   {conference.cfpLink && conference.cfpStatus !== "None" && (
                     <>

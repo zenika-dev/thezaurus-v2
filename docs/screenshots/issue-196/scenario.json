@@ -1,0 +1,341 @@
+{
+  "provenance": "Données de démonstration, compteurs dérivés des talks",
+  "conferences": [
+    {
+      "id": "devoxx",
+      "name": "Devoxx France 2026",
+      "date": {
+        "start": "2026-04-08",
+        "end": "2026-04-10",
+        "precision": "DAY"
+      },
+      "location": {
+        "city": "Paris",
+        "country": "France"
+      },
+      "cfpStatus": "Closed",
+      "type": "Technique généraliste",
+      "reach": "Nationale",
+      "submittedTalksAmount": 24,
+      "acceptedTalksAmount": 9
+    },
+    {
+      "id": "devfest",
+      "name": "DevFest Nantes 2026",
+      "date": {
+        "start": "2026-10-15",
+        "end": "2026-10-16",
+        "precision": "DAY"
+      },
+      "location": {
+        "city": "Nantes",
+        "country": "France"
+      },
+      "cfpStatus": "Closed",
+      "type": "Technique",
+      "reach": "Nationale",
+      "submittedTalksAmount": 12,
+      "acceptedTalksAmount": 5
+    },
+    {
+      "id": "meetup",
+      "name": "Meetup Cloud 2026",
+      "date": {
+        "start": "2026-12-08",
+        "end": "2026-12-08",
+        "precision": "DAY"
+      },
+      "location": {
+        "city": "Lyon",
+        "country": "France"
+      },
+      "cfpStatus": "Open",
+      "type": "Technique",
+      "reach": "Locale",
+      "submittedTalksAmount": 1,
+      "acceptedTalksAmount": 0,
+      "cfpOpeningDate": "2026-11-01",
+      "cfpClosingDate": "2026-11-30",
+      "cfpLink": "https://example.test/cfp"
+    },
+    {
+      "id": "2027",
+      "name": "Conférence 2027",
+      "date": {
+        "start": "2027-03-15",
+        "end": "2027-03-15",
+        "precision": "DAY"
+      },
+      "location": {
+        "city": "Lille",
+        "country": "France"
+      },
+      "cfpStatus": "None",
+      "type": "Technique",
+      "reach": "Nationale",
+      "submittedTalksAmount": 0,
+      "acceptedTalksAmount": 0
+    }
+  ],
+  "talks": [
+    {
+      "id": "devoxx-1",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devoxx-2",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devoxx-3",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devoxx-4",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devoxx-5",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devoxx-6",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devoxx-7",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devoxx-8",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devoxx-9",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devoxx-10",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-11",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-12",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-13",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-14",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-15",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-16",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-17",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-18",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-19",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-20",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-21",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-22",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-23",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devoxx-24",
+      "conference": {
+        "id": "devoxx"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devfest-1",
+      "conference": {
+        "id": "devfest"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devfest-2",
+      "conference": {
+        "id": "devfest"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devfest-3",
+      "conference": {
+        "id": "devfest"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devfest-4",
+      "conference": {
+        "id": "devfest"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devfest-5",
+      "conference": {
+        "id": "devfest"
+      },
+      "status": "DONE"
+    },
+    {
+      "id": "devfest-6",
+      "conference": {
+        "id": "devfest"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devfest-7",
+      "conference": {
+        "id": "devfest"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devfest-8",
+      "conference": {
+        "id": "devfest"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devfest-9",
+      "conference": {
+        "id": "devfest"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devfest-10",
+      "conference": {
+        "id": "devfest"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devfest-11",
+      "conference": {
+        "id": "devfest"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "devfest-12",
+      "conference": {
+        "id": "devfest"
+      },
+      "status": "REJECTED"
+    },
+    {
+      "id": "meetup-1",
+      "conference": {
+        "id": "meetup"
+      },
+      "status": "SUBMITTED"
+    }
+  ]
+}

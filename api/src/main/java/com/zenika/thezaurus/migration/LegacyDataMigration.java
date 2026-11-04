@@ -1,5 +1,6 @@
 package com.zenika.thezaurus.migration;
 
+import com.zenika.thezaurus.repository.ConferenceRepository;
 import com.zenika.thezaurus.repository.TalkRepository;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -25,6 +26,9 @@ public class LegacyDataMigration {
     @Inject
     TalkRepository talkRepository;
 
+    @Inject
+    ConferenceRepository conferenceRepository;
+
     /**
      * Désactivé en profil test : les tests n'ont pas de Firestore (tout est mocké) et
      * l'instanciation du client au démarrage ferait échouer le boot de Quarkus.
@@ -46,5 +50,7 @@ public class LegacyDataMigration {
                     "Migration feedback reminder : {0} talk(s) initialisé(s) avec feedbackReminderSent=false",
                     migratedReminders);
         }
+        int migratedStatistics = conferenceRepository.migrateStatistics();
+        logger.infov("Migration des compteurs de conférences : {0} conférence(s)", migratedStatistics);
     }
 }

@@ -1823,6 +1823,10 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "acceptedTalksAmount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "cfpOpeningDate" : {
             "type" : "string"
           },

@@ -148,6 +148,10 @@ public class TalkRepositoryTest {
         Mockito.when(conferences.document("conf")).thenReturn(conferenceRef);
         Mockito.when(conferenceRef.get()).thenReturn(ApiFutures.immediateFuture(conferenceDoc));
         Mockito.when(conferenceDoc.exists()).thenReturn(true);
+        Mockito.when(conferenceDoc.getReference()).thenReturn(conferenceRef);
+        Mockito.when(conferenceDoc.getLong(ConferenceCounters.VERSION_FIELD)).thenReturn(1L);
+        Mockito.when(conferenceDoc.getLong("submittedTalksAmount")).thenReturn(0L);
+        Mockito.when(conferenceDoc.getLong("acceptedTalksAmount")).thenReturn(0L);
         Mockito.when(conferenceDoc.toObject(Conference.class)).thenReturn(new Conference("conf", "Current name", null));
         assertEquals("Current name", repository.findById("talk").conference().getName());
     }
@@ -164,6 +168,10 @@ public class TalkRepositoryTest {
         Mockito.when(conferences.document("conf")).thenReturn(conferenceRef);
         Mockito.when(transaction.get(conferenceRef)).thenReturn(ApiFutures.immediateFuture(conferenceDoc));
         Mockito.when(conferenceDoc.exists()).thenReturn(true);
+        Mockito.when(conferenceDoc.getReference()).thenReturn(conferenceRef);
+        Mockito.when(conferenceDoc.getLong(ConferenceCounters.VERSION_FIELD)).thenReturn(1L);
+        Mockito.when(conferenceDoc.getLong("submittedTalksAmount")).thenReturn(0L);
+        Mockito.when(conferenceDoc.getLong("acceptedTalksAmount")).thenReturn(0L);
         Mockito.when(conferenceDoc.toObject(Conference.class)).thenReturn(new Conference("conf", "Current name", null));
         Mockito.when(repository.firestore.runTransaction(
                         Mockito.any(com.google.cloud.firestore.Transaction.Function.class)))
@@ -225,6 +233,34 @@ public class TalkRepositoryTest {
         repository.firestore = firestore;
         repository.logger = Mockito.mock(Logger.class);
         repository.collectionPrefix = Optional.empty();
+    }
+
+    @Test
+    void legacyNormalizationLeavesDeletingConferenceAttachmentsForTheDeletionWorker() throws Exception {
+        QueryDocumentSnapshot talk = Mockito.mock(QueryDocumentSnapshot.class);
+        DocumentReference reference = Mockito.mock(DocumentReference.class);
+        Mockito.when(talk.getReference()).thenReturn(reference);
+        Mockito.when(talk.exists()).thenReturn(true);
+        Mockito.when(talk.get("conference")).thenReturn(java.util.Map.of("id", "conf", "name", "Conference"));
+        Mockito.when(snapshot.getDocuments()).thenReturn(List.of(talk));
+        var transaction = Mockito.mock(Transaction.class);
+        Mockito.when(transaction.get(reference)).thenReturn(ApiFutures.immediateFuture(talk));
+        var conferences = Mockito.mock(CollectionReference.class);
+        var conferenceRef = Mockito.mock(DocumentReference.class);
+        var conference = Mockito.mock(DocumentSnapshot.class);
+        Mockito.when(repository.firestore.collection("conferences")).thenReturn(conferences);
+        Mockito.when(conferences.document("conf")).thenReturn(conferenceRef);
+        Mockito.when(transaction.get(conferenceRef)).thenReturn(ApiFutures.immediateFuture(conference));
+        Mockito.when(conference.exists()).thenReturn(true);
+        Mockito.when(conference.getBoolean("deleting")).thenReturn(true);
+        Mockito.when(repository.firestore.runTransaction(Mockito.any(Transaction.Function.class)))
+                .thenAnswer(i -> ApiFutures.immediateFuture(
+                        ((Transaction.Function<?>) i.getArgument(0)).updateCallback(transaction)));
+        assertEquals(1, repository.migrateLegacyConferences());
+        var updates = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        Mockito.verify(transaction).update(Mockito.eq(reference), updates.capture());
+        assertEquals(java.util.Map.of("id", "conf"), updates.getValue().get("conference"));
+        Mockito.verify(transaction, Mockito.never()).update(Mockito.eq(conferenceRef), Mockito.anyMap());
     }
 
     // --- Lecture défensive : un document illisible n'interrompt pas la liste --------------------

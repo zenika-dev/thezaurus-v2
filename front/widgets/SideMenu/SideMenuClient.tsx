@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useGuardedPush } from "@/shared/lib/navigation-guard";
-import { Calendar, CalendarDays, MicVocal, PenLine } from "lucide-react";
+import { BarChart3, Calendar, CalendarDays, MicVocal, PenLine } from "lucide-react";
 import { SideMenuView } from "./SideMenuView";
 import { type NavItemConfig } from "./SideMenuNavItem";
 
@@ -11,6 +11,7 @@ const iconMap: Record<string, React.ElementType> = {
   "/":            Calendar,
   "/talks":       MicVocal,
   "/conferences": CalendarDays,
+  "/conferences/statistics": BarChart3,
   "/blog-posts":  PenLine,
 };
 
@@ -29,13 +30,14 @@ export function SideMenuClient({ navLinks }: SideMenuClientProps) {
   const push = useGuardedPush();
   const pathname = usePathname();
 
-  const isActive = (path: string) =>
-    path === "/" ? pathname === "/" : pathname.startsWith(path);
+  const activeLink = navLinks
+    .filter(({ path }) => path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`))
+    .sort((left, right) => right.path.length - left.path.length)[0];
 
   const navItems: NavItemConfig[] = navLinks.map((link) => ({
     icon: iconMap[link.path] ?? Calendar,
     label: link.label,
-    active: isActive(link.path),
+    active: activeLink?.path === link.path,
     onClick: () => { push(link.path); setMobileOpen(false); },
   }));
 

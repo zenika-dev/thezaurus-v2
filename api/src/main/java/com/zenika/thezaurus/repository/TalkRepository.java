@@ -9,7 +9,6 @@ import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteBatch;
-import com.google.cloud.firestore.WriteResult;
 import com.google.cloud.firestore.encoding.CustomClassMapper;
 import com.zenika.thezaurus.model.Conference;
 import com.zenika.thezaurus.model.PagedResult;
@@ -48,16 +47,10 @@ public class TalkRepository {
     @ConfigProperty(name = "thezaurus.firestore.collection.prefix")
     Optional<String> collectionPrefix;
 
-    private static final String BASE_COLLECTION_NAME = "talks";
     private static final int BATCH_SIZE = 500;
 
     private String getCollectionName() {
-        if (collectionPrefix == null
-                || collectionPrefix.isEmpty()
-                || collectionPrefix.get().trim().isEmpty()) {
-            return BASE_COLLECTION_NAME;
-        }
-        return collectionPrefix.get().trim() + "_" + BASE_COLLECTION_NAME;
+        return FirestoreCollections.talks(collectionPrefix);
     }
 
     public List<Talk> findAll() throws ExecutionException, InterruptedException {
@@ -168,7 +161,7 @@ public class TalkRepository {
                 || talk.conference().getId().isBlank()) return talk;
         String id = talk.conference().getId();
         if (!cache.containsKey(id)) {
-            String collection = getCollectionName().replaceFirst("talks$", "conferences");
+            String collection = FirestoreCollections.conferences(collectionPrefix);
             DocumentSnapshot document =
                     firestore.collection(collection).document(id).get().get();
             cache.put(id, document.exists() ? document.toObject(Conference.class) : null);
@@ -240,8 +233,9 @@ public class TalkRepository {
         DocumentReference reference = firestore.collection(getCollectionName()).document(talk.id());
         return FirestoreTransactions.run(firestore, transaction -> {
             Boolean reminderSent = talk.feedbackReminderSent();
+            DocumentSnapshot stored = null;
             if (canEdit != null) {
-                DocumentSnapshot stored = transaction.get(reference).get();
+                stored = transaction.get(reference).get();
                 if (!stored.exists()) throw new WebApplicationException("Talk introuvable", 404);
                 if (!canEdit.test(stored.toObject(Talk.class)))
                     throw new WebApplicationException("Modification non autorisée", 403);
@@ -250,14 +244,18 @@ public class TalkRepository {
             Conference selected = talk.conference();
             Map<String, String> storedConference = null;
             Conference current = selected;
+            String newId = selected != null ? selected.getId() : null;
+            if (newId != null && newId.isBlank()) newId = null;
+            String oldId = stored != null ? ConferenceCounters.conferenceId(stored) : null;
+            Map<String, DocumentSnapshot> conferenceDocuments = new HashMap<>();
             if (selected != null
                     && selected.getId() != null
                     && !selected.getId().isBlank()) {
-                DocumentSnapshot conference = transaction
-                        .get(firestore
-                                .collection(getCollectionName().replaceFirst("talks$", "conferences"))
-                                .document(selected.getId()))
-                        .get();
+                DocumentReference conferenceReference = firestore
+                        .collection(FirestoreCollections.conferences(collectionPrefix))
+                        .document(selected.getId());
+                DocumentSnapshot conference =
+                        transaction.get(conferenceReference).get();
                 if (!conference.exists() || Boolean.TRUE.equals(conference.getBoolean("deleting"))) {
                     throw new WebApplicationException(
                             "La conférence n’est plus disponible. Sélectionnez une autre conférence ou saisissez un nom libre.",
@@ -265,11 +263,40 @@ public class TalkRepository {
                 }
                 current = conference.toObject(Conference.class);
                 storedConference = Map.of("id", selected.getId());
+                conferenceDocuments.put(newId, conference);
             } else if (selected != null
                     && selected.getName() != null
                     && !selected.getName().isBlank()) {
                 storedConference = Map.of("name", selected.getName().trim());
                 current = new Conference(null, selected.getName().trim(), null);
+            }
+            if (oldId != null && !oldId.equals(newId)) {
+                DocumentReference oldReference = firestore
+                        .collection(FirestoreCollections.conferences(collectionPrefix))
+                        .document(oldId);
+                DocumentSnapshot oldConference = transaction.get(oldReference).get();
+                // Never recreate a conference that has already been deleted.
+                if (oldConference.exists()) {
+                    conferenceDocuments.put(oldId, oldConference);
+                }
+            }
+            Map<String, ConferenceCounters.Counts> deltas = new HashMap<>();
+            if (oldId != null)
+                deltas.put(
+                        oldId,
+                        new ConferenceCounters.Counts(0, 0)
+                                .minus(ConferenceCounters.contribution(stored.get("status"))));
+            if (newId != null)
+                deltas.merge(newId, ConferenceCounters.contribution(talk.status()), ConferenceCounters.Counts::plus);
+            List<ConferenceCounters.Update> updates = new ArrayList<>();
+            for (var entry : conferenceDocuments.entrySet()) {
+                ConferenceCounters.applyDelta(
+                                transaction,
+                                entry.getValue(),
+                                firestore.collection(getCollectionName()),
+                                entry.getKey(),
+                                deltas.getOrDefault(entry.getKey(), new ConferenceCounters.Counts(0, 0)))
+                        .ifPresent(updates::add);
             }
             @SuppressWarnings("unchecked")
             Map<String, Object> payload = new HashMap<>((Map<String, Object>) CustomClassMapper.serialize(talk));
@@ -283,6 +310,7 @@ public class TalkRepository {
                     && selected.getDate().getStart() != null) {
                 payload.put("date", selected.getDate().getStart());
             }
+            for (var update : updates) update.write(transaction);
             if (canEdit == null) transaction.create(reference, payload);
             else transaction.set(reference, payload);
             return talk.withConference(current)
@@ -292,9 +320,30 @@ public class TalkRepository {
     }
 
     public void delete(String id) throws ExecutionException, InterruptedException {
-        ApiFuture<WriteResult> writeResult =
-                firestore.collection(getCollectionName()).document(id).delete();
-        writeResult.get();
+        DocumentReference reference = firestore.collection(getCollectionName()).document(id);
+        FirestoreTransactions.run(firestore, transaction -> {
+            DocumentSnapshot stored = transaction.get(reference).get();
+            if (!stored.exists()) return null;
+            String conferenceId = ConferenceCounters.conferenceId(stored);
+            Optional<ConferenceCounters.Update> update = Optional.empty();
+            if (conferenceId != null) {
+                DocumentReference conferenceReference = firestore
+                        .collection(FirestoreCollections.conferences(collectionPrefix))
+                        .document(conferenceId);
+                DocumentSnapshot conference =
+                        transaction.get(conferenceReference).get();
+                update = ConferenceCounters.applyDelta(
+                        transaction,
+                        conference,
+                        firestore.collection(getCollectionName()),
+                        conferenceId,
+                        new ConferenceCounters.Counts(0, 0)
+                                .minus(ConferenceCounters.contribution(stored.get("status"))));
+            }
+            update.ifPresent(value -> value.write(transaction));
+            transaction.delete(reference);
+            return null;
+        });
     }
 
     /** Réduit les copies embarquées, sans rapprochement par nom ni perte de la date Slack. */
@@ -315,11 +364,12 @@ public class TalkRepository {
                 if (reference instanceof String id && !id.isBlank()) {
                     DocumentSnapshot target = transaction
                             .get(firestore
-                                    .collection(getCollectionName().replaceFirst("talks$", "conferences"))
+                                    .collection(FirestoreCollections.conferences(collectionPrefix))
                                     .document(id))
                             .get();
-                    if (target.exists() && !Boolean.TRUE.equals(target.getBoolean("deleting")))
-                        conference = Map.of("id", id);
+                    // Keep existing attachments visible to the deletion worker, which detaches
+                    // talks and decrements counters atomically. This is not a new attachment.
+                    if (target.exists()) conference = Map.of("id", id);
                 }
                 if (conference == null && embedded.get("name") instanceof String name && !name.isBlank()) {
                     conference = Map.of("name", name.trim());

@@ -2385,6 +2385,8 @@ export interface components {
             cfpStatus?: string;
             /** Format: int32 */
             submittedTalksAmount?: number;
+            /** Format: int32 */
+            acceptedTalksAmount?: number;
             cfpOpeningDate?: string;
             cfpClosingDate?: string;
             type?: components["schemas"]["ConferenceType"];

@@ -2,6 +2,7 @@ package com.zenika.thezaurus.model;
 
 import jakarta.validation.constraints.NotBlank;
 
+@com.google.cloud.firestore.annotation.IgnoreExtraProperties
 public class Conference {
     private String id;
 
@@ -13,6 +14,7 @@ public class Conference {
     private Location location;
     private String cfpStatus;
     private int submittedTalksAmount;
+    private int acceptedTalksAmount;
     private String cfpOpeningDate;
     private String cfpClosingDate;
     private ConferenceType type;
@@ -80,6 +82,14 @@ public class Conference {
 
     public void setSubmittedTalksAmount(int submittedTalksAmount) {
         this.submittedTalksAmount = submittedTalksAmount;
+    }
+
+    public int getAcceptedTalksAmount() {
+        return acceptedTalksAmount;
+    }
+
+    public void setAcceptedTalksAmount(int acceptedTalksAmount) {
+        this.acceptedTalksAmount = acceptedTalksAmount;
     }
 
     public String getCfpOpeningDate() {

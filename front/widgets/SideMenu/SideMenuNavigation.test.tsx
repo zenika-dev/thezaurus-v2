@@ -9,7 +9,11 @@ vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => 
 vi.mock("next-auth/react", () => ({ useSession: () => ({ data: { user: { roles: ["ADMIN"] } } }) }));
 vi.mock("next-themes", () => ({ useTheme: () => ({ resolvedTheme: "light", setTheme: vi.fn() }) }));
 
-const links = [{ label: "Talks", path: "/talks" }];
+const links = [
+  { label: "Talks", path: "/talks" },
+  { label: "Conférences", path: "/conferences" },
+  { label: "Statistiques", path: "/conferences/statistics" },
+];
 
 async function navigateFromMobileMenu(label: string) {
   fireEvent.click(screen.getByRole("button", { name: "Ouvrir la navigation" }));
@@ -52,6 +56,7 @@ afterEach(() => {
 describe.each([false, true])("real mobile menu with Navigation API: %s", (modern) => {
   it.each([
     ["Talks", "/talks"],
+    ["Statistiques", "/conferences/statistics"],
     ["Mon profil", "/profile"],
     ["Administration", "/admin"],
   ])("checks %s before Next receives the navigation, and confirms only once", async (label, path) => {
@@ -77,6 +82,14 @@ describe.each([false, true])("real mobile menu with Navigation API: %s", (modern
     expect(router.push).toHaveBeenCalledExactlyOnceWith(path);
     expect(confirm).toHaveBeenCalledTimes(2);
   });
+});
+
+it("met en évidence uniquement Statistiques sur sa page", async () => {
+  window.history.replaceState({}, "", "/conferences/statistics");
+  render(<SideMenuClient navLinks={links} />);
+  fireEvent.click(screen.getByRole("button", { name: "Ouvrir la navigation" }));
+  expect(await screen.findByRole("button", { name: "Statistiques" })).toHaveAttribute("aria-current", "page");
+  expect(screen.getByRole("button", { name: "Conférences" })).not.toHaveAttribute("aria-current");
 });
 
 it("removes the guard after save and unmount without blocking a clean transition", async () => {

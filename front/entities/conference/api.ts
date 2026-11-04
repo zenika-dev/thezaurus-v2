@@ -36,6 +36,7 @@ export const mapBackendToFrontend = (c: BackendConference): ConferenceData => ({
   location: c.location ?? {},
   cfpStatus: toFrontendCfpStatus(c.cfpStatus),
   submittedTalksAmount: c.submittedTalksAmount ?? 0,
+  acceptedTalksAmount: c.acceptedTalksAmount ?? 0,
   cfpOpeningDate: c.cfpOpeningDate,
   cfpClosingDate: c.cfpClosingDate,
   type: c.type ?? "Hors scope",
