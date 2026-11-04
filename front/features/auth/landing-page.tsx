@@ -19,10 +19,12 @@ interface LandingPageProps {
 export function LandingPage({ error }: LandingPageProps) {
   const { resolvedTheme, setTheme } = useTheme();
   return (
-    <div className="min-h-screen w-full bg-background text-text flex flex-col justify-between relative overflow-hidden font-sans font-normal">
+    <div className="h-full min-h-0 w-full bg-background text-text flex flex-col justify-between relative overflow-x-hidden overflow-y-auto font-sans font-normal">
       {/* Decorative Background Glows */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-3xl -z-10"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-3xl -z-10"></div>
+      <div aria-hidden="true" className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-3xl -z-10"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-3xl -z-10"></div>
+      </div>
 
       {/* Header */}
       <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between z-10">
