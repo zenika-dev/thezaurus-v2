@@ -1,6 +1,8 @@
 import { NextAuthOptions } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { authorizeLocalUser, isLocalAuthEnabled } from "./local-auth";
 import type { Role } from "@/shared/api";
 import { AuthError } from "./types";
 import { requestGoogleTokenRefresh } from "./google-token";
@@ -35,6 +37,12 @@ async function refreshGoogleTokens(token: JWT): Promise<JWT> {
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    ...(isLocalAuthEnabled() ? [CredentialsProvider({
+      id: "local",
+      name: "Développement local",
+      credentials: {},
+      authorize: authorizeLocalUser,
+    })] : []),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
@@ -48,8 +56,17 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, account }) {
+    async jwt({ token, account, user }) {
+      if (account?.provider === "local") {
+        return isLocalAuthEnabled()
+          ? { ...token, localAuth: true, roles: (user as typeof user & { roles: Role[] }).roles, error: undefined }
+          : { ...token, localAuth: true, roles: [], error: AuthError.REFRESH_ACCESS_TOKEN_ERROR };
+      }
+      if (token.localAuth && !account) {
+        return isLocalAuthEnabled() ? token : { ...token, roles: [], error: AuthError.REFRESH_ACCESS_TOKEN_ERROR };
+      }
       if (account) {
+        delete token.localAuth;
         if (account.id_token) {
           token.idToken = account.id_token;
         }

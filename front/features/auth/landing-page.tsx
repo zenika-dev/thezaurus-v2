@@ -2,7 +2,8 @@
 
 import { Button, IconButton } from "@mui/material";
 import { useTheme } from "next-themes";
-import { signIn } from "next-auth/react";
+import { getProviders, signIn } from "next-auth/react";
+import { useEffect, useState } from "react";
 import {
   BookOpen,
   SunMoon,
@@ -17,6 +18,14 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ error }: LandingPageProps) {
+  const [localAvailable, setLocalAvailable] = useState(false);
+  useEffect(() => {
+    let active = true;
+    getProviders().then((providers) => {
+      if (active) setLocalAvailable(Boolean(providers?.local));
+    }).catch(() => { /* Google remains available if provider discovery fails. */ });
+    return () => { active = false; };
+  }, []);
   const { resolvedTheme, setTheme } = useTheme();
   return (
     <div className="h-full min-h-0 w-full bg-background text-text flex flex-col justify-between relative overflow-x-hidden overflow-y-auto font-sans font-normal">
@@ -121,6 +130,11 @@ export function LandingPage({ error }: LandingPageProps) {
 
             {/* Google Authentication Button (géré par NextAuth) */}
             <div className="py-4 flex flex-col items-center justify-center min-h-[80px]">
+              {localAvailable && (
+                <Button onClick={() => signIn("local")} fullWidth variant="outlined">
+                  Connexion locale (développement)
+                </Button>
+              )}
               <Button
                 variant="outlined"
                 onClick={() => signIn("google")}
