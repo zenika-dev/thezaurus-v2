@@ -1,4 +1,5 @@
 "use client";
+import { CopyDetailLinkButton } from "@/shared/ui/CopyDetailLinkButton";
 
 import { useEffect, useId, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -93,6 +94,7 @@ export function BlogPostFormDialog({ post, defaultAuthor, defaultOffice, onClose
           finally { setIsDeleting(false); }
         }}>Supprimer</Button>}
         <div className="flex-1" />
+        {post && <CopyDetailLinkButton path="/blog-posts" parameter="post" id={post.id} />}
         <Button onClick={close} disabled={pending}>Annuler</Button>
         <Button type="submit" form={formId} variant="contained" disabled={pending}>{post ? "Enregistrer" : "Créer le post"}</Button>
       </>}>

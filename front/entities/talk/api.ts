@@ -46,6 +46,11 @@ const toPayload = (t: TalkData): BackendTalk => ({
 });
 
 export const talkApi = {
+  getTalk: async (id: string): Promise<TalkData> => {
+    const res = await apiFetch(`/talks/${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error("Failed to fetch detail");
+    return mapBackendToFrontend(await res.json());
+  },
   getTalks: async (params?: PaginationParams): Promise<PagedResult<TalkData>> => {
     const searchParams = new URLSearchParams();
     if (params?.page !== undefined) searchParams.set("page", String(params.page));

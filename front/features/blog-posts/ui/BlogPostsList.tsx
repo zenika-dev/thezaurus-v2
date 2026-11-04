@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useDetailUrl } from "@/shared/lib/useDetailUrl";
+import { DetailUrlFeedback } from "@/shared/ui/DetailUrlFeedback";
+import { CopyDetailLinkButton } from "@/shared/ui/CopyDetailLinkButton";
+import { postApi } from "@/entities/post";
 import { BlogPostStatus } from "@/shared/api";
 import { ContributionFilters, PaginationBar, Surface } from "@/shared/ui";
 import { SpeakerChip } from "@/entities/user";
@@ -17,7 +20,6 @@ const BlogPostDetailsDialog = dynamic(
 );
 
 export function BlogPostsList() {
-  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const {
     page,
     pageSize,
@@ -33,7 +35,8 @@ export function BlogPostsList() {
 
   const { posts, total, totalPages, updatePost, deletePost } = usePosts(apiParams);
 
-  const selectedPost = posts.find((p) => p.id === selectedPostId) ?? null;
+  const detail = useDetailUrl("post", "posts", posts, postApi.getPost);
+  const { selected: selectedPost, selectedId: selectedPostId, select: setSelectedPostId } = detail;
 
   return (
     <div className="flex flex-col flex-1">
@@ -60,8 +63,9 @@ export function BlogPostsList() {
           >
             <div className="flex justify-between items-start gap-2">
               <button type="button" onClick={() => setSelectedPostId(post.id)} className="font-bold text-text text-left bg-transparent border-0 p-0 cursor-pointer wrap-anywhere">{post.title}</button>
-              <div className="shrink-0">
+              <div className="shrink-0 flex items-center gap-1">
                 <StatusTag status={post.status} />
+                <CopyDetailLinkButton path="/blog-posts" parameter="post" id={post.id} iconOnly label={`Copier le lien vers l’article : ${post.title}`} />
               </div>
             </div>
 
@@ -105,9 +109,10 @@ export function BlogPostsList() {
         label="Articles par page :"
       />
 
+      <DetailUrlFeedback loading={detail.loading} error={detail.error} onClose={detail.close} onRetry={detail.retry} />
       <BlogPostDetailsDialog
         post={selectedPost}
-        open={!!selectedPostId}
+        open={!!selectedPostId && !!selectedPost}
         onClose={() => setSelectedPostId(null)}
         onUpdate={updatePost}
         onDelete={deletePost}

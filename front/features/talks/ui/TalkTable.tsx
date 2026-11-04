@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useDetailUrl } from "@/shared/lib/useDetailUrl";
+import { DetailUrlFeedback } from "@/shared/ui/DetailUrlFeedback";
+import { CopyDetailLinkButton } from "@/shared/ui/CopyDetailLinkButton";
+import { talkApi } from "@/entities/talk";
 import { ContributionFilters, PaginationBar } from "@/shared/ui";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -24,7 +27,6 @@ const TalkDetailsDialog = dynamic(
 );
 
 export function TalkTable() {
-  const [selectedTalkId, setSelectedTalkId] = useState<string | null>(null);
   const {
     page,
     pageSize,
@@ -40,7 +42,8 @@ export function TalkTable() {
 
   const { talks, total, totalPages, updateTalk, deleteTalk } = useTalks(apiParams);
 
-  const selectedTalk = talks.find((talkItem) => talkItem.id === selectedTalkId) ?? null;
+  const detail = useDetailUrl("talk", "talks", talks, talkApi.getTalk);
+  const { selected: selectedTalk, selectedId: selectedTalkId, select: setSelectedTalkId } = detail;
 
   const handleUpdate = updateTalk;
   const handleDelete = deleteTalk;
@@ -121,6 +124,7 @@ export function TalkTable() {
                   <TableCell><StatusTag status={talk.status} /></TableCell>
                   <TableCell align="center"><VisibilityTag visibility={talk.visibility} /></TableCell>
                   <TableCell align="center">
+                    <CopyDetailLinkButton path="/talks" parameter="talk" id={talk.id} iconOnly label={`Copier le lien vers le talk : ${talk.title}`} />
                     {(talk.status === "ACCEPTED" || talk.status === "DONE") && (
                       <button
                         onClick={() => setSelectedTalkId(talk.id)}
@@ -150,6 +154,7 @@ export function TalkTable() {
         label="Talks par page :"
       />
 
+      <DetailUrlFeedback loading={detail.loading} error={detail.error} onClose={detail.close} onRetry={detail.retry} />
       <TalkDetailsDialog
         talk={selectedTalk}
         open={!!selectedTalkId}
