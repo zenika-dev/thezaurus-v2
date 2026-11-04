@@ -31,11 +31,11 @@ public class MessageTemplateCatalogResource {
                                 new TemplateToken("talkTitle", "Titre du talk"),
                                 new TemplateToken("talkDate", "Date du talk"),
                                 new TemplateToken("conferenceName", "Conférence"),
-                                new TemplateToken("talksUrl", "Lien vers Thezaurus")),
+                                new TemplateToken("talksUrl", "Lien vers le talk")),
                         ReminderTemplateMetadata.CONDITIONS,
-                        List.of(new TemplateLink("talksUrl", "Lien vers Thezaurus", "Ouvrir Thezaurus")),
+                        List.of(new TemplateLink("talksUrl", "Lien vers le talk", "Ouvrir le talk")),
                         "{{#hasConference}}\nLors de {{conferenceName}}\n{{/hasConference}}\n{{^hasConference}}\nMerci pour votre talk {{talkTitle}}\n{{/hasConference}}",
-                        "Date et conférence absentes donnent un texte vide. Une audience de zéro est renseignée. Le lien ouvre la liste des talks.",
+                        "Date et conférence absentes donnent un texte vide. Une audience de zéro est renseignée. Le lien ouvre directement le talk concerné.",
                         new MessageTemplateDefinition.PreviewContext(
                                 "Talk utilisé pour l’aperçu", "/api/admin/reminder-template/contexts")),
                 new MessageTemplateDefinition(

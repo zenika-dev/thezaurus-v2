@@ -57,7 +57,19 @@ class ReminderTemplateRendererTest {
         assertFalse(result.bodyHtml().contains("<script>"));
         assertTrue(result.bodyHtml().contains("16 septembre 2026"));
         assertTrue(result.bodyHtml().contains("Java &amp; friends"));
-        assertTrue(result.bodyHtml().contains("https://thezaurus.example/talks"));
+        assertTrue(result.bodyHtml().contains("href=\"https://thezaurus.example/talks?talk=one\""));
+    }
+
+    @Test
+    void directLinkEncodesTheIdentifierAndPreservesTheApplicationBasePath() {
+        renderer.publicUrl = "https://thezaurus.example/app/";
+        var result = renderer.render(
+                "Sujet", "<a href=\"{{talksUrl}}\">Ouvrir le talk</a>", new Talk("id &?#é", "Titre", "Description"));
+        assertEquals(
+                "https://thezaurus.example/app/talks?talk=id+%26%3F%23%C3%A9",
+                org.jsoup.Jsoup.parseBodyFragment(result.bodyHtml())
+                        .selectFirst("a")
+                        .attr("href"));
     }
 
     @Test
