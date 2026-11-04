@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useDetailUrl } from "@/shared/lib/useDetailUrl";
 import { DetailUrlFeedback } from "@/shared/ui/DetailUrlFeedback";
 import { CopyDetailLinkButton } from "@/shared/ui/CopyDetailLinkButton";
@@ -94,13 +96,13 @@ export function TalkTable() {
               talks.map((talk) => (
                 <TableRow key={talk.id} hover>
                   <TableCell>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTalkId(talk.id)}
+                    <Link
+                      href={detail.href(talk.id)}
+                      scroll={false}
                       className="text-link underline font-medium hover:text-link text-sm cursor-pointer text-left bg-transparent border-0 p-0"
                     >
                       {talk.title}
-                    </button>
+                    </Link>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -126,15 +128,16 @@ export function TalkTable() {
                   <TableCell align="center">
                     <CopyDetailLinkButton path="/talks" parameter="talk" id={talk.id} iconOnly label={`Copier le lien vers le talk : ${talk.title}`} />
                     {(talk.status === "ACCEPTED" || talk.status === "DONE") && (
-                      <button
-                        onClick={() => setSelectedTalkId(talk.id)}
+                      <Link
+                        href={detail.href(talk.id)}
+                        scroll={false}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs
                           border border-border text-text bg-surface font-sans
                           hover:bg-primary/10 hover:text-link transition-colors cursor-pointer"
                       >
                         <Eye size={12} />
                         <span>Détail</span>
-                      </button>
+                      </Link>
                     )}
                   </TableCell>
                 </TableRow>

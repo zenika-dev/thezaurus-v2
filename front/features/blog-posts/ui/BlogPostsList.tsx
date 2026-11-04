@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useDetailUrl } from "@/shared/lib/useDetailUrl";
 import { DetailUrlFeedback } from "@/shared/ui/DetailUrlFeedback";
 import { CopyDetailLinkButton } from "@/shared/ui/CopyDetailLinkButton";
@@ -62,7 +64,7 @@ export function BlogPostsList() {
               transition-colors duration-200 hover:bg-surface-muted min-h-[110px]"
           >
             <div className="flex justify-between items-start gap-2">
-              <button type="button" onClick={() => setSelectedPostId(post.id)} className="font-bold text-text text-left bg-transparent border-0 p-0 cursor-pointer wrap-anywhere">{post.title}</button>
+              <Link href={detail.href(post.id)} scroll={false} className="font-bold text-text text-left bg-transparent border-0 p-0 cursor-pointer wrap-anywhere">{post.title}</Link>
               <div className="shrink-0 flex items-center gap-1">
                 <StatusTag status={post.status} />
                 <CopyDetailLinkButton path="/blog-posts" parameter="post" id={post.id} iconOnly label={`Copier le lien vers l’article : ${post.title}`} />

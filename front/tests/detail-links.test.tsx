@@ -12,6 +12,21 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 it.each([['talk', 'talks'], ['post', 'posts'], ['conference', 'conferences']])(
+  "builds a native %s destination with the PR parameter and current filters", (parameter, scope) => {
+    setMockSearchParams(`page=3&personal=true&${parameter}=old`);
+    const fetchDetail = vi.fn();
+    const { result } = renderHook(() => useDetailUrl(parameter, scope, [{ id: "old" }], fetchDetail), { wrapper });
+    const url = new URL(result.current.href("id & other"), "http://localhost");
+    expect(url.searchParams.get(parameter)).toBe("id & other");
+    expect(url.searchParams.get("page")).toBe("3");
+    expect(url.searchParams.get("personal")).toBe("true");
+    expect(url.searchParams.has("detail")).toBe(false);
+    expect(result.current.selectedId).toBe("old");
+    expect(fetchDetail).not.toHaveBeenCalled();
+  },
+);
+
+it.each([['talk', 'talks'], ['post', 'posts'], ['conference', 'conferences']])(
   "opens a %s outside the current list and closes without losing filters", async (parameter, scope) => {
     setMockSearchParams(`page=3&personal=true&${parameter}=outside`);
     const fetchDetail = vi.fn().mockResolvedValue({ id: "outside", title: "Detail" });

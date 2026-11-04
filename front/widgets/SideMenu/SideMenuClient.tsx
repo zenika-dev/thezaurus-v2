@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { useGuardedPush } from "@/shared/lib/navigation-guard";
 import { BarChart3, Calendar, CalendarDays, MicVocal, PenLine } from "lucide-react";
 import { SideMenuView } from "./SideMenuView";
 import { type NavItemConfig } from "./SideMenuNavItem";
@@ -27,7 +26,6 @@ interface SideMenuClientProps {
 export function SideMenuClient({ navLinks }: SideMenuClientProps) {
   const [open, setOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const push = useGuardedPush();
   const pathname = usePathname();
 
   const activeLink = navLinks
@@ -38,7 +36,8 @@ export function SideMenuClient({ navLinks }: SideMenuClientProps) {
     icon: iconMap[link.path] ?? Calendar,
     label: link.label,
     active: activeLink?.path === link.path,
-    onClick: () => { push(link.path); setMobileOpen(false); },
+    href: link.path,
+    onClick: () => setMobileOpen(false),
   }));
 
   return (

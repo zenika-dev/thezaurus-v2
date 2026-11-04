@@ -18,15 +18,17 @@ export function useDetailUrl<T extends { id: string }>(
     enabled: !!selectedId && !listedItem,
     retry: false,
   });
-  const select = (id: string | null) => {
+  const href = (id: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
     if (id) params.set(parameter, id); else params.delete(parameter);
     const query = params.toString();
-    router.push(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+    return `${pathname}${query ? `?${query}` : ""}`;
   };
+  const select = (id: string | null) => router.push(href(id), { scroll: false });
   return {
     selected: listedItem ?? detail.data ?? null,
     selectedId,
+    href,
     select,
     close: () => select(null),
     loading: !!selectedId && !listedItem && detail.isPending,

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useConferences } from "@/features/conferences/model";
 import {
   ConferenceData,
@@ -153,9 +155,9 @@ export function ConferencesList() {
               >
                 <div className="flex flex-wrap justify-between items-start gap-4">
                   <div className="flex min-w-0 flex-1 flex-col gap-2">
-                    <button type="button" onClick={() => detail.select(conference.id)} className="font-bold text-text wrap-anywhere text-left cursor-pointer bg-transparent border-0 p-0">
+                    <Link href={detail.href(conference.id)} scroll={false} className="font-bold text-text wrap-anywhere text-left cursor-pointer bg-transparent border-0 p-0">
                       {conference.name}
-                    </button>
+                    </Link>
                     <div className="flex flex-col gap-1.5 text-xs text-text-muted">
                       <span className="flex items-center gap-1.5">
                         <MapPin
