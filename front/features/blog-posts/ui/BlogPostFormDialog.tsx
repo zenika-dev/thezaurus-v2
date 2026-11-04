@@ -9,6 +9,7 @@ import { DatePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { DatePickerProvider, FormDialog } from "@/shared/ui";
+import { useUnsavedChanges } from "@/shared/lib/useUnsavedChanges";
 import { isValidUrl } from "@/shared/lib";
 import { agencyLabels } from "@/shared/lib/offices";
 import { ContributorAutocomplete, type ContributorFormData } from "@/entities/user";
@@ -33,7 +34,7 @@ export function BlogPostFormDialog({ post, defaultAuthor, defaultOffice, onClose
   const [isDeleting, setIsDeleting] = useState(false);
   const [writersEdited, setWritersEdited] = useState(false);
   const [officeEdited, setOfficeEdited] = useState(false);
-  const { control, register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<BlogPostFormData>({
+  const { control, register, handleSubmit, resetField, formState: { errors, isSubmitting, isDirty } } = useForm<BlogPostFormData>({
     resolver: zodResolver(blogPostFormSchema),
     defaultValues: {
       title: post?.title ?? "",
@@ -49,21 +50,23 @@ export function BlogPostFormDialog({ post, defaultAuthor, defaultOffice, onClose
     },
   });
   const pending = isSubmitting || isDeleting;
+  const requestClose = useUnsavedChanges(isDirty, pending);
+  const close = () => requestClose(onClose);
   const status = useWatch({ control, name: "status" });
 
   useEffect(() => {
     if (post) return;
     if (defaultAuthor && !writersEdited) {
-      setValue("writers", [defaultAuthor]);
+      resetField("writers", { defaultValue: [defaultAuthor] });
     }
-  }, [post, defaultAuthor, writersEdited, setValue]);
+  }, [post, defaultAuthor, writersEdited, resetField]);
 
   useEffect(() => {
     if (post) return;
     if (defaultOffice && !officeEdited) {
-      setValue("office", defaultOffice);
+      resetField("office", { defaultValue: defaultOffice });
     }
-  }, [post, defaultOffice, officeEdited, setValue]);
+  }, [post, defaultOffice, officeEdited, resetField]);
 
   const save = handleSubmit(async (values) => {
     setSaveError(null);
@@ -78,7 +81,7 @@ export function BlogPostFormDialog({ post, defaultAuthor, defaultOffice, onClose
   });
 
   return <DatePickerProvider>
-    <FormDialog open onClose={() => { if (!pending) onClose(); }} maxWidth="md" titleId={titleId}
+    <FormDialog open onClose={close} maxWidth="md" titleId={titleId}
       title={post ? "Détails de l’article de blog" : "Nouvel article de blog"}
       showCloseButton={!pending} customActions actions={<>
         {post && onDelete && <Button color="error" disabled={pending} onClick={async () => {
@@ -90,7 +93,7 @@ export function BlogPostFormDialog({ post, defaultAuthor, defaultOffice, onClose
           finally { setIsDeleting(false); }
         }}>Supprimer</Button>}
         <div className="flex-1" />
-        <Button onClick={onClose} disabled={pending}>Annuler</Button>
+        <Button onClick={close} disabled={pending}>Annuler</Button>
         <Button type="submit" form={formId} variant="contained" disabled={pending}>{post ? "Enregistrer" : "Créer le post"}</Button>
       </>}>
         <form id={formId} onSubmit={save} noValidate className="flex flex-col gap-4 pt-2">

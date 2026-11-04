@@ -22,6 +22,7 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { ExternalLinkIcon, Library } from "lucide-react";
 import dayjs, { type Dayjs } from "dayjs";
 import "dayjs/locale/fr";
+import { useUnsavedChanges } from "@/shared/lib/useUnsavedChanges";
 import { isValidUrl } from "@/shared/lib";
 import {
   conferenceCFPStatusConfig,
@@ -132,7 +133,7 @@ export function CreateConferenceDialog({
     control,
     watch,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<ConferenceFormData>({
     resolver: zodResolver(conferenceFormSchema),
     defaultValues: {
@@ -145,6 +146,9 @@ export function CreateConferenceDialog({
       reach: undefined,
     },
   });
+
+  const requestClose = useUnsavedChanges(open && (isDirty ||
+    Boolean(date || dateEnd || dateMonth || cfpOpeningDate || cfpClosingDate || locationInputValue)), open && isSubmitting);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const cfpLink = watch("cfpLink");
@@ -310,7 +314,7 @@ export function CreateConferenceDialog({
     <DatePickerProvider>
       <FormDialog
         open={open}
-        onClose={() => { if (!isSubmitting) handleClose(); }}
+        onClose={() => requestClose(handleClose)}
         showCloseButton={!isSubmitting}
         maxWidth="md"
         titleId={DIALOG_TITLE_ID}
@@ -339,7 +343,7 @@ export function CreateConferenceDialog({
         formId="create-conference-form"
         customActions
         actions={<>
-          <Button variant="outlined" disabled={isSubmitting} onClick={handleClose}>Annuler</Button>
+          <Button variant="outlined" disabled={isSubmitting} onClick={() => requestClose(handleClose)}>Annuler</Button>
           <div className="flex-1" />
           <Button variant="contained" type="submit" form="create-conference-form" disabled={isSubmitting}
             startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}>
