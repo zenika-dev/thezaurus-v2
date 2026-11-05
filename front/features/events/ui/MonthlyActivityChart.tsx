@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart } from "@mui/x-charts/BarChart";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import {
   visibilityColors,
   type MonthlyActivity,
@@ -14,6 +15,7 @@ interface MonthlyActivityChartProps {
 }
 
 export function MonthlyActivityChart({ monthly, filter }: MonthlyActivityChartProps) {
+  const mobile = useMediaQuery("(max-width: 599px)");
 
   const series = [];
   if (filter !== "internal") {
@@ -34,18 +36,18 @@ export function MonthlyActivityChart({ monthly, filter }: MonthlyActivityChartPr
   }
 
   return (
-    <div className="overflow-x-auto" role="region" aria-label="Activité mensuelle, graphique défilant" tabIndex={0}>
-      <div className="min-w-[640px]">
-        <BarChart
-          skipAnimation
-          height={340}
-          series={series}
-          xAxis={[{ scaleType: "band", data: [...MonthLabel] }]}
-          grid={{ horizontal: true }}
-          margin={{ top: 16, bottom: 24, left: 8, right: 8 }}
-          borderRadius={8}
-        />
-      </div>
+    <div className="min-w-0" role="region" aria-label="Activité mensuelle">
+      <BarChart
+        skipAnimation
+        height={mobile ? 560 : 340}
+        layout={mobile ? "horizontal" : "vertical"}
+        series={series}
+        xAxis={mobile ? [{ min: 0 }] : [{ scaleType: "band", data: [...MonthLabel] }]}
+        yAxis={mobile ? [{ scaleType: "band", data: [...MonthLabel] }] : undefined}
+        grid={mobile ? { vertical: true } : { horizontal: true }}
+        margin={{ top: 16, bottom: 24, left: 8, right: 8 }}
+        borderRadius={8}
+      />
     </div>
   );
 }

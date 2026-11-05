@@ -193,7 +193,20 @@ describe("Mes articles", () => {
 });
 
 describe("Mes talks", () => {
-  it.each(Role)("filtre les speakers pour %s et ne confond pas nom et email", async (role) => {
+  it.each(Role.flatMap((role) => [
+    { role, mobile: false },
+    { role, mobile: true },
+  ]))("filtre les speakers pour $role (mobile : $mobile) et ne confond pas nom et email", async ({ role, mobile }) => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: mobile && query === "(max-width: 767px)",
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
     resetMockSearchParams();
     setupTalksFetch("alice@zenika.com");
     const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
@@ -208,6 +221,14 @@ describe("Mes talks", () => {
     );
     const user = userEvent.setup();
     expect(await screen.findByText("Autre talk")).toBeInTheDocument();
+    if (mobile) {
+      expect(screen.getByRole("list", { name: "Talks" })).toBeInTheDocument();
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      expect(screen.getAllByText("Conférence")).toHaveLength(2);
+    } else {
+      expect(screen.getByRole("table")).toBeInTheDocument();
+      expect(screen.queryByRole("list", { name: "Talks" })).not.toBeInTheDocument();
+    }
 
     const personalBtn = await screen.findByRole("button", { name: "Mes talks" });
     await user.click(personalBtn);

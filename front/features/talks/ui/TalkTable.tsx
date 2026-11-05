@@ -13,6 +13,7 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { Surface } from "@/shared/ui";
 import { Eye } from "lucide-react";
 import { TalkStatus } from "@/shared/api";
@@ -29,6 +30,7 @@ const TalkDetailsDialog = dynamic(
 );
 
 export function TalkTable() {
+  const mobile = useMediaQuery("(max-width: 767px)");
   const {
     page,
     pageSize,
@@ -65,7 +67,49 @@ export function TalkTable() {
         />
       </div>
 
-      <TableContainer
+      {mobile ? <div className="mb-4">
+        {talks.length === 0 ? (
+          <Surface className="p-4 text-center text-text-muted">
+            Aucun talk ne correspond à ces critères.
+          </Surface>
+        ) : (
+          <ul aria-label="Talks" className="list-none m-0 p-0 flex flex-col gap-3">
+            {talks.map((talk) => (
+              <Surface component="li" key={talk.id} className="p-4 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTalkId(talk.id)}
+                  className="text-link underline font-medium cursor-pointer text-left bg-transparent border-0 p-0 wrap-anywhere"
+                >
+                  {talk.title}
+                </button>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <StatusTag status={talk.status} />
+                  <VisibilityTag visibility={talk.visibility} />
+                </div>
+                <dl className="m-0 mt-3 flex flex-col gap-3 text-sm">
+                  <div>
+                    <dt className="text-text-muted">Speakers</dt>
+                    <dd className="m-0 mt-1 flex flex-wrap gap-1">
+                      {talk.speakers?.length ? talk.speakers.map((speaker, index) => (
+                        <SpeakerChip key={index} name={speaker.name} email={speaker.email} size="small" className="max-w-full" />
+                      )) : "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-text-muted">Agence</dt>
+                    <dd className="m-0">{agencyLabels[talk.office] || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-text-muted">Conférence</dt>
+                    <dd className="m-0 wrap-anywhere">{talk.conference?.name || "—"}</dd>
+                  </div>
+                </dl>
+              </Surface>
+            ))}
+          </ul>
+        )}
+      </div> : <TableContainer
         component={Surface}
         variant="outlined"
         className="overflow-x-auto mb-4"
@@ -145,9 +189,10 @@ export function TalkTable() {
             )}
           </TableBody>
         </Table>
-      </TableContainer>
+      </TableContainer>}
 
       <PaginationBar
+        className="max-sm:-mx-4 max-sm:px-4 sm:max-lg:-mx-6 sm:max-lg:px-6"
         page={page}
         pageSize={pageSize}
         total={total}
