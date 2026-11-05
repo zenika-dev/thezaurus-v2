@@ -13,7 +13,6 @@ import com.zenika.thezaurus.visuals.model.ConferenceInput;
 import com.zenika.thezaurus.visuals.model.NightClazzVisualRequest;
 import com.zenika.thezaurus.visuals.model.PartnerInput;
 import com.zenika.thezaurus.visuals.model.PersonInput;
-import com.zenika.thezaurus.visuals.model.TalkItemInput;
 import com.zenika.thezaurus.visuals.model.TalkVisualRequest;
 import com.zenika.thezaurus.visuals.model.VisualTemplate;
 import com.zenika.thezaurus.visuals.model.VisualType;
@@ -64,7 +63,7 @@ class TemplateServiceTest {
     }
 
     @Test
-    void shouldRouteTalkTemplatesBasedOnSpeakersCountAndTalksCount() {
+    void shouldRouteTalkTemplatesBasedOnSpeakersCount() {
         TalkVisualRequest single =
                 new TalkVisualRequest("Quarkus in Action", "Devoxx France", List.of(new PersonInput("Jean Dupont")));
         assertEquals(
@@ -89,15 +88,6 @@ class TemplateServiceTest {
         assertEquals(
                 TemplateService.DEFAULT_TALK_TRIO_TEMPLATE,
                 templateService.resolveTalkTemplate(trio).name());
-
-        TalkVisualRequest twoTalks = TalkVisualRequest.forTwoTalks(
-                new ConferenceInput("Devoxx France"),
-                List.of(
-                        new TalkItemInput("Premier Talk", "Jean Dupont"),
-                        new TalkItemInput("Second Talk", "Marie Curie")));
-        assertEquals(
-                TemplateService.DEFAULT_TALK_TWO_TALKS_TEMPLATE,
-                templateService.resolveTalkTemplate(twoTalks).name());
     }
 
     @Test
@@ -188,20 +178,6 @@ class TemplateServiceTest {
         assertFalse(talkPrompt.contains("%TITLE%"));
         assertFalse(talkPrompt.contains("%NAME%"));
         assertFalse(talkPrompt.contains("%CONFERENCE%"));
-
-        TalkVisualRequest twoTalksRequest = TalkVisualRequest.forTwoTalks(
-                new ConferenceInput("Devoxx France 2026"),
-                List.of(
-                        new TalkItemInput("Talk 1 : Quarkus", "Jean-Phi"),
-                        new TalkItemInput("Talk 2 : Gemini", "Marie Curie")));
-        VisualTemplate twoTalksTemplate = templateService.resolveTalkTemplate(twoTalksRequest);
-        String twoTalksPrompt = templateService.buildTalkPrompt(twoTalksTemplate, twoTalksRequest);
-        assertTrue(twoTalksPrompt.contains("Talk 1 : Quarkus"));
-        assertTrue(twoTalksPrompt.contains("Talk 2 : Gemini"));
-        assertTrue(twoTalksPrompt.contains("Jean-Phi"));
-        assertTrue(twoTalksPrompt.contains("Marie Curie"));
-        assertFalse(twoTalksPrompt.contains("%TITLE2%"));
-        assertFalse(twoTalksPrompt.contains("%NAME2%"));
 
         BlogVisualRequest blogRequest =
                 new BlogVisualRequest("Découvrir Google GenAI en Java", List.of(new PersonInput("Jean-Phi")));
