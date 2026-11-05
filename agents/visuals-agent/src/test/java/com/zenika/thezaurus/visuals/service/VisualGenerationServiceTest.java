@@ -67,7 +67,7 @@ class VisualGenerationServiceTest {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<InlineMediaPart>> mediaCaptor = ArgumentCaptor.forClass(List.class);
         verify(genAiVisualClient).generateImage(eq("gemini-2.5-flash-image"), anyString(), mediaCaptor.capture());
-        assertEquals(1, mediaCaptor.getValue().size());
+        assertEquals(2, mediaCaptor.getValue().size(), "Doit inclure le template + l'icône de personne par défaut");
     }
 
     @Test
