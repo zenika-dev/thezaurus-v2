@@ -74,7 +74,7 @@
       "TITLE",
       "PHOTO"
     ],
-    "prompt": "I would like to create an image from the template image available in this file %TEMPLATE% integrating these elements: - replace 'Prénom' and 'Nom' by %NAME% - replace 'Titre blog post' by %TITLE%. Please center this title and use 2 lines at maximum. - replace the pink square by the photo from this %PHOTO% file if provided. Please don't modify the name of the author and the title of the blog post."
+    "prompt": "Strictly edit the base template image provided in %TEMPLATE% while preserving 100% of its original layout, white background, decorative icons, 'A découvrir sur le blog Zenika' text, Zenika logo, bottom pink bar, and 4:5 portrait aspect ratio (do NOT redesign or change the layout). Perform only these exact replacements on %TEMPLATE%: - replace 'Prénom' and 'Nom' by '%NAME%' - replace 'Titre blog post' by '%TITLE%' (centered at the top, bold black font, 2 lines maximum) - replace the pink rounded square on the right by the author photo from %PHOTO%. Please don't modify the name of the author, the title of the blog post, or the template layout."
   },
   {
     "name": "generate-image-2-blog-post",
@@ -88,7 +88,7 @@
       "PHOTO",
       "PHOTO2"
     ],
-    "prompt": "I would like to create an image from the template image available in this file %TEMPLATE% integrating these elements: - replace the text 'Name' by %NAME% - replace the text 'Name2' by %NAME2% - replace the text 'Post title' by %TITLE%. Please center this title and use 2 lines at maximum. - replace the first white square by the first author photo from %PHOTO% if provided. - replace the second white square by the second author photo from %PHOTO2% if provided. Please don't modify the names of the authors and the title of the blog post and the ratio of the photos."
+    "prompt": "Strictly edit the base template image provided in %TEMPLATE% while preserving 100% of its original layout, white background, decorative icons, 'A découvrir sur le blog Zenika' text, Zenika logo, bottom pink bar, and 4:5 portrait aspect ratio (do NOT redesign or change the layout). Perform only these exact replacements on %TEMPLATE%: - replace the top black text 'Post title' by '%TITLE%' (centered at the top, bold black font, 2 lines maximum). - replace the first pink text 'Name' (on the left of the top square frame) by '%NAME%' (keeping the same pink color and font). - replace the second pink text 'Name2' (on the left of the bottom square frame) by '%NAME2%' (keeping the same pink color and font). - insert the first author photo from %PHOTO% inside the top rounded square frame with the pink outline (located on the right of '%NAME%'). - insert the second author photo from %PHOTO2% inside the bottom rounded square frame with the pink outline (located on the right of '%NAME2%'). Please don't modify the names of the authors, the title of the blog post, or the template layout."
   },
   {
     "name": "generate-image-nightclazz",

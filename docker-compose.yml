@@ -64,3 +64,25 @@ services:
       - api
     x-google-cloudrun:
       ingress-container: true
+
+  # Agent Génération de Visuels (Quarkus + Google GenAI)
+  visuals-agent:
+    build:
+      context: ./agents/visuals-agent
+      dockerfile: src/main/docker/Dockerfile.jvm
+    container_name: thezaurus-visuals-agent
+    ports:
+      - "${VISUALS_AGENT_PORT:-8082}:8082"
+    environment:
+      - VISUALS_AGENT_PORT=8082
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash-image}
+      - GEMINI_TIMEOUT_MS=${GEMINI_TIMEOUT_MS:-120000}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI:-false}
+      - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID:-}
+      - GCP_REGION=${GCP_REGION:-europe-west1}
+      - VISUALS_TEMPLATES_DIR=${VISUALS_TEMPLATES_DIR:-}
+      - VISUALS_SSE_HEARTBEAT_MS=${VISUALS_SSE_HEARTBEAT_MS:-3000}
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
+    volumes:
+      - ${GCLOUD_ADC:-${HOME}/.config/gcloud/application_default_credentials.json}:/tmp/credentials.json:ro

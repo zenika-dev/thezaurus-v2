@@ -30,15 +30,33 @@ public class PartnerInputDeserializer extends JsonDeserializer<PartnerInput> {
 
             String logo = null;
             if (node.hasNonNull("logoBase64")) {
-                logo = node.get("logoBase64").asText().trim();
+                logo = sanitizeLogo(node.get("logoBase64").asText());
             } else if (node.hasNonNull("logo")) {
-                logo = node.get("logo").asText().trim();
+                JsonNode logoNode = node.get("logo");
+                if (logoNode.isObject()) {
+                    if (logoNode.hasNonNull("base64")) {
+                        logo = sanitizeLogo(logoNode.get("base64").asText());
+                    }
+                    if (logo == null && logoNode.hasNonNull("url")) {
+                        logo = sanitizeLogo(logoNode.get("url").asText());
+                    }
+                } else {
+                    logo = sanitizeLogo(logoNode.asText());
+                }
             } else if (node.hasNonNull("partnerLogoBase64")) {
-                logo = node.get("partnerLogoBase64").asText().trim();
+                logo = sanitizeLogo(node.get("partnerLogoBase64").asText());
             }
 
             return new PartnerInput(name, logo);
         }
         return null;
+    }
+
+    private static String sanitizeLogo(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return (trimmed.isEmpty() || "string".equalsIgnoreCase(trimmed)) ? null : trimmed;
     }
 }

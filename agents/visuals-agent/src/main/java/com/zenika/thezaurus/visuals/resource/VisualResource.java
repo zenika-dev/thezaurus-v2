@@ -20,8 +20,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
+import java.util.Base64;
 import java.util.List;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
 @Path("/visuals")
@@ -63,6 +65,38 @@ public class VisualResource {
     public RestResponse<VisualGenerationResponse> generateNightClazzVisual(@Valid NightClazzVisualRequest request) {
         VisualGenerationResponse response = visualGenerationService.generateNightClazzVisual(request);
         return RestResponse.ok(response);
+    }
+
+    @POST
+    @Path("/talks/image")
+    @Produces("image/png")
+    @RunOnVirtualThread
+    public RestResponse<byte[]> generateTalkVisualImage(@Valid TalkVisualRequest request) {
+        return toBinaryImageResponse(visualGenerationService.generateTalkVisual(request));
+    }
+
+    @POST
+    @Path("/blogs/image")
+    @Produces("image/png")
+    @RunOnVirtualThread
+    public RestResponse<byte[]> generateBlogVisualImage(@Valid BlogVisualRequest request) {
+        return toBinaryImageResponse(visualGenerationService.generateBlogVisual(request));
+    }
+
+    @POST
+    @Path("/nightclazz/image")
+    @Produces("image/png")
+    @RunOnVirtualThread
+    public RestResponse<byte[]> generateNightClazzVisualImage(@Valid NightClazzVisualRequest request) {
+        return toBinaryImageResponse(visualGenerationService.generateNightClazzVisual(request));
+    }
+
+    private RestResponse<byte[]> toBinaryImageResponse(VisualGenerationResponse response) {
+        byte[] imageBytes = Base64.getDecoder().decode(response.imageBase64());
+        String mimeType = response.mimeType() != null ? response.mimeType() : "image/png";
+        return ResponseBuilder.ok(imageBytes, mimeType)
+                .header("X-Visual-Template", response.templateName())
+                .build();
     }
 
     @POST

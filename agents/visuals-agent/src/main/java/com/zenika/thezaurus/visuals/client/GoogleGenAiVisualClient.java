@@ -7,13 +7,17 @@ import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.HttpOptions;
+import com.google.genai.types.ImageConfig;
 import com.google.genai.types.Part;
 import com.zenika.thezaurus.visuals.exception.VisualGenerationException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import javax.imageio.ImageIO;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -48,9 +52,12 @@ public class GoogleGenAiVisualClient implements GenAiVisualClient {
     @Override
     public GeneratedImage generateImage(String model, String prompt, List<InlineMediaPart> mediaParts) {
         Content content = buildContent(prompt, mediaParts);
-        GenerateContentConfig config = GenerateContentConfig.builder()
-                .responseModalities("TEXT", "IMAGE")
-                .build();
+        GenerateContentConfig.Builder configBuilder =
+                GenerateContentConfig.builder().responseModalities("TEXT", "IMAGE");
+        detectTemplateAspectRatio(mediaParts)
+                .ifPresent(aspectRatio -> configBuilder.imageConfig(
+                        ImageConfig.builder().aspectRatio(aspectRatio).build()));
+        GenerateContentConfig config = configBuilder.build();
 
         LOG.infof("Appel à Google GenAI avec le modèle '%s' (%d média(s) en entrée)", model, mediaParts.size());
         try (Client client = createClient()) {
@@ -74,6 +81,48 @@ public class GoogleGenAiVisualClient implements GenAiVisualClient {
             }
         }
         return Content.fromParts(parts.toArray(new Part[0]));
+    }
+
+    Optional<String> detectTemplateAspectRatio(List<InlineMediaPart> mediaParts) {
+        if (mediaParts == null || mediaParts.isEmpty() || mediaParts.get(0) == null) {
+            return Optional.empty();
+        }
+        byte[] templateBytes = mediaParts.get(0).data();
+        if (templateBytes == null || templateBytes.length == 0) {
+            return Optional.empty();
+        }
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(templateBytes)) {
+            BufferedImage image = ImageIO.read(bais);
+            if (image == null || image.getWidth() <= 0 || image.getHeight() <= 0) {
+                return Optional.empty();
+            }
+            int w = image.getWidth();
+            int h = image.getHeight();
+            if (w == h) {
+                return Optional.of("1:1");
+            }
+            if (w * 5 == h * 4) {
+                return Optional.of("4:5");
+            }
+            if (w * 4 == h * 5) {
+                return Optional.of("5:4");
+            }
+            if (w * 4 == h * 3) {
+                return Optional.of("3:4");
+            }
+            if (w * 3 == h * 4) {
+                return Optional.of("4:3");
+            }
+            if (w * 16 == h * 9) {
+                return Optional.of("9:16");
+            }
+            if (w * 9 == h * 16) {
+                return Optional.of("16:9");
+            }
+        } catch (Exception e) {
+            LOG.debug("Impossible de déterminer le ratio du template", e);
+        }
+        return Optional.empty();
     }
 
     GeneratedImage extractImage(GenerateContentResponse response) {

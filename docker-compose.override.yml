@@ -94,3 +94,11 @@ services:
           path: ./front/package.json
         - action: rebuild
           path: ./front/package-lock.json
+
+  visuals-agent:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/q/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
