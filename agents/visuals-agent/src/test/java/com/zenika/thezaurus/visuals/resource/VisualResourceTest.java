@@ -1,7 +1,9 @@
 package com.zenika.thezaurus.visuals.resource;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -18,11 +20,13 @@ import com.zenika.thezaurus.visuals.model.ConferenceInput;
 import com.zenika.thezaurus.visuals.model.NightClazzVisualRequest;
 import com.zenika.thezaurus.visuals.model.PartnerInput;
 import com.zenika.thezaurus.visuals.model.PersonInput;
+import com.zenika.thezaurus.visuals.model.PhotoInput;
 import com.zenika.thezaurus.visuals.model.TalkVisualRequest;
 import com.zenika.thezaurus.visuals.model.VisualGenerationResponse;
 import com.zenika.thezaurus.visuals.model.VisualStreamEvent;
 import com.zenika.thezaurus.visuals.model.VisualTemplate;
 import com.zenika.thezaurus.visuals.model.VisualType;
+import com.zenika.thezaurus.visuals.service.VisualGenerationService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -77,13 +81,12 @@ class VisualResourceTest {
 
     @Test
     void shouldGenerateTalkVisualUsingDynamicRoutingWithoutTemplateInput() {
-        String fakeSpeakerPhoto = Base64.getEncoder().encodeToString("speaker-photo".getBytes(StandardCharsets.UTF_8));
-        String fakeConfLogo = Base64.getEncoder().encodeToString("conf-logo".getBytes(StandardCharsets.UTF_8));
+        String validPngBase64 = Base64.getEncoder().encodeToString(VisualGenerationService.getDefaultPersonIconPng());
 
         TalkVisualRequest request = new TalkVisualRequest(
                 "Architecture Hexagonale avec Quarkus",
-                new ConferenceInput("Devoxx France 2026", fakeConfLogo),
-                List.of(new PersonInput("Jean-Philippe Baconnais", fakeSpeakerPhoto)));
+                new ConferenceInput("Devoxx France 2026", validPngBase64),
+                List.of(new PersonInput("Jean-Philippe Baconnais", PhotoInput.ofBase64(validPngBase64))));
 
         RestResponse<VisualGenerationResponse> restResponse = visualResource.generateTalkVisual(request);
         assertEquals(200, restResponse.getStatus());
@@ -111,7 +114,7 @@ class VisualResourceTest {
     }
 
     @Test
-    void shouldGenerateBlogVisualUsingDynamicRoutingWithoutTemplateInput() {
+    void shouldGenerateBlogVisualUsingDefaultPersonIconWhenNoPhotoProvided() {
         BlogVisualRequest request = new BlogVisualRequest(
                 "Créer des visuels avec Google GenAI et Quarkus", List.of(new PersonInput("Jean-Philippe Baconnais")));
 
@@ -131,21 +134,26 @@ class VisualResourceTest {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<InlineMediaPart>> mediaCaptor = ArgumentCaptor.forClass(List.class);
         verify(genAiVisualClient).generateImage(eq("gemini-2.5-flash-image"), anyString(), mediaCaptor.capture());
-        assertEquals(1, mediaCaptor.getValue().size(), "Doit inclure l'image du template de blog");
+        assertEquals(
+                2,
+                mediaCaptor.getValue().size(),
+                "Doit inclure l'image du template de blog + l'icône de personne par défaut");
+        assertArrayEquals(
+                VisualGenerationService.getDefaultPersonIconPng(),
+                mediaCaptor.getValue().get(1).data());
     }
 
     @Test
     void shouldGenerateNightClazzVisualUsingDynamicRouting() {
-        String fakeSpeakerPhoto = Base64.getEncoder().encodeToString("speaker-photo".getBytes(StandardCharsets.UTF_8));
-        String fakePartnerLogo = Base64.getEncoder().encodeToString("partner-logo".getBytes(StandardCharsets.UTF_8));
+        String validPngBase64 = Base64.getEncoder().encodeToString(VisualGenerationService.getDefaultPersonIconPng());
 
         NightClazzVisualRequest request = NightClazzVisualRequest.withPartner(
                 "Découvrir Gemini 4 avec Quarkus",
                 "19/11",
                 "18h30-21h",
                 "Zenika Nantes",
-                new PersonInput("Jean-Philippe Baconnais", fakeSpeakerPhoto),
-                new PartnerInput("Google Cloud", fakePartnerLogo));
+                new PersonInput("Jean-Philippe Baconnais", PhotoInput.ofBase64(validPngBase64)),
+                new PartnerInput("Google Cloud", validPngBase64));
 
         RestResponse<VisualGenerationResponse> restResponse = visualResource.generateNightClazzVisual(request);
         assertEquals(200, restResponse.getStatus());
@@ -162,6 +170,17 @@ class VisualResourceTest {
         ArgumentCaptor<List<InlineMediaPart>> mediaCaptor = ArgumentCaptor.forClass(List.class);
         verify(genAiVisualClient).generateImage(eq("gemini-2.5-flash-image"), anyString(), mediaCaptor.capture());
         assertEquals(3, mediaCaptor.getValue().size(), "Doit inclure le template + photo speaker + logo partenaire");
+    }
+
+    @Test
+    void shouldReturnBinaryPngImageDirectlyOnImageEndpoints() {
+        BlogVisualRequest blogRequest =
+                new BlogVisualRequest("Visualisation directe PNG", List.of(new PersonInput("Jean-Phi")));
+
+        RestResponse<byte[]> imageResponse = visualResource.generateBlogVisualImage(blogRequest);
+        assertEquals(200, imageResponse.getStatus());
+        assertArrayEquals(FAKE_GENERATED_PNG, imageResponse.getEntity());
+        assertEquals("generate-image-blog-post", imageResponse.getHeaderString("X-Visual-Template"));
     }
 
     @Test
@@ -217,7 +236,13 @@ class VisualResourceTest {
                 {
                     "title": "Article Tech",
                     "writers": [
-                        { "name": "Jean-Phi", "photoBase64": "fake-photo-base64" }
+                        {
+                            "name": "Jean-Phi",
+                            "photo": {
+                                "url": "https://example.com/jean-phi.png",
+                                "base64": "fake-photo-base64"
+                            }
+                        }
                     ]
                 }
                 """;
@@ -226,7 +251,11 @@ class VisualResourceTest {
         assertEquals("Article Tech", req2.title());
         assertEquals(1, req2.writers().size());
         assertEquals("Jean-Phi", req2.writers().get(0).name());
-        assertEquals("fake-photo-base64", req2.writers().get(0).photoBase64());
+        assertNotNull(req2.writers().get(0).photo());
+        assertEquals(
+                "https://example.com/jean-phi.png",
+                req2.writers().get(0).photo().url());
+        assertEquals("fake-photo-base64", req2.writers().get(0).photo().base64());
 
         String nightClazzJson = """
                 {
@@ -235,7 +264,13 @@ class VisualResourceTest {
                     "hour": "18h30-21h",
                     "location": "Zenika Nantes",
                     "speakers": [
-                        { "name": "Jean-Phi" }
+                        {
+                            "name": "Jean-Phi",
+                            "photo": {
+                                "url": "string",
+                                "base64": "string"
+                            }
+                        }
                     ],
                     "partner": "Google Cloud"
                 }
@@ -246,6 +281,7 @@ class VisualResourceTest {
         assertEquals("19/11", req3.date());
         assertEquals(1, req3.speakers().size());
         assertEquals("Jean-Phi", req3.speakers().get(0).name());
+        assertNull(req3.speakers().get(0).photo(), "Les valeurs placeholder 'string' doivent être ignorées");
         assertNotNull(req3.partner());
         assertEquals("Google Cloud", req3.partner().name());
     }

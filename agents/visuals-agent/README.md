@@ -46,29 +46,31 @@ Deux options sont disponibles :
 | Méthode | Endpoint | Body | Mode | Description |
 | --- | --- | --- | --- | --- |
 | `GET` | `/visuals/templates` | — | REST (`application/json`) | Liste les templates disponibles (`?category=TALK`, `BLOG` ou `NIGHT_CLAZZ`) |
-| `POST` | `/visuals/talks` | `TalkVisualRequest` | REST Synchrone (`@RunOnVirtualThread`) | Génère un visuel de talk |
+| `POST` | `/visuals/talks` | `TalkVisualRequest` | REST (`application/json`) | Génère un visuel de talk (métadonnées + Base64) |
+| `POST` | `/visuals/talks/image` | `TalkVisualRequest` | **Image (`image/png`)** | Génère et renvoie directement l'image PNG du talk (affichable dans Swagger UI / Postman) |
 | `POST` | `/visuals/talks/stream` | `TalkVisualRequest` | **SSE (`text/event-stream`)** | Flux SSE pour visuel de talk |
-| `POST` | `/visuals/blogs` | `BlogVisualRequest` | REST Synchrone (`@RunOnVirtualThread`) | Génère un visuel de blog |
+| `POST` | `/visuals/blogs` | `BlogVisualRequest` | REST (`application/json`) | Génère un visuel de blog (métadonnées + Base64) |
+| `POST` | `/visuals/blogs/image` | `BlogVisualRequest` | **Image (`image/png`)** | Génère et renvoie directement l'image PNG du blog (affichable dans Swagger UI / Postman) |
 | `POST` | `/visuals/blogs/stream` | `BlogVisualRequest` | **SSE (`text/event-stream`)** | Flux SSE pour visuel de blog |
-| `POST` | `/visuals/nightclazz` | `NightClazzVisualRequest` | REST Synchrone (`@RunOnVirtualThread`) | Génère un visuel NightClazz |
+| `POST` | `/visuals/nightclazz` | `NightClazzVisualRequest` | REST (`application/json`) | Génère un visuel NightClazz (métadonnées + Base64) |
+| `POST` | `/visuals/nightclazz/image` | `NightClazzVisualRequest` | **Image (`image/png`)** | Génère et renvoie directement l'image PNG du NightClazz (affichable dans Swagger UI / Postman) |
 | `POST` | `/visuals/nightclazz/stream` | `NightClazzVisualRequest` | **SSE (`text/event-stream`)** | Flux SSE pour visuel NightClazz |
 
 ### Structures de données en entrée
 
 #### 1. Talk (`TalkVisualRequest` — `/visuals/talks`)
-- `title` : Titre du talk (obligatoire sauf si `talks` est fourni).
+- `title` : Titre du talk (obligatoire).
 - `conference` : Conférence visée (chaîne simple `"Devoxx France"` ou objet `{"name": "...", "logoBase64": "..."}`).
-- `speakers` : Liste des speakers (1, 2 ou 3 chaînes ou objets `{"name": "...", "photoBase64": "..."}`).
-- `talks` : *(Optionnel, pour `conf-2.png`)* Liste de 2 talks `[{"title": "...", "speaker": {"name": "...", "photoBase64": "..."}}]`.
+- `speakers` : Liste des speakers (1, 2 ou 3 chaînes ou objets `{"name": "Jean-Phi", "photo": {"url": "...", "base64": "..."}}`). Si aucune photo valide n'est fournie, une icône représentant une personne est automatiquement intégrée au visuel.
 
 #### 2. Blog (`BlogVisualRequest` — `/visuals/blogs`)
 - `title` : Titre de l'article de blog (obligatoire).
-- `writers` : Liste des rédacteurs / auteurs (1 ou 2 chaînes ou objets `{"name": "...", "photoBase64": "..."}`).
+- `writers` : Liste des rédacteurs / auteurs (1 ou 2 chaînes ou objets `{"name": "Jean-Phi", "photo": {"url": "...", "base64": "..."}}`). Si aucune photo valide n'est fournie, une icône représentant une personne est automatiquement intégrée au visuel.
 
 #### 3. NightClazz (`NightClazzVisualRequest` — `/visuals/nightclazz`)
 - `title` : Titre du NightClazz (obligatoire).
 - `date`, `hour`, `location` : Informations pratiques (ex. `"19/11"`, `"18h30-21h"`, `"Zenika Nantes"`).
-- `speakers` : Liste des speakers (1 ou 2 chaînes ou objets `{"name": "...", "photoBase64": "..."}`).
+- `speakers` : Liste des speakers (1 ou 2 chaînes ou objets `{"name": "Jean-Phi", "photo": {"url": "...", "base64": "..."}}`). Si aucune photo valide n'est fournie, une icône représentant une personne est automatiquement intégrée au visuel.
 - `partner` : *(Optionnel, active le template `nc-partenaire.png`)* Partenaire (chaîne simple ou objet `{"name": "...", "logoBase64": "..."}`).
 
 ## Configuration
@@ -90,6 +92,24 @@ cp ../../.env-template ../../.env
 | `GCP_REGION` / `GOOGLE_CLOUD_LOCATION` | `visuals.gemini.location` | `europe-west1` | Région GCP (si Vertex AI est activé) |
 | `VISUALS_TEMPLATES_DIR` | `visuals.templates.dir` | *(vide)* | Dossier externe optionnel pour surcharger les images de templates |
 | `VISUALS_SSE_HEARTBEAT_MS` | `visuals.sse.heartbeat-interval-ms` | `3000` | Intervalle des événements `HEARTBEAT` en mode SSE |
+
+## Lancer l'agent
+
+### En mode développement (Quarkus Dev)
+
+Depuis la **racine du dépôt** (pour prendre en compte le fichier .env) :
+```bash
+./agents/visuals-agent/mvnw -f agents/visuals-agent/pom.xml quarkus:dev
+```
+
+Swagger UI est alors accessible sur [http://localhost:8082/q/swagger-ui/](http://localhost:8082/q/swagger-ui/).
+
+### Avec Docker Compose (avec les autres composants)
+
+Depuis la racine du dépôt :
+```bash
+docker compose up --build
+```
 
 ## Exécuter les tests (sans appel IA)
 

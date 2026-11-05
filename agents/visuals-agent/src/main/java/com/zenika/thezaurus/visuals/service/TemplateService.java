@@ -6,7 +6,6 @@ import com.zenika.thezaurus.visuals.client.GenAiVisualClient.InlineMediaPart;
 import com.zenika.thezaurus.visuals.model.BlogVisualRequest;
 import com.zenika.thezaurus.visuals.model.NightClazzVisualRequest;
 import com.zenika.thezaurus.visuals.model.PersonInput;
-import com.zenika.thezaurus.visuals.model.TalkItemInput;
 import com.zenika.thezaurus.visuals.model.TalkVisualRequest;
 import com.zenika.thezaurus.visuals.model.VisualTemplate;
 import com.zenika.thezaurus.visuals.model.VisualType;
@@ -86,24 +85,6 @@ public class TemplateService {
         }
         if (request.conference() == null || !isNotBlank(request.conference().name())) {
             throw new IllegalArgumentException("Le nom de la conférence est requis pour un visuel de talk.");
-        }
-
-        List<TalkItemInput> talks = sanitizeTalks(request.talks());
-        if (!talks.isEmpty()) {
-            return switch (talks.size()) {
-                case 1 ->
-                    findByName(DEFAULT_TALK_TEMPLATE)
-                            .orElseThrow(
-                                    () -> new IllegalStateException("Template introuvable: " + DEFAULT_TALK_TEMPLATE));
-                case 2 ->
-                    findByName(DEFAULT_TALK_TWO_TALKS_TEMPLATE)
-                            .orElseThrow(() -> new IllegalStateException(
-                                    "Template introuvable: " + DEFAULT_TALK_TWO_TALKS_TEMPLATE));
-                default ->
-                    throw new IllegalArgumentException(
-                            "Le nombre de talks pour une conférence doit être compris entre 1 et 2 (reçu : "
-                                    + talks.size() + ").");
-            };
         }
 
         List<PersonInput> speakers = sanitizeList(request.speakers());
@@ -214,34 +195,25 @@ public class TemplateService {
     }
 
     public String buildTalkPrompt(VisualTemplate template, TalkVisualRequest request) {
-        List<TalkItemInput> talks = sanitizeTalks(request.talks());
         List<PersonInput> speakers = sanitizeList(request.speakers());
 
-        String firstTitle = !talks.isEmpty() ? safeTrim(talks.get(0).title()) : safeTrim(request.title());
-        String secondTitle = talks.size() > 1 ? safeTrim(talks.get(1).title()) : "";
-
-        String firstSpeaker = !talks.isEmpty()
-                ? safeTrim(talks.get(0).speaker().name())
-                : (speakers.size() > 0 ? safeTrim(speakers.get(0).name()) : "");
-        String secondSpeaker = talks.size() > 1
-                ? safeTrim(talks.get(1).speaker().name())
-                : (speakers.size() > 1 ? safeTrim(speakers.get(1).name()) : "");
+        String firstSpeaker = speakers.size() > 0 ? safeTrim(speakers.get(0).name()) : "";
+        String secondSpeaker = speakers.size() > 1 ? safeTrim(speakers.get(1).name()) : "";
         String thirdSpeaker = speakers.size() > 2 ? safeTrim(speakers.get(2).name()) : "";
 
         Map<String, String> values = new HashMap<>();
-        values.put("%TEMPLATE%", template.templatePath());
-        values.put("%TITLE%", firstTitle);
-        values.put("%TITLE2%", secondTitle);
+        values.put("%TEMPLATE%", "Image 1 (" + template.templatePath() + ")");
+        values.put("%TITLE%", safeTrim(request.title()));
         values.put(
                 "%CONFERENCE%",
                 request.conference() != null ? safeTrim(request.conference().name()) : "");
         values.put("%NAME%", firstSpeaker);
         values.put("%NAME2%", secondSpeaker);
         values.put("%NAME3%", thirdSpeaker);
-        values.put("%PHOTO%", "speaker-photo-1");
-        values.put("%PHOTO2%", "speaker-photo-2");
-        values.put("%PHOTO3%", "speaker-photo-3");
-        values.put("%CONF_PHOTO%", "conference-logo");
+        values.put("%PHOTO%", "Image 2 (first speaker photo)");
+        values.put("%PHOTO2%", "Image 3 (second speaker photo)");
+        values.put("%PHOTO3%", "Image 4 (third speaker photo)");
+        values.put("%CONF_PHOTO%", "the last provided image (conference logo)");
 
         return replacePlaceholders(template.prompt(), values);
     }
@@ -249,12 +221,12 @@ public class TemplateService {
     public String buildBlogPrompt(VisualTemplate template, BlogVisualRequest request) {
         List<PersonInput> writers = sanitizeList(request.writers());
         Map<String, String> values = new HashMap<>();
-        values.put("%TEMPLATE%", template.templatePath());
+        values.put("%TEMPLATE%", "Image 1 (" + template.templatePath() + ")");
         values.put("%TITLE%", safeTrim(request.title()));
         values.put("%NAME%", writers.size() > 0 ? safeTrim(writers.get(0).name()) : "");
         values.put("%NAME2%", writers.size() > 1 ? safeTrim(writers.get(1).name()) : "");
-        values.put("%PHOTO%", "author-photo-1");
-        values.put("%PHOTO2%", "author-photo-2");
+        values.put("%PHOTO%", "Image 2 (first author photo)");
+        values.put("%PHOTO2%", "Image 3 (second author photo)");
 
         return replacePlaceholders(template.prompt(), values);
     }
@@ -262,19 +234,19 @@ public class TemplateService {
     public String buildNightClazzPrompt(VisualTemplate template, NightClazzVisualRequest request) {
         List<PersonInput> speakers = sanitizeList(request.speakers());
         Map<String, String> values = new HashMap<>();
-        values.put("%TEMPLATE%", template.templatePath());
+        values.put("%TEMPLATE%", "Image 1 (" + template.templatePath() + ")");
         values.put("%TITLE%", safeTrim(request.title()));
         values.put("%DATE%", isNotBlank(request.date()) ? safeTrim(request.date()) : "");
         values.put("%HOUR%", isNotBlank(request.hour()) ? safeTrim(request.hour()) : "18h30-21h");
         values.put("%LOCATION%", isNotBlank(request.location()) ? safeTrim(request.location()) : "Zenika Nantes");
         values.put("%NAME%", speakers.size() > 0 ? safeTrim(speakers.get(0).name()) : "");
         values.put("%NAME2%", speakers.size() > 1 ? safeTrim(speakers.get(1).name()) : "");
-        values.put("%PHOTO%", "speaker-photo-1");
-        values.put("%PHOTO2%", "speaker-photo-2");
+        values.put("%PHOTO%", "Image 2 (first speaker photo)");
+        values.put("%PHOTO2%", "Image 3 (second speaker photo)");
         values.put(
                 "%PARTNER%",
                 request.partner() != null ? safeTrim(request.partner().name()) : "");
-        values.put("%PARTNER_LOGO%", "partner-logo");
+        values.put("%PARTNER_LOGO%", "the last provided image (partner logo)");
 
         return replacePlaceholders(template.prompt(), values);
     }
@@ -306,18 +278,6 @@ public class TemplateService {
             return List.of();
         }
         return list.stream().filter(p -> p != null && isNotBlank(p.name())).toList();
-    }
-
-    private static List<TalkItemInput> sanitizeTalks(List<TalkItemInput> talks) {
-        if (talks == null) {
-            return List.of();
-        }
-        return talks.stream()
-                .filter(t -> t != null
-                        && isNotBlank(t.title())
-                        && t.speaker() != null
-                        && isNotBlank(t.speaker().name()))
-                .toList();
     }
 
     private static boolean isNotBlank(String value) {

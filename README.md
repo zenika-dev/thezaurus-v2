@@ -27,14 +27,16 @@ Le projet s'articule autour des composants suivants :
 
 - **Frontend (`front/`)** : Application React / Next.js (App Router), stylisée avec TailwindCSS & Material UI (MUI), typée avec TypeScript et sécurisée avec NextAuth.
 - **Backend API (`api/`)** : API REST développée avec Java 21 et Quarkus, exposant les ressources et intégrant le SDK Bolt pour Slack.
+- **Agent Visuels (`agents/visuals-agent/`)** : Agent Quarkus (Java 21) de génération de visuels de communication (talks, blogs, NightClazz) via Google GenAI (`gemini-2.5-flash-image`).
 - **Base de données** : Google Cloud Firestore (avec émulateur local Firebase pour le développement).
 
 ```
 thezaurus-v2/
-├── api/             # Backend Java Quarkus (JAX-RS, Firestore, Slack Bot)
-├── front/           # Frontend Next.js / React / TypeScript
-├── docs/            # Documentation détaillée du projet
-├── docker-compose.* # Orchestration des conteneurs locaux et Cloud
+├── api/                  # Backend Java Quarkus (JAX-RS, Firestore, Slack Bot)
+├── agents/visuals-agent/ # Agent Quarkus de génération de visuels (Google GenAI)
+├── front/                # Frontend Next.js / React / TypeScript
+├── docs/                 # Documentation détaillée du projet
+├── docker-compose.*      # Orchestration des conteneurs locaux et Cloud
 ```
 
 ---
@@ -65,11 +67,13 @@ L'API Quarkus gère les entités principales dans Firestore :
    ```bash
    docker compose up --build
    ```
+   *(Pour lancer uniquement l'agent de génération de visuels en mode dev local : `./agents/visuals-agent/mvnw -f agents/visuals-agent/pom.xml quarkus:dev`)*
 
 3. **Accéder aux services :**
    - **Frontend** : [http://localhost:3000](http://localhost:3000)
    - **API Backend** : [http://localhost:8080](http://localhost:8080)
-   - **Swagger UI** : [http://localhost:8080/q/swagger-ui/](http://localhost:8080/q/swagger-ui/)
+   - **Swagger UI (API)** : [http://localhost:8080/q/swagger-ui/](http://localhost:8080/q/swagger-ui/)
+   - **Visuals Agent** : [http://localhost:8082](http://localhost:8082) ([Swagger UI](http://localhost:8082/q/swagger-ui/))
    - **Firebase Emulator UI** : [http://localhost:4000/firestore/local-dev/data](http://localhost:4000/firestore/local-dev/data)
    - **Mailpit (emails locaux)** : [http://localhost:8025](http://localhost:8025)
 
