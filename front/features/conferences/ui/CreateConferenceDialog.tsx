@@ -443,7 +443,7 @@ export function CreateConferenceDialog({
               />
 
               <div className="sm:col-span-2 flex flex-col gap-2">
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   {dateType === "single" && (
                     <DatePicker
                       disabled={isSubmitting}
@@ -625,7 +625,7 @@ export function CreateConferenceDialog({
                 }}
               />
 
-              <div className="col-span-2 flex gap-4">
+              <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4">
                 <DatePicker
                   disabled={isSubmitting}
                   label="Date de début du CFP"
