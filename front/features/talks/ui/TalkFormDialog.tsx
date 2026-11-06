@@ -1,5 +1,6 @@
 "use client";
 
+import { useUnsavedChanges } from "@/shared/lib/useUnsavedChanges";
 import { useId, type ReactNode } from "react";
 import { Box, Button, CircularProgress,
   FormControl, FormHelperText, InputLabel, MenuItem, Select, TextField } from "@mui/material";
@@ -28,6 +29,7 @@ interface TalkFormDialogProps {
   submitLabel: string;
   disabled?: boolean;
   pending?: boolean;
+  dirty?: boolean;
   assistantLoading: boolean;
   errors: Record<string, string | undefined>;
   feedback?: ReactNode;
@@ -38,8 +40,10 @@ interface TalkFormDialogProps {
 
 /** Même présentation pour la création, la modification et la consultation d’un talk. */
 export function TalkFormDialog({ open, title, description, value, onChange, onClose, onSubmit,
-  onReview, submitLabel, disabled = false, pending = false, assistantLoading, errors,
+  onReview, submitLabel, disabled = false, pending = false, dirty = false, assistantLoading, errors,
   feedback, speakerWarning, secondaryActions, existingTalk = false }: TalkFormDialogProps) {
+  const requestClose = useUnsavedChanges(open && dirty, open && pending);
+  const close = () => requestClose(onClose);
   const id = useId();
   const formId = `${id}-form`;
   const renderSelectField = (field: "office" | "format" | "language" | "visibility", label: string,
@@ -60,10 +64,10 @@ export function TalkFormDialog({ open, title, description, value, onChange, onCl
     </FormControl>
   );
   return <DatePickerProvider>
-    <FormDialog open={open} onClose={pending ? () => {} : onClose} maxWidth="md" fullWidth
+    <FormDialog open={open} onClose={close} maxWidth="md" fullWidth
       titleId={`${id}-title`} title={title} showCloseButton={!pending} customActions
       actions={<>
-        <Button variant="outlined" disabled={pending} onClick={onClose}>Annuler</Button>
+        <Button variant="outlined" disabled={pending} onClick={close}>Annuler</Button>
         <div className="flex-1" />
         {secondaryActions}
         <Button variant="contained" disabled={disabled} type="submit" form={formId}>{submitLabel}</Button>

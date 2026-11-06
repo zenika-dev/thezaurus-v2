@@ -38,15 +38,17 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
     : [];
 
   const {
+    register,
     handleSubmit,
     control,
     trigger,
     getValues,
     setValue,
     reset,
+    resetField,
     clearErrors,
     setError: setFieldError,
-    formState: { errors, isSubmitted },
+    formState: { errors, isSubmitted, isDirty },
   } = useForm<TalkFormData>({
     resolver: zodResolver(talkFormSchema),
     defaultValues: {
@@ -62,18 +64,23 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
     },
   });
 
+  // These controlled fields hydrate asynchronously; register them so resetField
+  // updates their initial values without marking the profile defaults as edits.
+  register("office");
+  register("speakers");
+
   useEffect(() => {
     if (open && session?.user?.name) {
       const current = getValues("speakers");
       if (!current || current.length === 0) {
-        setValue("speakers", [{ name: session.user.name, email: session.user.email ?? "" }]);
+        resetField("speakers", { defaultValue: [{ name: session.user.name, email: session.user.email ?? "" }] });
       }
     }
-  }, [open, session?.user?.name, session?.user?.email, setValue, getValues]);
+  }, [open, session?.user?.name, session?.user?.email, resetField, getValues]);
 
   useEffect(() => {
-    if (open && !officeEdited) setValue("office", profile?.office ?? "");
-  }, [open, profile?.office, officeEdited, setValue]);
+    if (open && !officeEdited) resetField("office", { defaultValue: profile?.office ?? "" });
+  }, [open, profile?.office, officeEdited, resetField]);
 
   const buildTalkData = (
     { speakers, conference, ...data }: TalkFormData,
@@ -188,7 +195,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
       { shouldDirty: true, shouldValidate: isSubmitted });
     if (field === "conference") {
       setSelectedConference(next.conference);
-      setValue("conference", next.conference?.name ?? "");
+      setValue("conference", next.conference?.name ?? "", { shouldDirty: true });
     }
     if (field === "date") { setDate(next.date ?? ""); clearErrors("root"); }
   };
@@ -197,7 +204,7 @@ export function CreateTalkDialog({ open, onClose, onSubmit }: CreateTalkDialogPr
       description="Déclarez une nouvelle idée de talk ou soumission à une conférence."
       value={formValue} onChange={change} onClose={handleCancel} onSubmit={handleSubmit(onCreateTalk)}
       onReview={handleTriggerAssistantReview} assistantLoading={assistantLoading}
-      pending={saving} disabled={saving} submitLabel="Créer le talk"
+      dirty={isDirty || Boolean(date)} pending={saving} disabled={saving} submitLabel="Créer le talk"
       errors={{ ...Object.fromEntries(Object.entries(errors).map(([key, error]) => [key, error?.message])),
         speakers: errors.speakers?.message ?? errors.speakers?.root?.message, date: errors.root?.message }}
       feedback={saveError && <Alert severity="error">{saveError}</Alert>}

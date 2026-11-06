@@ -24,6 +24,18 @@ function mayEdit(talk: TalkData, email?: string | null, roles: readonly string[]
       speaker => speaker.email?.trim().toLowerCase() === email?.trim().toLowerCase()));
 }
 
+/** Optional API values and empty form controls represent the same initial value. */
+function formSnapshot(talk: TalkData) {
+  return JSON.stringify({
+    ...talk,
+    date: talk.date ?? "",
+    slides: talk.slides ?? "",
+    replay: talk.replay ?? "",
+    audience: talk.audience ?? null,
+    speakers: talk.speakers.map(speaker => ({ name: speaker.name, email: speaker.email ?? "" })),
+  });
+}
+
 export function TalkDetailsDialog(props: TalkDetailsDialogProps) {
   if (!props.open || !props.talk) return null;
   return <TalkEditor key={props.talk.id} {...props} talk={props.talk} />;
@@ -92,7 +104,7 @@ function TalkEditor({ talk, onClose, onUpdate, onDelete }: Omit<TalkDetailsDialo
   return <>
     <TalkFormDialog open title={saved.title} description="Consultez les informations du talk."
       value={draft} onChange={change} onClose={onClose} onSubmit={save} onReview={review}
-      assistantLoading={aiLoading} pending={pending} disabled={disabled} errors={errors} existingTalk
+      assistantLoading={aiLoading} dirty={formSnapshot(draft) !== formSnapshot(saved)} pending={pending} disabled={disabled} errors={errors} existingTalk
       submitLabel={pending ? "Enregistrement…" : "Enregistrer"}
       feedback={<>
         {error && <Alert severity="error">{error}</Alert>}
