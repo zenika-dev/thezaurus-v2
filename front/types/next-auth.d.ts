@@ -13,6 +13,7 @@ declare module "next-auth" {
 
 declare module "next-auth/jwt" {
   interface JWT {
+    localAuth?: boolean;
     roles?: Role[];
     idToken?: string;
     refreshToken?: string;

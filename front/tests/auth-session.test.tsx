@@ -10,6 +10,7 @@ vi.mock("next-auth/react", () => ({
   useSession: vi.fn(),
   signOut: vi.fn(),
   signIn: vi.fn(),
+  getProviders: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock("next/navigation", () => ({
