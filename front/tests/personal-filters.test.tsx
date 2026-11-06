@@ -1,13 +1,13 @@
 import { Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SessionProvider } from "next-auth/react";
-import { render, screen, within, waitFor } from "@testing-library/react";
+import { act, render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BlogPostsList } from "@/features/blog-posts/ui/BlogPostsList";
 import { TalkTable } from "@/features/talks/ui/TalkTable";
 import { Role } from "@/shared/api";
-import { resetMockSearchParams } from "./setup";
+import { resetMockSearchParams, setMockSearchParams } from "./setup";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -111,7 +111,10 @@ describe("Mes articles", () => {
     renderPosts("CONSULTANT", "alice@zenika.com", true);
 
     vi.spyOn(window, "confirm").mockReturnValue(true);
-    await user.click(await screen.findByText("Mon brouillon"));
+    const link = await screen.findByRole("link", { name: "Mon brouillon" });
+    expect(link).toHaveAttribute("href", "/?post=mine");
+    // Next routing is mocked by setup.ts; follow the link's search params.
+    act(() => setMockSearchParams("post=mine"));
     const title = await screen.findByRole("textbox", { name: /Titre/ });
     await user.clear(title);
     await user.type(title, "Travail conservé");

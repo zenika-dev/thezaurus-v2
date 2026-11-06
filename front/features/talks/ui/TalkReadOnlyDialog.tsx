@@ -1,4 +1,5 @@
 "use client";
+import { CopyDetailLinkButton } from "@/shared/ui/CopyDetailLinkButton";
 import { FormDialog } from "@/shared/ui";
 
 import { Alert, Button, Switch, MenuItem,
@@ -21,7 +22,7 @@ interface TalkReadOnlyDialogProps {
 export function TalkReadOnlyDialog({ talk, onClose, success }: TalkReadOnlyDialogProps) {
   return (
     <FormDialog open onClose={onClose} maxWidth="sm" fullWidth title={talk.title}
-      headerAction={<StatusTag status={talk.status} />} cancelLabel="Fermer">
+      headerAction={<StatusTag status={talk.status} />} cancelLabel="Fermer" actions={<CopyDetailLinkButton path="/talks" parameter="talk" id={talk.id} />}>
         {success && <Alert severity="success">{success}</Alert>}
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-text-muted">Détails du talk</p>

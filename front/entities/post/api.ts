@@ -70,6 +70,11 @@ export function mapFrontendToBackend(p: BlogPostData): BackendBlogPostPayload {
 }
 
 export const postApi = {
+  getPost: async (id: string): Promise<BlogPostData> => {
+    const res = await apiFetch(`/blog-posts/${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error("Failed to fetch detail");
+    return mapBackendToFrontend(await res.json());
+  },
   getPosts: async (params?: PaginationParams): Promise<PagedResult<BlogPostData>> => {
     const searchParams = new URLSearchParams();
     if (params?.page !== undefined) searchParams.set("page", String(params.page));

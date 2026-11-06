@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import {
   ListItem,
   ListItemButton,
@@ -13,6 +15,7 @@ export interface NavItemConfig {
   icon: React.ElementType;
   label: string;
   active: boolean;
+  href: string;
   onClick: () => void;
 }
 
@@ -25,6 +28,7 @@ export function SideMenuNavItem({
   label,
   open,
   active,
+  href,
   onClick,
 }: SideMenuNavItemProps) {
   const theme = useTheme();
@@ -32,8 +36,9 @@ export function SideMenuNavItem({
   const button = (
     <ListItem disablePadding sx={{ display: "block", mb: 0.4, px: 1.5 }}>
       <ListItemButton
-        onClick={onClick}
-        component="button"
+        onNavigate={onClick}
+        component={Link}
+        href={href}
         aria-label={label}
         aria-current={active ? "page" : undefined}
         sx={{

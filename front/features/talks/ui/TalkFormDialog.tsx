@@ -1,4 +1,5 @@
 "use client";
+import { CopyDetailLinkButton } from "@/shared/ui/CopyDetailLinkButton";
 
 import { useUnsavedChanges } from "@/shared/lib/useUnsavedChanges";
 import { useId, type ReactNode } from "react";
@@ -69,6 +70,7 @@ export function TalkFormDialog({ open, title, description, value, onChange, onCl
       actions={<>
         <Button variant="outlined" disabled={pending} onClick={close}>Annuler</Button>
         <div className="flex-1" />
+        {existingTalk && <CopyDetailLinkButton path="/talks" parameter="talk" id={value.id} />}
         {secondaryActions}
         <Button variant="contained" disabled={disabled} type="submit" form={formId}>{submitLabel}</Button>
       </>} headerAction={

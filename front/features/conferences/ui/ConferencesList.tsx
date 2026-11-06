@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useConferences } from "@/features/conferences/model";
 import {
   ConferenceData,
@@ -10,6 +12,11 @@ import {
 import { StatusTag, TypeTag } from "@/features/conferences/ui";
 import { FilterChip, Surface } from "@/shared/ui";
 import { useState } from "react";
+import dynamic from "next/dynamic";
+import { conferenceApi } from "@/entities/conference";
+import { useDetailUrl } from "@/shared/lib/useDetailUrl";
+import { DetailUrlFeedback } from "@/shared/ui/DetailUrlFeedback";
+import { CopyDetailLinkButton } from "@/shared/ui/CopyDetailLinkButton";
 import dayjs from "dayjs";
 import {
   MapPin,
@@ -18,8 +25,11 @@ import {
   Funnel,
 } from "lucide-react";
 
+const ConferenceDetailsDialog = dynamic(() => import("./ConferenceDetailsDialog").then(m => m.ConferenceDetailsDialog), { ssr: false });
+
 export function ConferencesList() {
   const { conferences } = useConferences();
+  const detail = useDetailUrl("conference", "conferences", conferences, conferenceApi.getConference);
 
   const [statusFilter, setStatusFilter] = useState<"All" | "Open" | "Closed">(
     "All",
@@ -117,6 +127,8 @@ export function ConferencesList() {
         </div>
       </div>
 
+      <DetailUrlFeedback loading={detail.loading} error={detail.error} onClose={detail.close} onRetry={detail.retry} />
+      {detail.selected && detail.selectedId && <ConferenceDetailsDialog conference={detail.selected} onClose={detail.close} />}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredConferences.map(
           (conference: ConferenceData, index: number) => {
@@ -143,9 +155,9 @@ export function ConferencesList() {
               >
                 <div className="flex flex-wrap justify-between items-start gap-4">
                   <div className="flex min-w-0 flex-1 flex-col gap-2">
-                    <span className="font-bold text-text wrap-anywhere">
+                    <Link href={detail.href(conference.id)} scroll={false} className="font-bold text-text wrap-anywhere text-left cursor-pointer bg-transparent border-0 p-0">
                       {conference.name}
-                    </span>
+                    </Link>
                     <div className="flex flex-col gap-1.5 text-xs text-text-muted">
                       <span className="flex items-center gap-1.5">
                         <MapPin
@@ -174,6 +186,7 @@ export function ConferencesList() {
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <StatusTag status={conference.cfpStatus} />
+                    <CopyDetailLinkButton path="/conferences" parameter="conference" id={conference.id} iconOnly label={`Copier le lien vers la conférence : ${conference.name}`} />
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 items-center justify-between text-xs mt-2 text-text-muted">
