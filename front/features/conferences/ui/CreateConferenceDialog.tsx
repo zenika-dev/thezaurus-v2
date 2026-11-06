@@ -16,10 +16,13 @@ import IconButton from "@mui/material/IconButton";
 import Box from "@mui/material/Box";
 import Autocomplete from "@mui/material/Autocomplete";
 import CircularProgress from "@mui/material/CircularProgress";
+import Alert from "@mui/material/Alert";
+import Button from "@mui/material/Button";
 import { DatePicker } from "@mui/x-date-pickers";
 import { ExternalLinkIcon, Library } from "lucide-react";
 import dayjs, { type Dayjs } from "dayjs";
 import "dayjs/locale/fr";
+import { useUnsavedChanges } from "@/shared/lib/useUnsavedChanges";
 import { isValidUrl } from "@/shared/lib";
 import {
   conferenceCFPStatusConfig,
@@ -45,7 +48,7 @@ type DateInputMode = "single" | "range" | "month";
 interface CreateConferenceDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (conference: ConferenceData) => void;
+  onSubmit: (conference: ConferenceData) => Promise<unknown>;
 }
 
 interface LocationOption {
@@ -58,6 +61,7 @@ export function CreateConferenceDialog({
   onClose,
   onSubmit,
 }: CreateConferenceDialogProps) {
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [dateType, setDateType] = useState<DateInputMode>("single");
   const [date, setDate] = useState<Dayjs | null>(null);
   const [dateEnd, setDateEnd] = useState<Dayjs | null>(null);
@@ -129,7 +133,7 @@ export function CreateConferenceDialog({
     control,
     watch,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<ConferenceFormData>({
     resolver: zodResolver(conferenceFormSchema),
     defaultValues: {
@@ -142,6 +146,9 @@ export function CreateConferenceDialog({
       reach: undefined,
     },
   });
+
+  const requestClose = useUnsavedChanges(open && (isDirty ||
+    Boolean(date || dateEnd || dateMonth || cfpOpeningDate || cfpClosingDate || locationInputValue)), open && isSubmitting);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const cfpLink = watch("cfpLink");
@@ -157,6 +164,11 @@ export function CreateConferenceDialog({
     setDateType("single");
     setDate(null);
     setDateEnd(null);
+    setDateMonth(null);
+    setLocationInputValue("");
+    setSelectedLocation(null);
+    setLocationOptions([]);
+    setSaveError(null);
     setDateError(null);
     setCfpDateError(null);
     setCfpOpeningDateError(null);
@@ -256,8 +268,10 @@ export function CreateConferenceDialog({
     }
   };
 
-  const onSave = (data: ConferenceFormData) => {
+  const onSave = async (data: ConferenceFormData) => {
+    if (isSubmitting) return;
     if (!validateDates()) return;
+    setSaveError(null);
 
     const parsedLocation = parseLocation(
       selectedLocation && selectedLocation.display_name === data.location
@@ -274,29 +288,34 @@ export function CreateConferenceDialog({
       }
     }
 
-    onSubmit({
-      id: crypto.randomUUID(),
-      ...data,
-      cfpStatus: finalCfpStatus,
-      date: buildConferencePeriod(),
-      location: parsedLocation,
-      ...(cfpOpeningDate &&
-        cfpOpeningDate.isValid() && {
-        cfpOpeningDate: cfpOpeningDate.format("YYYY-MM-DD"),
-      }),
-      ...(cfpClosingDate &&
-        cfpClosingDate.isValid() && {
-        cfpClosingDate: cfpClosingDate.format("YYYY-MM-DD"),
-      }),
-    });
-    handleClose();
+    try {
+      await onSubmit({
+        id: crypto.randomUUID(),
+        ...data,
+        cfpStatus: finalCfpStatus,
+        date: buildConferencePeriod(),
+        location: parsedLocation,
+        ...(cfpOpeningDate &&
+          cfpOpeningDate.isValid() && {
+          cfpOpeningDate: cfpOpeningDate.format("YYYY-MM-DD"),
+        }),
+        ...(cfpClosingDate &&
+          cfpClosingDate.isValid() && {
+          cfpClosingDate: cfpClosingDate.format("YYYY-MM-DD"),
+        }),
+      });
+      handleClose();
+    } catch {
+      setSaveError("La création a échoué. Vos saisies sont conservées ; vous pouvez réessayer.");
+    }
   };
 
   return (
     <DatePickerProvider>
       <FormDialog
         open={open}
-        onClose={handleClose}
+        onClose={() => requestClose(handleClose)}
+        showCloseButton={!isSubmitting}
         maxWidth="md"
         titleId={DIALOG_TITLE_ID}
         title="Nouvelle conférence"
@@ -308,6 +327,7 @@ export function CreateConferenceDialog({
               <FormControl size="small" className="min-w-30">
                 <Select
                   {...field}
+                  disabled={isSubmitting}
                   style={{ fontWeight: "bold", color: appliedStatusColor }}
                   inputProps={{ "aria-label": "Statut du CFP" }}
                 >
@@ -321,17 +341,26 @@ export function CreateConferenceDialog({
         }
         subtitle="Saisir une conférence"
         formId="create-conference-form"
-        submitLabel="Créer la conférence"
-        cancelLabel="Annuler"
+        customActions
+        actions={<>
+          <Button variant="outlined" disabled={isSubmitting} onClick={() => requestClose(handleClose)}>Annuler</Button>
+          <div className="flex-1" />
+          <Button variant="contained" type="submit" form="create-conference-form" disabled={isSubmitting}
+            startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}>
+            {isSubmitting ? "Création…" : "Créer la conférence"}
+          </Button>
+        </>}
       >
         <Box
           component="form"
           id="create-conference-form"
-          onSubmit={handleSubmit(onSave)}
+          onSubmit={event => { if (isSubmitting) event.preventDefault(); else void handleSubmit(onSave)(event); }}
           noValidate
           sx={{ display: "flex", flexDirection: "column", gap: 2 }}
         >
+            {saveError && <Alert severity="error">{saveError}</Alert>}
             <TextField
+              disabled={isSubmitting}
               {...register("name")}
               id="conference-title"
               label="Titre de la conférence"
@@ -348,6 +377,7 @@ export function CreateConferenceDialog({
                 control={control}
                 render={({ field }) => (
                   <Autocomplete
+                    disabled={isSubmitting}
                     id="conference-location"
                     open={openLocation}
                     onOpen={() => setOpenLocation(true)}
@@ -416,6 +446,7 @@ export function CreateConferenceDialog({
                 <div className="flex flex-wrap gap-4">
                   {dateType === "single" && (
                     <DatePicker
+                      disabled={isSubmitting}
                       label="Date"
                       value={date}
                       onChange={(val) => {
@@ -441,6 +472,7 @@ export function CreateConferenceDialog({
                   {dateType === "range" && (
                     <>
                       <DatePicker
+                        disabled={isSubmitting}
                         label="Date de début"
                         value={date}
                         onChange={(val) => {
@@ -462,6 +494,7 @@ export function CreateConferenceDialog({
                         }}
                       />
                       <DatePicker
+                        disabled={isSubmitting}
                         label="Date de fin"
                         value={dateEnd}
                         onChange={(val) => {
@@ -486,6 +519,7 @@ export function CreateConferenceDialog({
 
                   {dateType === "month" && (
                     <DatePicker
+                      disabled={isSubmitting}
                       label="Mois"
                       value={dateMonth}
                       onChange={(val) => {
@@ -514,6 +548,7 @@ export function CreateConferenceDialog({
                     <>
                       <button
                         type="button"
+                        disabled={isSubmitting}
                         className="text-link underline underline-offset-2"
                         onClick={() => {
                           setDateType("range");
@@ -524,6 +559,7 @@ export function CreateConferenceDialog({
                       </button>
                       <button
                         type="button"
+                        disabled={isSubmitting}
                         className="text-link underline underline-offset-2"
                         onClick={() => {
                           setDateType("month");
@@ -539,6 +575,7 @@ export function CreateConferenceDialog({
                   {(dateType === "range" || dateType === "month") && (
                     <button
                       type="button"
+                        disabled={isSubmitting}
                       className="text-text-muted underline underline-offset-2"
                       onClick={() => {
                         setDateType("single");
@@ -554,6 +591,8 @@ export function CreateConferenceDialog({
               </div>
 
               <TextField
+
+                disabled={isSubmitting}
                 {...register("cfpLink")}
                 id="conference-cfp-link"
                 label="Lien CFP"
@@ -588,6 +627,7 @@ export function CreateConferenceDialog({
 
               <div className="col-span-2 flex gap-4">
                 <DatePicker
+                  disabled={isSubmitting}
                   label="Date de début du CFP"
                   value={cfpOpeningDate}
                   onChange={(val) => {
@@ -608,6 +648,8 @@ export function CreateConferenceDialog({
                 />
 
                 <DatePicker
+
+                  disabled={isSubmitting}
                   label="Date de fin du CFP"
                   value={cfpClosingDate}
                   onChange={(val) => {
@@ -638,6 +680,7 @@ export function CreateConferenceDialog({
                       Type
                     </InputLabel>
                     <Select
+                      disabled={isSubmitting}
                       {...field}
                       labelId="create-conference-type-label"
                       id="conference-type"
@@ -666,6 +709,7 @@ export function CreateConferenceDialog({
                       Portée
                     </InputLabel>
                     <Select
+                      disabled={isSubmitting}
                       {...field}
                       labelId="create-conference-reach-label"
                       id="conference-reach"

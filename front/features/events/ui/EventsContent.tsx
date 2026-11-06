@@ -7,10 +7,11 @@ import { SectionCard } from "@/shared/ui";
 
 interface EventsContentProps {
   filter: EventFilter;
+  year: number;
 }
 
-export function EventsContent({ filter }: EventsContentProps) {
-  const dashboard = useEventsDashboard(2026);
+export function EventsContent({ filter, year }: EventsContentProps) {
+  const dashboard = useEventsDashboard(year);
 
   const eventTypes = dashboard.eventTypes.filter(
     (type) => filter === "all" || type.visibility === filter
