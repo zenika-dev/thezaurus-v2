@@ -90,6 +90,8 @@ jobs:
           FIRESTORE_DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID }}
           FIRESTORE_COLLECTION_PREFIX: ${{ vars.FIRESTORE_COLLECTION_PREFIX }}
           PROFILE_PHOTOS_BUCKET: ${{ vars.PROFILE_PHOTOS_BUCKET }}
+          SCHEDULER_SERVICE_ACCOUNT: ${{ vars.SCHEDULER_SERVICE_ACCOUNT }}
+          FEEDBACK_REMINDER_AUDIENCE: ${{vars.FEEDBACK_REMINDER_AUDIENCE}}
         run: |
           # Une valeur de label n'accepte ni points ni majuscules
           VERSION_LABEL=$(echo "$VERSION" | tr '.' '-' | tr '[:upper:]' '[:lower:]')
@@ -98,7 +100,8 @@ jobs:
           # seules ces variables sont substituées
           envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE}
                     ${GCP_PROJECT_ID} ${RUNTIME_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
-                    ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${PROFILE_PHOTOS_BUCKET}' \
+                    ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${PROFILE_PHOTOS_BUCKET}
+                    ${SCHEDULER_SERVICE_ACCOUNT} ${FEEDBACK_REMINDER_AUDIENCE}' \
             > service.rendered.yaml <<'MANIFEST'
           apiVersion: serving.knative.dev/v1
           kind: Service
@@ -174,6 +177,12 @@ jobs:
                         value: "${PROFILE_PHOTOS_BUCKET}"
                       - name: GOOGLE_CLIENT_ID
                         value: "${GOOGLE_CLIENT_ID}"
+                 
+                      - name: FEEDBACK_REMINDER_AUDIENCE
+                        value: "${FEEDBACK_REMINDER_AUDIENCE}"
+                      # Seul compte autorisé à déclencher les rappels post-talk (Cloud Scheduler)
+                      - name: FEEDBACK_REMINDER_INVOKER
+                        value: "${SCHEDULER_SERVICE_ACCOUNT}"
                       - name: SLACK_BOT_TOKEN
                         valueFrom:
                           secretKeyRef:

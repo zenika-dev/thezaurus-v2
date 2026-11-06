@@ -13,7 +13,6 @@ import com.zenika.thezaurus.repository.UserRepository;
 import com.zenika.thezaurus.slack.SlackUserResolver;
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;
-import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.LocalDate;
@@ -22,6 +21,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jsoup.Jsoup;
@@ -69,13 +69,25 @@ public class TalkFeedbackReminderService {
     @ConfigProperty(name = "thezaurus.slack.bot-token")
     Optional<String> botToken;
 
-    @Scheduled(
-            identity = "talk-feedback-reminder",
-            cron = "{thezaurus.feedback-reminder.cron}",
-            timeZone = "{thezaurus.feedback-reminder.time-zone}",
-            concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
+    // Cloud Scheduler peut relancer l'appel (retry) pendant qu'un batch tourne encore :
+    // on ignore l'appel concurrent plutôt que d'envoyer deux fois les mêmes rappels.
+    private final AtomicBoolean running = new AtomicBoolean();
+
+    /** Déclenché par Cloud Scheduler via {@code FeedbackReminderResource}. */
     public void sendReminders() throws ExecutionException {
         if (!enabled) return;
+        if (!running.compareAndSet(false, true)) {
+            LOG.warn("Batch de rappels déjà en cours : appel ignoré.");
+            return;
+        }
+        try {
+            sendRemindersOnce();
+        } finally {
+            running.set(false);
+        }
+    }
+
+    private void sendRemindersOnce() {
         boolean hasSmtp = sender.isPresent() && !sender.get().isBlank();
         boolean hasSlack = botToken.isPresent() && !botToken.get().isBlank();
         if (!hasSmtp && !hasSlack) {
