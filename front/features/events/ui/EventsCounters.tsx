@@ -5,8 +5,8 @@ import { Badge } from "@/shared/ui";
 import { visibilityColors } from "@/entities/event";
 import { useEventsDashboard } from "@/features/events/model";
 
-export function EventsCounters() {
-  const { totals } = useEventsDashboard(2026);
+export function EventsCounters({ year }: { year: number }) {
+  const { totals } = useEventsDashboard(year);
 
   return (
     <div className="flex items-center gap-2 h-9">
