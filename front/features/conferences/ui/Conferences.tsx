@@ -7,7 +7,6 @@ import { ConferencesList } from "./ConferencesList";
 
 import { Plus } from "lucide-react";
 import { useConferencesMutations } from "../model/useConferencesMutations";
-import { ConferenceData } from "@/entities/conference";
 import dynamic from "next/dynamic";
 
 const CreateConferenceDialog = dynamic(
@@ -21,14 +20,6 @@ const CreateConferenceDialog = dynamic(
 export function Conferences() {
   const [open, setOpen] = useState(false);
   const { createConference } = useConferencesMutations();
-
-  const handleSubmit = async (conference: ConferenceData) => {
-    try {
-      await createConference(conference);
-    } catch {
-      alert("Erreur lors de la création de la conférence");
-    }
-  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -50,7 +41,7 @@ export function Conferences() {
       <CreateConferenceDialog
         open={open}
         onClose={() => setOpen(false)}
-        onSubmit={handleSubmit}
+        onSubmit={createConference}
       />
     </div>
   );
