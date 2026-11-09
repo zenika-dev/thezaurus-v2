@@ -221,6 +221,7 @@ describe("Mes talks", () => {
     );
     const user = userEvent.setup();
     expect(await screen.findByText("Autre talk")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Autre talk" })).toHaveAttribute("href", "/?talk=namesake");
     if (mobile) {
       expect(screen.getByRole("list", { name: "Talks" })).toBeInTheDocument();
       expect(screen.queryByRole("table")).not.toBeInTheDocument();

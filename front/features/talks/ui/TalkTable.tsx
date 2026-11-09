@@ -76,13 +76,13 @@ export function TalkTable() {
           <ul aria-label="Talks" className="list-none m-0 p-0 flex flex-col gap-3">
             {talks.map((talk) => (
               <Surface component="li" key={talk.id} className="p-4 min-w-0">
-                <button
-                  type="button"
-                  onClick={() => setSelectedTalkId(talk.id)}
+                <Link
+                  href={detail.href(talk.id)}
+                  scroll={false}
                   className="text-link underline font-medium cursor-pointer text-left bg-transparent border-0 p-0 wrap-anywhere"
                 >
                   {talk.title}
-                </button>
+                </Link>
                 <div className="flex flex-wrap gap-2 mt-3">
                   <StatusTag status={talk.status} />
                   <VisibilityTag visibility={talk.visibility} />
