@@ -22,7 +22,7 @@ export function EventsDashboard() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <PageHeader title={`Événements ${year}`} subtitle="Suivi des événements internes et externes par agence Zenika."
-        action={<Suspense fallback={<EventsCountersSkeleton />}><DataErrorBoundary><EventsCounters year={year} /></DataErrorBoundary></Suspense>}
+        action={<Suspense fallback={<EventsCountersSkeleton />}><DataErrorBoundary key={year}><EventsCounters year={year} /></DataErrorBoundary></Suspense>}
       />
 
       <div className="mb-4 flex items-center gap-3">
@@ -45,7 +45,7 @@ export function EventsDashboard() {
       </div>
 
       <Suspense fallback={<EventsContentSkeleton />}>
-        <DataErrorBoundary>
+        <DataErrorBoundary key={year}>
           <EventsContent filter={filter} year={year} />
         </DataErrorBoundary>
       </Suspense>
