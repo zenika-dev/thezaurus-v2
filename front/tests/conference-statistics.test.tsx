@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { ConferenceAnnualStatistics } from "@/features/conferences/ui/ConferenceAnnualStatistics";
@@ -22,7 +23,7 @@ it("charge les statistiques groupées en un seul appel", async () => {
   expect(String(fetch.mock.calls[0]?.[0])).toContain("/conferences");
   expect(conferences[0]).toMatchObject({ submittedTalksAmount: 4, acceptedTalksAmount: 2 });
   state.conferences = conferences;
-  render(<ConferencesList />);
+  render(<QueryClientProvider client={new QueryClient()}><ConferencesList /></QueryClientProvider>);
   expect(screen.getByText("4 talks soumis")).toBeInTheDocument();
   expect(screen.getByText("2 talks acceptés")).toBeInTheDocument();
   expect(screen.getByText("0 talks acceptés")).toBeInTheDocument();
@@ -43,7 +44,7 @@ it("trie les compteurs sans requête, conserve les filtres et réinitialise l'or
     { id: "b", name: "Bravo", cfpStatus: "Open", submittedTalksAmount: 3, acceptedTalksAmount: 3 },
     { id: "c", name: "Charlie", cfpStatus: "Open", submittedTalksAmount: 4, acceptedTalksAmount: 2 },
   ].map(mapBackendToFrontend);
-  render(<ConferencesList />);
+  render(<QueryClientProvider client={new QueryClient()}><ConferencesList /></QueryClientProvider>);
   const sort = screen.getByRole("combobox", { name: /Trier par/ });
   const before = (first: string, second: string) => {
     expect(screen.getByText(first).compareDocumentPosition(screen.getByText(second)) & Node.DOCUMENT_POSITION_FOLLOWING)
@@ -104,7 +105,7 @@ it("conserve les filtres historiques sans afficher le bilan sur la liste ni refa
     annualConference("Historique", "2023-03-01", "2023-03-01", 2, 1),
     annualConference("Future", "2027-05-01", "2027-05-01", 3, 2),
   ];
-  render(<ConferencesList />);
+  render(<QueryClientProvider client={new QueryClient()}><ConferencesList /></QueryClientProvider>);
   fireEvent.click(screen.getByRole("button", { name: "2023" }));
   expect(screen.getByText("Historique")).toBeInTheDocument();
   expect(screen.queryByText("Future")).not.toBeInTheDocument();

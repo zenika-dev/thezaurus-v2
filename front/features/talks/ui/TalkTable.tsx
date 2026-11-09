@@ -1,6 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+
+import { useDetailUrl } from "@/shared/lib/useDetailUrl";
+import { DetailUrlFeedback } from "@/shared/ui/DetailUrlFeedback";
+import { CopyDetailLinkButton } from "@/shared/ui/CopyDetailLinkButton";
+import { talkApi } from "@/entities/talk";
 import { ContributionFilters, PaginationBar } from "@/shared/ui";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -24,7 +29,6 @@ const TalkDetailsDialog = dynamic(
 );
 
 export function TalkTable() {
-  const [selectedTalkId, setSelectedTalkId] = useState<string | null>(null);
   const {
     page,
     pageSize,
@@ -40,7 +44,8 @@ export function TalkTable() {
 
   const { talks, total, totalPages, updateTalk, deleteTalk } = useTalks(apiParams);
 
-  const selectedTalk = talks.find((talkItem) => talkItem.id === selectedTalkId) ?? null;
+  const detail = useDetailUrl("talk", "talks", talks, talkApi.getTalk);
+  const { selected: selectedTalk, selectedId: selectedTalkId, select: setSelectedTalkId } = detail;
 
   const handleUpdate = updateTalk;
   const handleDelete = deleteTalk;
@@ -91,13 +96,13 @@ export function TalkTable() {
               talks.map((talk) => (
                 <TableRow key={talk.id} hover>
                   <TableCell>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTalkId(talk.id)}
+                    <Link
+                      href={detail.href(talk.id)}
+                      scroll={false}
                       className="text-link underline font-medium hover:text-link text-sm cursor-pointer text-left bg-transparent border-0 p-0"
                     >
                       {talk.title}
-                    </button>
+                    </Link>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -121,16 +126,18 @@ export function TalkTable() {
                   <TableCell><StatusTag status={talk.status} /></TableCell>
                   <TableCell align="center"><VisibilityTag visibility={talk.visibility} /></TableCell>
                   <TableCell align="center">
+                    <CopyDetailLinkButton path="/talks" parameter="talk" id={talk.id} iconOnly label={`Copier le lien vers le talk : ${talk.title}`} />
                     {(talk.status === "ACCEPTED" || talk.status === "DONE") && (
-                      <button
-                        onClick={() => setSelectedTalkId(talk.id)}
+                      <Link
+                        href={detail.href(talk.id)}
+                        scroll={false}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs
                           border border-border text-text bg-surface font-sans
                           hover:bg-primary/10 hover:text-link transition-colors cursor-pointer"
                       >
                         <Eye size={12} />
                         <span>Détail</span>
-                      </button>
+                      </Link>
                     )}
                   </TableCell>
                 </TableRow>
@@ -150,6 +157,7 @@ export function TalkTable() {
         label="Talks par page :"
       />
 
+      <DetailUrlFeedback loading={detail.loading} error={detail.error} onClose={detail.close} onRetry={detail.retry} />
       <TalkDetailsDialog
         talk={selectedTalk}
         open={!!selectedTalkId}

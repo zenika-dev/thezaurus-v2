@@ -15,6 +15,8 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -100,7 +102,8 @@ public class ReminderTemplateRenderer {
         data.put("talkTitle", text(talk.title()));
         data.put("talkDate", date);
         data.put("conferenceName", conference);
-        data.put("talksUrl", talksUrl());
+        // Keep the legacy variable name so saved email templates also open the selected talk.
+        data.put("talksUrl", talkUrl(talk.id()));
         data.put("hasDate", !date.isBlank());
         data.put("hasConference", !conference.isBlank());
         data.put("missingReplay", text(talk.replay()).isBlank());
@@ -156,6 +159,13 @@ public class ReminderTemplateRenderer {
         }
         String path = uri.getPath() == null ? "" : uri.getPath().replaceAll("/+$", "");
         return uri.resolve(path + "/talks").toString();
+    }
+
+    private String talkUrl(String talkId) {
+        if (talkId == null || talkId.isBlank()) {
+            return talksUrl();
+        }
+        return talksUrl() + "?talk=" + URLEncoder.encode(talkId, StandardCharsets.UTF_8);
     }
 
     private static String sanitize(String html, boolean template) {

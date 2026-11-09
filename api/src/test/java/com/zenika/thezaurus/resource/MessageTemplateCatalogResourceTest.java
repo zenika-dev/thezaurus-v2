@@ -44,6 +44,8 @@ class MessageTemplateCatalogResourceTest {
                 .body("[0].variables.name", hasItems("talkTitle", "talkDate", "conferenceName", "talksUrl", "speakers"))
                 .body("[0].conditions.name", hasItems("hasConference", "hasDate", "missingReplay", "missingAudience"))
                 .body("[0].links[0].variable", is("talksUrl"))
+                .body("[0].links[0].label", is("Lien vers le talk"))
+                .body("[0].links[0].text", is("Ouvrir le talk"))
                 .body("[1].id", is("talk-slack-reminder"))
                 .body("[1].label", is("Rappel Slack"))
                 .body("[1].apiPath", is("/api/admin/slack-reminder-template"))

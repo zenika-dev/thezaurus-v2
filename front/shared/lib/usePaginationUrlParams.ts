@@ -50,7 +50,8 @@ export function usePaginationUrlParams<TStatus extends string>(
         personal: updates.personal !== undefined ? updates.personal : state.personal,
       };
 
-      const nextParams = new URLSearchParams();
+      const nextParams = new URLSearchParams(searchParamsString);
+      for (const key of ["page", "pageSize", "status", "personal"]) nextParams.delete(key);
 
       if (nextState.page > 1) {
         nextParams.set("page", String(nextState.page));
@@ -76,7 +77,7 @@ export function usePaginationUrlParams<TStatus extends string>(
         // ignore
       }
     },
-    [router, pathname, defaultPageSize, state]
+    [router, pathname, defaultPageSize, state, searchParamsString]
   );
 
   const setStatus = useCallback((s: "All" | TStatus) => updateUrl({ status: s, page: 1 }), [updateUrl]);

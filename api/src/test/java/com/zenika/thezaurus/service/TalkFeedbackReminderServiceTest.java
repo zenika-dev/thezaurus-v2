@@ -464,7 +464,7 @@ class TalkFeedbackReminderServiceTest {
                     assertEquals("Rappel Java & Qute", mail.getSubject());
                     assertEquals(
                             "<p>Bonjour Alice, Bob</p><p>Replay manquant</p><p>Audience manquante</p>"
-                                    + "<a href=\"https://thezaurus.example/talks\">Compléter</a>",
+                                    + "<a href=\"https://thezaurus.example/talks?talk=talk-1\">Compléter</a>",
                             mail.getHtml());
                     verify(talks, never()).markFeedbackReminderSent(anyString());
                     return null;

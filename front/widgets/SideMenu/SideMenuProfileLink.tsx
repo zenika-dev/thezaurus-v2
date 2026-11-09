@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useGuardedPush } from "@/shared/lib/navigation-guard";
 import { UserRound } from "lucide-react";
 import { SideMenuNavItem } from "./SideMenuNavItem";
 
@@ -11,7 +10,6 @@ interface SideMenuProfileLinkProps {
 }
 
 export function SideMenuProfileLink({ open, onNavigate }: SideMenuProfileLinkProps) {
-  const push = useGuardedPush();
   const pathname = usePathname();
 
   return (
@@ -20,7 +18,8 @@ export function SideMenuProfileLink({ open, onNavigate }: SideMenuProfileLinkPro
       label="Mon profil"
       open={open}
       active={pathname.startsWith("/profile")}
-      onClick={() => { push("/profile"); onNavigate(); }}
+      href="/profile"
+      onClick={onNavigate}
     />
   );
 }
