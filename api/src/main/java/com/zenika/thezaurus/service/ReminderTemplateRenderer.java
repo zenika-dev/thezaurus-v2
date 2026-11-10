@@ -27,8 +27,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.safety.Cleaner;
 import org.jsoup.safety.Safelist;
 
-
-
 /** Shared, side-effect-free renderer for previews and future delivery using Mustache. */
 @ApplicationScoped
 public class ReminderTemplateRenderer {
