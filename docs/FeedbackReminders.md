@@ -37,6 +37,21 @@ active les rappels, à 09:00 Paris selon `FEEDBACK_REMINDER_CRON` et
 `FEEDBACK_REMINDER_TIME_ZONE`. Le modèle administrable et les préférences email
 restent nécessaires. Les messages Mailpit sont éphémères lors d’une recréation.
 
+### Déclencher le batch en local
+
+En production, le batch est déclenché par Cloud Scheduler, qui appelle
+`POST /api/internal/feedback-reminders` avec un token OIDC de son compte de service.
+En local, il n’y a pas de déclenchement automatique : le profil `dev` active
+`thezaurus.feedback-reminder.local-trigger`, qui accepte l’appel sans token.
+
+```bash
+curl -i -X POST http://localhost:8080/api/internal/feedback-reminders
+```
+
+L’appel se fait directement sur l’API (`:8080`) : la route du front exige un token.
+Une réponse `204` signifie que le batch a tourné ; les emails arrivent dans Mailpit
+(aucun log s’il n’y a aucun talk éligible).
+
 Après modification de `.env`, lancer `docker compose up -d api mailpit` pour
 recréer les conteneurs concernés ; un simple `restart` ne recharge pas leurs variables.
 
@@ -52,16 +67,20 @@ FEEDBACK_REMINDER_CRON="0 0 9 * * ?"
 FEEDBACK_REMINDER_TIME_ZONE=Europe/Paris
 THEZAURUS_PUBLIC_URL=https://thezaurus.zenika.com
 
-SMTP_HOST=smtp.sendgrid.net
-SMTP_PORT=587
-SMTP_FROM=thezaurus@zenika.com
-SMTP_USERNAME=apikey
-SMTP_PASSWORD=votre-token-secret
-SMTP_LOGIN=REQUIRED
-SMTP_START_TLS=REQUIRED
-SMTP_TLS=false
-SMTP_MOCK=false
+# Prod : API HTTP Mailgun (région EU), authentifiée par une Domain Sending Key
+SMTP_FROM=thezaurus-noreply@m.zenika.com
+MAILGUN_DOMAIN=m.zenika.com
+MAILGUN_BASE_URL=https://api.eu.mailgun.net
+MAILGUN_SENDING_KEY=votre-sending-key
 ```
+
+Si `MAILGUN_SENDING_KEY` ou `MAILGUN_DOMAIN` est vide, l'envoi passe par le SMTP
+`quarkus-mailer` (`SMTP_*`) : c'est le cas en local avec Mailpit. Une Domain Sending Key
+n'est acceptée que par l'API HTTP Mailgun, pas en SMTP. Le transport utilisé apparaît dans
+le log `Email de rappel envoyé avec succès via mailgun (m.zenika.com) …`.
+
+Sur Cloud Run (`.github/workflows/_deploy.yml`), `MAILGUN_DOMAIN` et `SMTP_FROM` viennent des
+vars de l'environnement GitHub, la clé du secret Secret Manager `thezaurus-mailgun-sending-key`.
 
 ### Via properties Quarkus (`config/application.properties`)
 
