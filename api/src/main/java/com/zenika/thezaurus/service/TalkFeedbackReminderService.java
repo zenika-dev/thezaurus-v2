@@ -67,8 +67,9 @@ public class TalkFeedbackReminderService {
     @ConfigProperty(name = "thezaurus.slack.bot-token")
     Optional<String> botToken;
 
-    // Cloud Scheduler peut relancer l'appel (retry) pendant qu'un batch tourne encore :
-    // on ignore l'appel concurrent plutôt que d'envoyer deux fois les mêmes rappels.
+    // Évite deux batchs simultanés (double déclenchement manuel du job, appel local répété),
+    // qui enverraient deux fois les mêmes rappels. Protection limitée à l'instance : suffisante
+    // tant que l'API tourne sur une seule instance (maxScale: 1 dans _deploy.yml).
     private final AtomicBoolean running = new AtomicBoolean();
 
     /** Déclenché par Cloud Scheduler via {@code FeedbackReminderResource}. */
@@ -86,14 +87,14 @@ public class TalkFeedbackReminderService {
     }
 
     private void sendRemindersOnce() {
-        boolean hasSmtp = sender.isPresent() && !sender.get().isBlank();
+        boolean hasEmailSender = sender.isPresent() && !sender.get().isBlank();
         boolean hasSlack = botToken.isPresent() && !botToken.get().isBlank();
-        if (!hasSmtp && !hasSlack) {
+        if (!hasEmailSender && !hasSlack) {
             LOG.warn("Aucun canal de notification configuré (SMTP et Slack absents) : aucun rappel envoyé.");
             return;
         }
         try {
-            sendBatch(hasSmtp, hasSlack);
+            sendBatch(hasEmailSender, hasSlack);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             LOG.warn("Envoi des rappels interrompu.");
@@ -102,8 +103,8 @@ public class TalkFeedbackReminderService {
         }
     }
 
-    private void sendBatch(boolean hasSmtp, boolean hasSlack) throws ExecutionException, InterruptedException {
-        var emailTemplate = hasSmtp ? templates.get() : null;
+    private void sendBatch(boolean hasEmailSender, boolean hasSlack) throws ExecutionException, InterruptedException {
+        var emailTemplate = hasEmailSender ? templates.get() : null;
         boolean emailTemplateValid = false;
         if (emailTemplate != null
                 && !emailTemplate.subject().isBlank()

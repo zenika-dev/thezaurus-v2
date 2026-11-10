@@ -33,8 +33,8 @@ L’authentification SMTP locale est sans TLS ; aucun relais externe n’est con
 L’override transmet explicitement les variables du `.env` à l’API. Les properties
 du profil `dev` les lisent, notamment `SMTP_MOCK=false`, qui active la livraison
 à Mailpit au lieu de la simulation Quarkus. `FEEDBACK_REMINDER_ENABLED=true`
-active les rappels, à 09:00 Paris selon `FEEDBACK_REMINDER_CRON` et
-`FEEDBACK_REMINDER_TIME_ZONE`. Le modèle administrable et les préférences email
+active les rappels ; le batch se déclenche à la main (voir ci-dessous).
+`FEEDBACK_REMINDER_TIME_ZONE` sert à déterminer les talks passés. Le modèle administrable et les préférences email
 restent nécessaires. Les messages Mailpit sont éphémères lors d’une recréation.
 
 ### Déclencher le batch en local
@@ -55,6 +55,62 @@ Une réponse `204` signifie que le batch a tourné ; les emails arrivent dans Ma
 Après modification de `.env`, lancer `docker compose up -d api mailpit` pour
 recréer les conteneurs concernés ; un simple `restart` ne recharge pas leurs variables.
 
+### Données nécessaires dans l’émulateur
+
+Le batch sort sans rien envoyer (et souvent sans log) si l’une de ces conditions manque :
+
+1. **Modèle d’email** : **Administration → Templates de messages → Email de rappel**,
+   sujet et corps non vides (document `dev_app_configuration/reminder_template`).
+2. **Préférence du speaker** : notification email activée sur sa page profil
+   (`emailNotificationsEnabled = true` dans `users/<email>`). Une préférence jamais
+   exprimée (`null`) vaut refus.
+3. **Talk éligible** : speaker = ce compte, `status` `ACCEPTED` ou `DONE`, `visibility`
+   `PUBLIC`, `feedbackReminderSent = false`, `date` **strictement passée** (`AAAA-MM-JJ`),
+   et pas à la fois un replay et une audience renseignés.
+
+Les données sont consultables et modifiables dans l’Emulator UI : http://localhost:4000
+(projet `local-dev`, base `(default)`, collections préfixées par `dev_` sauf `users`).
+
+Un talk ne reçoit qu’un rappel : après un envoi, remettre `feedbackReminderSent` à
+`false` (booléen) pour rejouer le test.
+
+**L’émulateur ne persiste rien** : à chaque redémarrage de son conteneur, modèle,
+utilisateurs et talks sont perdus. Pour reconstruire l’API sans le relancer :
+
+```bash
+docker compose up -d --build --no-deps api
+```
+
+### Tester l’envoi réel via Mailgun en local
+
+Par défaut l’envoi local passe par Mailpit. Pour recevoir un vrai email, renseigner dans
+`.env` (jamais commité) :
+
+```bash
+MAILGUN_SENDING_KEY=<Domain Sending Key>
+MAILGUN_DOMAIN=m.zenika.com
+SMTP_FROM=thezaurus-noreply@m.zenika.com
+```
+
+puis `docker compose up -d --no-deps api` et le `curl` ci-dessus. Le log doit indiquer
+`Email de rappel envoyé avec succès via mailgun (m.zenika.com)` ; `via smtp` signifie que
+les variables Mailgun ne sont pas arrivées dans le conteneur. Vider ces variables pour
+revenir à Mailpit. Le profil `dev` reste actif : c’est lui qui autorise le `curl` sans token.
+
+### Diagnostic rapide
+
+```bash
+docker logs thezaurus-api --since 5m 2>&1 | grep -i -E "rappel|reminder"
+```
+
+| Symptôme | Cause probable |
+|---|---|
+| `204`, aucun log | rappels désactivés, modèle absent, aucun talk éligible ou préférence email non activée |
+| `Modèle d'email de rappel invalide.` | syntaxe Mustache ou lien autre que `{{talksUrl}}` |
+| `Échec de l'envoi d'email … Connection refused` | Mailpit arrêté, ou Mailgun non configuré alors qu’on l’attendait |
+| `Mailgun a répondu 401` | clé Mailgun ou domaine incorrect |
+| Lien `localhost:3000` dans l’email | `THEZAURUS_PUBLIC_URL` non défini (normal en local) |
+
 ## Configuration en production et hors Docker Compose
 
 Les rappels sont désactivés par défaut. Vous pouvez renseigner la configuration soit via les variables d'environnement (`.env` ou variables système dans votre orchestration), soit via un fichier `config/application.properties` non versionné relatif au répertoire de lancement de l'API.
@@ -63,7 +119,6 @@ Les rappels sont désactivés par défaut. Vous pouvez renseigner la configurati
 
 ```bash
 FEEDBACK_REMINDER_ENABLED=true
-FEEDBACK_REMINDER_CRON="0 0 9 * * ?"
 FEEDBACK_REMINDER_TIME_ZONE=Europe/Paris
 THEZAURUS_PUBLIC_URL=https://thezaurus.zenika.com
 
@@ -86,7 +141,6 @@ vars de l'environnement GitHub, la clé du secret Secret Manager `thezaurus-mail
 
 ```properties
 thezaurus.feedback-reminder.enabled=true
-thezaurus.feedback-reminder.cron=0 0 9 * * ?
 thezaurus.feedback-reminder.time-zone=Europe/Paris
 thezaurus.public-url=https://thezaurus.zenika.com
 
@@ -102,17 +156,44 @@ quarkus.mailer.mock=false
 ```
 
 Hors Compose, le profil `dev` simule l’envoi par défaut (`SMTP_MOCK=true`).
-Le profil `test` conserve toujours `quarkus.mailer.mock=true`. Le scheduler est désactivé en test ; les tests
-déclenchent le service explicitement. Une simulation réussie marque le talk
+Le profil `test` conserve toujours `quarkus.mailer.mock=true` et n'utilise jamais Mailgun ;
+les tests déclenchent le service explicitement. Une simulation réussie marque le talk
 dans la base de développement : utiliser une base isolée.
 
 ## Exécution en production
 
-Activer le job sur une seule instance de l’API, maintenue en fonctionnement avec
-du CPU disponible à l’heure prévue. En particulier, un service Cloud Run réduit
-à zéro ou suspendu hors requêtes ne garantit pas ce déclenchement quotidien.
-Les exécutions simultanées sont empêchées dans cette instance ; le scheduler
-ne coordonne pas plusieurs instances. Voir la [référence du scheduler Quarkus](https://quarkus.io/guides/scheduler-reference/).
+Le batch est déclenché par **Cloud Scheduler** (job `talk-feedback-reminder`, créé ou mis à
+jour par `.github/workflows/_gcp_scheduler.yaml` à chaque release). Le job appelle
+`POST <NEXTAUTH_URL>/api/internal/feedback-reminders` avec un token OIDC signé pour
+`SCHEDULER_SERVICE_ACCOUNT` ; la route du front le relaie à l'API, qui vérifie la signature,
+l'audience (`FEEDBACK_REMINDER_AUDIENCE`) et l'email du compte (`FEEDBACK_REMINDER_INVOKER`).
+Le job n'a pas de retry : un batch interrompu est rattrapé au passage suivant.
+
+L'envoi est synchrone dans la requête (limite `--attempt-deadline=300s`). Les appels
+concurrents sont ignorés dans l'instance ; cette protection suppose une seule instance
+d'API (`maxScale: 1` dans `_deploy.yml`).
+
+### Checklist de mise en production
+
+1. **Secret Manager** : secret `thezaurus-mailgun-sending-key` (Domain Sending Key Mailgun),
+   lisible par `RUNTIME_SERVICE_ACCOUNT` (`roles/secretmanager.secretAccessor`).
+2. **Vars de l'environnement GitHub `production`** :
+   - `FEEDBACK_REMINDER_ENABLED=true` (sinon le batch ne fait rien) ;
+   - `MAILGUN_DOMAIN` (ex. `m.zenika.com`) et `SMTP_FROM` (ex. `thezaurus-noreply@m.zenika.com`) ;
+   - `SCHEDULER_SERVICE_ACCOUNT`, `FEEDBACK_REMINDER_AUDIENCE` et `SCHEDULER_CRON`
+     (ex. `0 9 * * 1-5`, fuseau `Europe/Paris`).
+3. **Index composite Firestore** sur `<prefix>_talks`, tous ascendants :
+   `feedbackReminderSent`, `status`, `visibility`, `date`. Sans lui, le batch échoue avec
+   `FAILED_PRECONDITION: The query requires an index` (le lien de création est dans le log).
+   L'émulateur n'exige pas d'index : l'erreur n'apparaît qu'en prod.
+4. **Modèle d'email** : à créer dans **Administration → Templates de messages → Email de
+   rappel** (document `<prefix>_app_configuration/reminder_template`). S'il est créé à la
+   main dans la console, `revision` doit être un entier ou absent.
+5. **Release depuis `main`** avec un commit `feat:`/`fix:` touchant `api/` : sans nouvelle
+   version, l'image API existante est redéployée et le nouveau code n'est pas livré.
+
+Un talk ne reçoit qu'un rappel (`feedbackReminderSent`). Pour rejouer un test, remettre ce
+champ à `false` (booléen) sur le talk.
 
 SMTP et Firestore ne partagent pas de transaction : si l’email est accepté puis
 que l’écriture du marqueur échoue (ou que le processus s’arrête), le prochain

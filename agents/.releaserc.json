@@ -1,11 +1,7 @@
 {
   "extends": "semantic-release-monorepo",
   "branches": [
-    "main",
-    {
-      "name": "feat/send-reminder-email-using-cloud-scheduler",
-      "prerelease": "scheduler"
-    }
+    "main"
   ],
   "tagFormat": "agents-v${version}",
   "plugins": [

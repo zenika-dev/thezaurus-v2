@@ -2,10 +2,6 @@ name: (interne) Cloud Scheduler
 
 on:
   workflow_call:
-   
-  push:
-    branches: [feat/send-reminder-email-using-cloud-scheduler]
-    paths: [.github/workflows/_gcp_scheduler.yaml]
 
 jobs:
   run-scheduler:
@@ -27,7 +23,7 @@ jobs:
       GCP_REGION: ${{ vars.GCP_REGION }}
       NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
       SCHEDULER_SERVICE_ACCOUNT: ${{ vars.SCHEDULER_SERVICE_ACCOUNT }}
-      FEEDBACK_REMINDER_AUDIENCE: ${{vars.FEEDBACK_REMINDER_AUDIENCE}}
+      FEEDBACK_REMINDER_AUDIENCE: ${{ vars.FEEDBACK_REMINDER_AUDIENCE }}
       SCHEDULER_CRON: ${{ vars.SCHEDULER_CRON }}
     steps:
       # Échoue tout de suite si l'environnement GitHub est incomplet.
@@ -40,8 +36,8 @@ jobs:
             WIF_PROVIDER=${{ vars.WIF_PROVIDER }}
             WIF_SERVICE_ACCOUNT=${{ vars.WIF_SERVICE_ACCOUNT }}
             SCHEDULER_SERVICE_ACCOUNT=${{ vars.SCHEDULER_SERVICE_ACCOUNT }}
-            FEEDBACK_REMINDER_AUDIENCE=${{vars.FEEDBACK_REMINDER_AUDIENCE}}
-            SCHEDULER_CRON=${{vars.SCHEDULER_CRON}}
+            FEEDBACK_REMINDER_AUDIENCE=${{ vars.FEEDBACK_REMINDER_AUDIENCE }}
+            SCHEDULER_CRON=${{ vars.SCHEDULER_CRON }}
         run: |
           MISSING=0
           for pair in $REQUIRED; do
