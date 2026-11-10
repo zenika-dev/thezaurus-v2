@@ -99,6 +99,8 @@ jobs:
           MAILGUN_DOMAIN: ${{ vars.MAILGUN_DOMAIN }}
           MAILGUN_BASE_URL: ${{ vars.MAILGUN_BASE_URL || 'https://api.eu.mailgun.net' }}
           SMTP_FROM: ${{ vars.SMTP_FROM }}
+          # Interrupteur des rappels post-talk : false tant que la var n'est pas créée
+          FEEDBACK_REMINDER_ENABLED: ${{ vars.FEEDBACK_REMINDER_ENABLED || 'false' }}
         run: |
           # Une valeur de label n'accepte ni points ni majuscules
           VERSION_LABEL=$(echo "$VERSION" | tr '.' '-' | tr '[:upper:]' '[:lower:]')
@@ -109,7 +111,8 @@ jobs:
                     ${GCP_PROJECT_ID} ${RUNTIME_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
                     ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${PROFILE_PHOTOS_BUCKET}
                     ${SCHEDULER_SERVICE_ACCOUNT} ${FEEDBACK_REMINDER_AUDIENCE}
-                    ${MAILGUN_DOMAIN} ${MAILGUN_BASE_URL} ${SMTP_FROM}' \
+                    ${MAILGUN_DOMAIN} ${MAILGUN_BASE_URL} ${SMTP_FROM}
+                    ${FEEDBACK_REMINDER_ENABLED}' \
             > service.rendered.yaml <<'MANIFEST'
           apiVersion: serving.knative.dev/v1
           kind: Service
@@ -185,6 +188,8 @@ jobs:
                         value: "${PROFILE_PHOTOS_BUCKET}"
                       - name: GOOGLE_CLIENT_ID
                         value: "${GOOGLE_CLIENT_ID}"
+                      - name: FEEDBACK_REMINDER_ENABLED
+                        value: "${FEEDBACK_REMINDER_ENABLED}"
                       - name: FEEDBACK_REMINDER_AUDIENCE
                         value: "${FEEDBACK_REMINDER_AUDIENCE}"
                       # Seul compte autorisé à déclencher les rappels post-talk (Cloud Scheduler)
