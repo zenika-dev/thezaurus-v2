@@ -11,8 +11,6 @@ import com.zenika.thezaurus.repository.SlackReminderTemplateRepository;
 import com.zenika.thezaurus.repository.TalkRepository;
 import com.zenika.thezaurus.repository.UserRepository;
 import com.zenika.thezaurus.slack.SlackUserResolver;
-import io.quarkus.mailer.Mail;
-import io.quarkus.mailer.Mailer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.LocalDate;
@@ -55,7 +53,7 @@ public class TalkFeedbackReminderService {
     App slackApp;
 
     @Inject
-    Mailer mailer;
+    ReminderMailSender mailSender;
 
     @ConfigProperty(name = "thezaurus.feedback-reminder.time-zone", defaultValue = "Europe/Paris")
     String timeZone;
@@ -174,11 +172,10 @@ public class TalkFeedbackReminderService {
                             if (user != null && user.notifiesByEmail()) recipients.add(email);
                         }
                         if (!recipients.isEmpty()) {
-                            mailer.send(new Mail()
-                                    .setSubject(message.subject())
-                                    .setHtml(message.bodyHtml())
-                                    .setTo(recipients));
-                            LOG.infof("Email de rappel envoyé avec succès à %s pour le talk %s", recipients, talk.id());
+                            mailSender.send(message.subject(), message.bodyHtml(), recipients);
+                            LOG.infof(
+                                    "Email de rappel envoyé avec succès via %s à %s pour le talk %s",
+                                    mailSender.transport(), recipients, talk.id());
                             anySuccess = true;
                         }
                     }
