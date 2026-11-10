@@ -188,6 +188,9 @@ jobs:
                         value: "${PROFILE_PHOTOS_BUCKET}"
                       - name: GOOGLE_CLIENT_ID
                         value: "${GOOGLE_CLIENT_ID}"
+                      # URL publique de l'appli : liens absolus des emails ({{talksUrl}})
+                      - name: THEZAURUS_PUBLIC_URL
+                        value: "${NEXTAUTH_URL}"
                       - name: FEEDBACK_REMINDER_ENABLED
                         value: "${FEEDBACK_REMINDER_ENABLED}"
                       - name: FEEDBACK_REMINDER_AUDIENCE
