@@ -1,0 +1,127 @@
+[
+  {
+    "name": "generate-image-speaker-event",
+    "description": "Génère un visuel de communication pour annoncer un talk (1 speaker) à une conférence",
+    "category": "TALK",
+    "templatePath": "templates/conf-1.png",
+    "fields": [
+      "NAME",
+      "TITLE",
+      "CONFERENCE",
+      "PHOTO",
+      "CONF_PHOTO"
+    ],
+    "prompt": "I would like to create an image from the template image available in this file %TEMPLATE% integrating these elements: - replace 'Speaker name' by %NAME% - replace 'Talk title' by %TITLE%. Please center this title and use 2 lines at maximum. - integrate the target conference name %CONFERENCE% (and replace the yellow square by the logo of the conference from the %CONF_PHOTO% file if provided). - replace the white square by the speaker photo from this %PHOTO% file if provided. Please don't modify the name of the speaker, the conference name, and the title of the talk."
+  },
+  {
+    "name": "generate-image-2-speaker-event",
+    "description": "Génère un visuel de communication pour annoncer un talk en binôme (2 speakers) à une conférence",
+    "category": "TALK",
+    "templatePath": "templates/conf-1-binome.png",
+    "fields": [
+      "NAME",
+      "NAME2",
+      "TITLE",
+      "CONFERENCE",
+      "PHOTO",
+      "PHOTO2",
+      "CONF_PHOTO"
+    ],
+    "prompt": "I would like to create an image from the template image available in this file %TEMPLATE% integrating these elements: - replace 'Speaker 1' by %NAME% - replace 'Speaker 2' by %NAME2% - replace 'Talk title' by %TITLE%. Please center this title and use 2 lines at maximum. - integrate the target conference name %CONFERENCE% (and replace the top white rectangle by the conference logo from %CONF_PHOTO% if provided). - replace the first speaker white square (above 'Speaker 1') by the first speaker photo from %PHOTO% if provided. - replace the second speaker white square (above 'Speaker 2') by the second speaker photo from %PHOTO2% if provided. Please don't modify the names of the speakers, the conference name, and the title of the talk."
+  },
+  {
+    "name": "generate-image-3-speaker-event",
+    "description": "Génère un visuel de communication pour annoncer un talk en trinôme (3 speakers) à une conférence",
+    "category": "TALK",
+    "templatePath": "templates/conf-1-trinome.png",
+    "fields": [
+      "NAME",
+      "NAME2",
+      "NAME3",
+      "TITLE",
+      "CONFERENCE",
+      "PHOTO",
+      "PHOTO2",
+      "PHOTO3",
+      "CONF_PHOTO"
+    ],
+    "prompt": "I would like to create an image from the template image available in this file %TEMPLATE% integrating these elements: - integrate the target conference name %CONFERENCE% (and replace the yellow square by the conference photo from %CONF_PHOTO% if provided) - replace 'Speaker 1' by %NAME% - replace the white square with %PHOTO% if provided - replace 'Speaker 2' by %NAME2% - replace the blue square with %PHOTO2% if provided - replace 'Speaker 3' by %NAME3% - replace the green square with %PHOTO3% if provided - replace 'Talk title' by %TITLE%. Please don't modify the names of the speakers, the conference name, and the title of the talk."
+  },
+  {
+    "name": "generate-image-2-talks-event",
+    "description": "Génère un visuel de communication pour annoncer 2 talks distincts à une même conférence",
+    "category": "TALK",
+    "templatePath": "templates/conf-2.png",
+    "fields": [
+      "NAME",
+      "TITLE",
+      "NAME2",
+      "TITLE2",
+      "CONFERENCE",
+      "PHOTO",
+      "PHOTO2",
+      "CONF_PHOTO"
+    ],
+    "prompt": "I would like to create an image from the template image available in this file %TEMPLATE% integrating these elements: - integrate the target conference name %CONFERENCE% (and replace the top-right white rectangle next to the Zenika logo by the conference logo from %CONF_PHOTO% if provided). - in the first talk card (top), replace 'Prénom Nom' by %NAME%, replace 'Titre du talk' by %TITLE%, and replace the white square by the first speaker photo from %PHOTO% if provided. - in the second talk card (bottom), replace 'Prénom Nom' by %NAME2%, replace 'Titre du talk' by %TITLE2%, and replace the white square by the second speaker photo from %PHOTO2% if provided. Please don't modify the names of the speakers, the conference name, and the titles of the talks."
+  },
+  {
+    "name": "generate-image-blog-post",
+    "description": "Génère un visuel de communication pour un article de blog (1 auteur)",
+    "category": "BLOG",
+    "templatePath": "templates/blog.png",
+    "fields": [
+      "NAME",
+      "TITLE",
+      "PHOTO"
+    ],
+    "prompt": "Strictly edit the base template image provided in %TEMPLATE% while preserving 100% of its original layout, white background, decorative icons, 'A découvrir sur le blog Zenika' text, Zenika logo, bottom pink bar, and 4:5 portrait aspect ratio (do NOT redesign or change the layout). Perform only these exact replacements on %TEMPLATE%: - replace 'Prénom' and 'Nom' by '%NAME%' - replace 'Titre blog post' by '%TITLE%' (centered at the top, bold black font, 2 lines maximum) - replace the pink rounded square on the right by the author photo from %PHOTO%. Please don't modify the name of the author, the title of the blog post, or the template layout."
+  },
+  {
+    "name": "generate-image-2-blog-post",
+    "description": "Génère un visuel de communication pour un article de blog (2 co-auteurs)",
+    "category": "BLOG",
+    "templatePath": "templates/blog-2.png",
+    "fields": [
+      "NAME",
+      "NAME2",
+      "TITLE",
+      "PHOTO",
+      "PHOTO2"
+    ],
+    "prompt": "Strictly edit the base template image provided in %TEMPLATE% while preserving 100% of its original layout, white background, decorative icons, 'A découvrir sur le blog Zenika' text, Zenika logo, bottom pink bar, and 4:5 portrait aspect ratio (do NOT redesign or change the layout). Perform only these exact replacements on %TEMPLATE%: - replace the top black text 'Post title' by '%TITLE%' (centered at the top, bold black font, 2 lines maximum). - replace the first pink text 'Name' (on the left of the top square frame) by '%NAME%' (keeping the same pink color and font). - replace the second pink text 'Name2' (on the left of the bottom square frame) by '%NAME2%' (keeping the same pink color and font). - insert the first author photo from %PHOTO% inside the top rounded square frame with the pink outline (located on the right of '%NAME%'). - insert the second author photo from %PHOTO2% inside the bottom rounded square frame with the pink outline (located on the right of '%NAME2%'). Please don't modify the names of the authors, the title of the blog post, or the template layout."
+  },
+  {
+    "name": "generate-image-nightclazz",
+    "description": "Génère un visuel de communication pour un événement NightClazz (1 ou 2 speakers)",
+    "category": "NIGHT_CLAZZ",
+    "templatePath": "templates/nc.png",
+    "fields": [
+      "TITLE",
+      "DATE",
+      "HOUR",
+      "LOCATION",
+      "NAME",
+      "PHOTO",
+      "NAME2",
+      "PHOTO2"
+    ],
+    "prompt": "I would like to create an image from the template image available in this file %TEMPLATE% integrating these elements: - replace 'Talk title' by %TITLE%. Please center this title and use 2 lines at maximum. - replace 'date' by %DATE% - replace 'hour' by %HOUR% - replace 'Zenika Nantes' by %LOCATION% - replace 'Speaker 1 name' by %NAME% and remove 'Speaker 1 job' - replace the yellow square by the first speaker photo from %PHOTO% if provided - replace 'Speaker 2 name' by %NAME2% and remove 'Speaker 2 job' - replace the green square by the second speaker photo from %PHOTO2% if provided. Please don't modify the names of the speakers, the date, the hour, the location, and the title of the talk."
+  },
+  {
+    "name": "generate-image-nightclazz-partner",
+    "description": "Génère un visuel de communication pour un événement NightClazz en partenariat",
+    "category": "NIGHT_CLAZZ",
+    "templatePath": "templates/nc-partenaire.png",
+    "fields": [
+      "TITLE",
+      "DATE",
+      "HOUR",
+      "LOCATION",
+      "NAME",
+      "PHOTO",
+      "PARTNER",
+      "PARTNER_LOGO"
+    ],
+    "prompt": "I would like to create an image from the template image available in this file %TEMPLATE% integrating these elements: - replace 'Titre du talk' by %TITLE%. Please center this title and use 2 lines at maximum. - replace 'jour / mois' by %DATE% - replace '18h30-21h' by %HOUR% - replace 'Zenika Nantes' by %LOCATION% - replace 'Nom / prénom' by %NAME% and remove 'Intitulé du poste' - replace the blue square by the speaker photo from %PHOTO% if provided - replace 'Nom du partenaire' by %PARTNER% - replace the white square next to 'En partenariat avec' by the partner logo from %PARTNER_LOGO% if provided. Please don't modify the name of the speaker, the partner name, the date, the hour, the location, and the title of the talk."
+  }
+]
