@@ -15,9 +15,9 @@
         <quarkus.platform.version>3.40.1.1</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.6.1</surefire-plugin.version>
-        <slack-sdk.version>1.53.0</slack-sdk.version>
+        <slack-sdk.version>1.54.0</slack-sdk.version>
         <lombok.version>1.18.48</lombok.version>
-        <spotless-plugin.version>3.10.4</spotless-plugin.version>
+        <spotless-plugin.version>3.11.0</spotless-plugin.version>
         <palantir-java-format.version>2.97.0</palantir-java-format.version>
         <mustache.version>0.9.14</mustache.version>
     </properties>
@@ -67,7 +67,7 @@
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
-            <version>1.23.2</version>
+            <version>1.24.1</version>
         </dependency>
         <dependency>
             <groupId>com.slack.api</groupId>
