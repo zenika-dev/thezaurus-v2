@@ -117,6 +117,13 @@ jobs:
     with:
       version: ${{ needs.release.outputs.agents_version }}
 
+  scheduler:
+    needs: [deploy-production]
+    uses: ./.github/workflows/_gcp_scheduler.yaml
+    permissions:
+      contents: read
+      id-token: write
+
   # Release GitHub globale (vAAAA.MM.JJ-<sha>) qui regroupe les notes api/front/agents.
   # Seulement une fois la prod à jour : au moins un déploiement réussi, aucun en échec.
   umbrella-release:

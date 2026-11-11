@@ -39,6 +39,9 @@ services:
       - SMTP_TLS=${SMTP_TLS:-false}
       - SMTP_START_TLS=${SMTP_START_TLS:-REQUIRED}
       - SMTP_MOCK=${SMTP_MOCK:-false}
+      - MAILGUN_SENDING_KEY=${MAILGUN_SENDING_KEY:-}
+      - MAILGUN_DOMAIN=${MAILGUN_DOMAIN:-}
+      - MAILGUN_BASE_URL=${MAILGUN_BASE_URL:-https://api.eu.mailgun.net}
       - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
     volumes:
       - ${GCLOUD_ADC:-${HOME}/.config/gcloud/application_default_credentials.json}:/tmp/credentials.json:ro

@@ -1,0 +1,89 @@
+name: (interne) Cloud Scheduler
+
+on:
+  workflow_call:
+   
+  push:
+    branches: [feat/send-reminder-email-using-cloud-scheduler]
+    paths: [.github/workflows/_gcp_scheduler.yaml]
+
+jobs:
+  run-scheduler:
+    name: Cloud Scheduler (production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # L'environnement GitHub apporte les vars de prod (projet, région, URL, comptes de service).
+    environment:
+      name: production
+    concurrency:
+      group: scheduler-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      JOB_NAME: talk-feedback-reminder
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
+      SCHEDULER_SERVICE_ACCOUNT: ${{ vars.SCHEDULER_SERVICE_ACCOUNT }}
+      FEEDBACK_REMINDER_AUDIENCE: ${{vars.FEEDBACK_REMINDER_AUDIENCE}}
+      SCHEDULER_CRON: ${{ vars.SCHEDULER_CRON }}
+    steps:
+      # Échoue tout de suite si l'environnement GitHub est incomplet.
+      - name: Vérifier la configuration de l'environnement
+        env:
+          REQUIRED: >-
+            GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
+            GCP_REGION=${{ vars.GCP_REGION }}
+            NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}
+            WIF_PROVIDER=${{ vars.WIF_PROVIDER }}
+            WIF_SERVICE_ACCOUNT=${{ vars.WIF_SERVICE_ACCOUNT }}
+            SCHEDULER_SERVICE_ACCOUNT=${{ vars.SCHEDULER_SERVICE_ACCOUNT }}
+            FEEDBACK_REMINDER_AUDIENCE=${{vars.FEEDBACK_REMINDER_AUDIENCE}}
+            SCHEDULER_CRON=${{vars.SCHEDULER_CRON}}
+        run: |
+          MISSING=0
+          for pair in $REQUIRED; do
+            if [ -z "${pair#*=}" ]; then
+              echo "::error::Variable '${pair%%=*}' manquante dans l'environnement production"
+              MISSING=1
+            fi
+          done
+          exit $MISSING
+
+      # WIF : GitHub Actions -> GCP (droits pour gérer le job Cloud Scheduler).
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      # OIDC Scheduler : Cloud Scheduler -> front (route /api/internal/feedback-reminders) -> API.
+      # Le job signe un token d'identité avec SCHEDULER_SERVICE_ACCOUNT ; l'API vérifie l'audience
+      # (FEEDBACK_REMINDER_AUDIENCE, défaut thezaurus-feedback-reminder) et l'email du compte
+      # (FEEDBACK_REMINDER_INVOKER, injecté par _deploy.yml).
+      # Pas de retry : un batch partiellement envoyé est rattrapé au passage suivant
+      # (feedbackReminderSent évite les doublons).
+      - name: Créer ou mettre à jour le job Cloud Scheduler
+        run: |
+          ARGS=(
+            --project="$GCP_PROJECT_ID"
+            --location="$GCP_REGION"
+            --schedule="$SCHEDULER_CRON"
+            --time-zone="Europe/Paris"
+            --uri="${NEXTAUTH_URL}/api/internal/feedback-reminders"
+            --http-method=POST
+            --oidc-service-account-email="$SCHEDULER_SERVICE_ACCOUNT"
+            --oidc-token-audience="$FEEDBACK_REMINDER_AUDIENCE"
+            --attempt-deadline=300s
+            --max-retry-attempts=0
+          )
+
+          if gcloud scheduler jobs describe "$JOB_NAME" \
+              --project="$GCP_PROJECT_ID" --location="$GCP_REGION" >/dev/null 2>&1; then
+            gcloud scheduler jobs update http "$JOB_NAME" "${ARGS[@]}"
+          else
+            gcloud scheduler jobs create http "$JOB_NAME" "${ARGS[@]}"
+          fi
