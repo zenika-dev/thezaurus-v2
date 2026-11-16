@@ -9,6 +9,7 @@ import { type TalkData, talkFormSchema, reviewTalkAction, TALK_REVIEW_FALLBACK_E
 import { TalkAssistantDialog } from "./TalkAssistantDialog";
 import { TalkFormDialog } from "./TalkFormDialog";
 import { TalkReadOnlyDialog } from "./TalkReadOnlyDialog";
+import { TalkVisualButton } from "./TalkVisualButton";
 
 interface TalkDetailsDialogProps {
   talk: TalkData | null;
@@ -111,7 +112,10 @@ function TalkEditor({ talk, onClose, onUpdate, onDelete }: Omit<TalkDetailsDialo
         {success && <Alert severity="success">{success}</Alert>}
       </>}
       speakerWarning={losesAccess && <Alert severity="warning">Après enregistrement, vous ne pourrez plus modifier ce talk car vous vous êtes retiré des speakers.</Alert>}
-      secondaryActions={roles.includes("ADMIN") && <Button color="error" disabled={pending} onClick={remove}>Supprimer</Button>} />
+      secondaryActions={<>
+        <TalkVisualButton talk={saved} disabled={pending || formSnapshot(draft) !== formSnapshot(saved)} />
+        {roles.includes("ADMIN") && <Button color="error" disabled={pending} onClick={remove}>Supprimer</Button>}
+      </>} />
     {editable && <TalkAssistantDialog open={aiOpen} loading={aiLoading} error={aiError} title={draft.title} abstract={draft.description}
       assistantReviewResult={aiResult} onClose={() => setAiOpen(false)} onApply={(title, description) => {
         setDraft(current => ({ ...current, title, description })); setAiOpen(false); setSuccess("");

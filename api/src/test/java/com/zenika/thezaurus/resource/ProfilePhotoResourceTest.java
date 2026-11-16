@@ -26,6 +26,19 @@ class ProfilePhotoResourceTest {
 
     final String email = "jane@zenika.com";
 
+    @Test
+    @TestSecurity(user = "jane@zenika.com", roles = Role.Names.CONSULTANT)
+    void servesStoredJpegWithItsActualContentType() throws Exception {
+        var output = new ByteArrayOutputStream();
+        ImageIO.write(new BufferedImage(4, 3, BufferedImage.TYPE_INT_RGB), "jpeg", output);
+        when(storage.read("old")).thenReturn(output.toByteArray());
+        given().accept("image/jpeg")
+                .get("/api/users/" + email + "/photo")
+                .then()
+                .statusCode(200)
+                .contentType("image/jpeg");
+    }
+
     @BeforeEach
     void setup() throws Exception {
         when(users.findByEmail(email))
@@ -123,8 +136,10 @@ class ProfilePhotoResourceTest {
 
     @Test
     @TestSecurity(user = "jane@zenika.com", roles = Role.Names.CONSULTANT)
-    void ordinaryDisplayDoesNotRequireAiConsentAndDisablesCaching() {
-        when(storage.read("old")).thenReturn(new byte[] {1, 2, 3});
+    void ordinaryDisplayDoesNotRequireAiConsentAndDisablesCaching() throws Exception {
+        var output = new ByteArrayOutputStream();
+        ImageIO.write(new BufferedImage(4, 3, BufferedImage.TYPE_INT_RGB), "png", output);
+        when(storage.read("old")).thenReturn(output.toByteArray());
         given().get("/api/users/" + email + "/photo")
                 .then()
                 .statusCode(200)

@@ -816,7 +816,8 @@
           "200" : {
             "description" : "OK",
             "content" : {
-              "image/png" : { }
+              "image/png" : { },
+              "image/jpeg" : { }
             }
           },
           "401" : {
@@ -1695,6 +1696,37 @@
         "tags" : [ "Talk Resource" ],
         "security" : [ {
           "SecurityScheme" : [ "ADMIN" ]
+        } ]
+      }
+    },
+    "/talks/{id}/visual" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "image/png" : { }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "summary" : "Visual",
+        "tags" : [ "Talk Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN", "DT", "CONSULTANT" ]
         } ]
       }
     }
