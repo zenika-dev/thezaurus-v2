@@ -14,6 +14,8 @@ import jakarta.ws.rs.WebApplicationException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class TalkVisualServiceTest {
     private final TalkVisualService service = new TalkVisualService();
@@ -28,19 +30,23 @@ class TalkVisualServiceTest {
         var conference = mock(Conference.class);
         when(service.talks.findById("talk")).thenReturn(talk);
         when(talk.speakers())
-                .thenReturn(java.util.Collections.nCopies(
-                        speakers,
-                        User.builder().name("Alice").email("alice@example.com").build()));
-        if (speakers == 1) {
+                .thenReturn(java.util.stream.IntStream.range(0, speakers)
+                        .mapToObj(index -> User.builder()
+                                .name("Speaker " + index)
+                                .email(email(index))
+                                .build())
+                        .toList());
+        if (speakers >= 1 && speakers <= 3) {
             when(talk.conference()).thenReturn(conference);
             when(conference.getName()).thenReturn("Devoxx");
             when(talk.title()).thenReturn("Mon talk");
         }
     }
 
-    @Test
-    void refusesMultipleSpeakersBeforeReadingPhotos() throws Exception {
-        setup(2);
+    @ParameterizedTest
+    @ValueSource(ints = {0, 4})
+    void refusesUnsupportedSpeakerCountsBeforeReadingPhotos(int count) throws Exception {
+        setup(count);
         assertThrows(BadRequestException.class, () -> service.generate("talk"));
         verifyNoInteractions(service.photos);
     }
@@ -52,11 +58,14 @@ class TalkVisualServiceTest {
         assertThrows(ForbiddenException.class, () -> service.generate("talk"));
     }
 
-    @Test
-    void sendsSavedTalkAndAuthorizedPhotoAndReturnsPng() throws Exception {
-        setup(1);
-        when(service.photos.getForAgent("alice@example.com"))
-                .thenReturn(new ProfilePhotoService.Photo(new byte[] {1, 2, 3}, "image/png"));
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3})
+    void sendsSavedTalkAndAuthorizedPhotosInOrderAndReturnsPng(int count) throws Exception {
+        setup(count);
+        for (int i = 0; i < count; i++) {
+            when(service.photos.getForAgent(email(i)))
+                    .thenReturn(new ProfilePhotoService.Photo(new byte[] {(byte) i, 2, 3}, "image/png"));
+        }
         var body = new AtomicReference<String>();
         var key = new AtomicReference<String>();
         var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -77,14 +86,36 @@ class TalkVisualServiceTest {
             var request = service.json.readTree(body.get());
             assertEquals("Mon talk", request.path("title").asText());
             assertEquals("Devoxx", request.path("conference").asText());
-            assertEquals(
-                    "AQID",
-                    request.path("speakers").get(0).path("photo").path("base64").asText());
+            assertEquals(count, request.path("speakers").size());
+            for (int i = 0; i < count; i++) {
+                var speaker = request.path("speakers").get(i);
+                assertEquals("Speaker " + i, speaker.path("name").asText());
+                assertEquals(
+                        java.util.Base64.getEncoder().encodeToString(new byte[] {(byte) i, 2, 3}),
+                        speaker.path("photo").path("base64").asText());
+            }
             assertTrue(request.path("autoCrop").asBoolean());
             assertEquals("test-key", key.get());
         } finally {
             server.stop(0);
         }
+    }
+
+    private static String email(int index) {
+        return index == 0 ? "alice@example.com" : "speaker" + index + "@example.com";
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {2, 3})
+    void refusesGenerationIfLastSpeakerHasNotAuthorizedTheirPhoto(int count) throws Exception {
+        setup(count);
+        for (int i = 0; i < count - 1; i++) {
+            when(service.photos.getForAgent(email(i)))
+                    .thenReturn(new ProfilePhotoService.Photo(new byte[] {1}, "image/png"));
+        }
+        when(service.photos.getForAgent(email(count - 1))).thenThrow(new ForbiddenException());
+        assertThrows(ForbiddenException.class, () -> service.generate("talk"));
+        for (int i = 0; i < count; i++) verify(service.photos).getForAgent(email(i));
     }
 
     @Test

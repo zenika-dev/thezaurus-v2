@@ -12,8 +12,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Base64;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -45,17 +45,26 @@ public class TalkVisualService {
         var talk = talks.findById(id);
         if (talk == null) throw new NotFoundException();
         if (talk.speakers() == null
-                || talk.speakers().size() != 1
+                || talk.speakers().isEmpty()
+                || talk.speakers().size() > 3
                 || talk.conference() == null
                 || talk.conference().getName() == null
                 || talk.conference().getName().isBlank()) {
-            throw new BadRequestException("Un seul intervenant et une conférence sont requis.");
+            throw new BadRequestException("Un à trois intervenants et une conférence sont requis.");
         }
-        var speaker = talk.speakers().getFirst();
-        if (speaker.email() == null || speaker.email().isBlank()) {
-            throw new BadRequestException("L’intervenant doit avoir un profil avec une photo autorisée pour l’IA.");
+        var speakers = new ArrayList<Map<String, Object>>();
+        for (var speaker : talk.speakers()) {
+            if (speaker == null || speaker.email() == null || speaker.email().isBlank()) {
+                throw new BadRequestException(
+                        "Chaque intervenant doit avoir un profil avec une photo autorisée pour l’IA.");
+            }
+            var photo = photos.getForAgent(speaker.email());
+            speakers.add(Map.of(
+                    "name",
+                    speaker.name(),
+                    "photo",
+                    Map.of("base64", Base64.getEncoder().encodeToString(photo.bytes()))));
         }
-        var photo = photos.getForAgent(speaker.email());
         try {
             var body = Map.of(
                     "title",
@@ -63,11 +72,7 @@ public class TalkVisualService {
                     "conference",
                     talk.conference().getName(),
                     "speakers",
-                    List.of(Map.of(
-                            "name",
-                            speaker.name(),
-                            "photo",
-                            Map.of("base64", Base64.getEncoder().encodeToString(photo.bytes())))),
+                    speakers,
                     "autoCrop",
                     true);
             var request = HttpRequest.newBuilder(URI.create(agentUrl.orElseThrow() + "/visuals/talks/image"))

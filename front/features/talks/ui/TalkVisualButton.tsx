@@ -8,7 +8,7 @@ import type { TalkData } from "@/entities/talk";
 export function TalkVisualButton({ talk, disabled = false }: { talk: TalkData; disabled?: boolean }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  if (talk.speakers.length !== 1) return null;
+  if (talk.speakers.length < 1 || talk.speakers.length > 3) return null;
 
   const download = async () => {
     setPending(true);
@@ -17,9 +17,9 @@ export function TalkVisualButton({ talk, disabled = false }: { talk: TalkData; d
       const response = await fetch(`/api/backend/talks/${encodeURIComponent(talk.id)}/visual`, { method: "POST" });
       if (!response.ok) {
         throw new Error(response.status === 403
-          ? "L’intervenant doit autoriser l’utilisation de sa photo par l’IA depuis son profil."
+          ? "Chaque intervenant doit autoriser l’utilisation de sa photo par l’IA depuis son profil."
           : response.status === 404
-            ? "Le talk ou la photo de l’intervenant est introuvable."
+            ? "Le talk ou la photo d’un intervenant est introuvable."
             : "Impossible de générer le visuel. Vérifiez la configuration de l’agent et réessayez.");
       }
       const url = URL.createObjectURL(await response.blob());

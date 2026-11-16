@@ -8,13 +8,13 @@ const talk = { id: "talk-1", speakers: [{ name: "Alice" }], conference: { name: 
 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
-it("downloads the generated PNG from the saved talk", async () => {
+it.each([1, 2, 3])("downloads the generated PNG for %i speakers", async (count) => {
   const fetchMock = vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(["png"], { type: "image/png" }) });
   vi.stubGlobal("fetch", fetchMock);
   const createUrl = vi.fn().mockReturnValue("blob:visual");
   vi.stubGlobal("URL", { createObjectURL: createUrl, revokeObjectURL: vi.fn() });
   const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
-  render(<TalkVisualButton talk={talk} />);
+  render(<TalkVisualButton talk={{ ...talk, speakers: Array.from({ length: count }, (_, i) => ({ name: `Speaker ${i}` })) }} />);
   await userEvent.click(screen.getByRole("button", { name: "Télécharger le visuel" }));
   await waitFor(() => expect(click).toHaveBeenCalledOnce());
   expect(fetchMock).toHaveBeenCalledWith("/api/backend/talks/talk-1/visual", { method: "POST" });
@@ -29,8 +29,8 @@ it("explains photo consent failures and allows retrying", async () => {
   expect(screen.getByRole("button", { name: "Télécharger le visuel" })).toBeEnabled();
 });
 
-it("only offers generation for one speaker with a conference", () => {
-  const { rerender } = render(<TalkVisualButton talk={{ ...talk, speakers: [...talk.speakers, ...talk.speakers] }} />);
+it.each([0, 4])("hides generation for %i speakers and disables it without a conference", (count) => {
+  const { rerender } = render(<TalkVisualButton talk={{ ...talk, speakers: Array.from({ length: count }, () => talk.speakers[0]) }} />);
   expect(screen.queryByRole("button")).not.toBeInTheDocument();
   rerender(<TalkVisualButton talk={{ ...talk, conference: null }} />);
   expect(screen.getByRole("button")).toBeDisabled();
