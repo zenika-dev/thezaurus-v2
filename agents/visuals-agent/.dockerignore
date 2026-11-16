@@ -1,7 +1,10 @@
 target/
-.mvn/
-mvnw
-mvnw.cmd
+.git/
 .env
-.gitignore
-.dockerignore
+.env.*
+*.json
+!src/**/*.json
+scripts/
+tools/
+.idea/
+.vscode/

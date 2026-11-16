@@ -1,5 +1,7 @@
 package com.zenika.thezaurus.visuals.exception;
 
+import com.zenika.thezaurus.visuals.crop.CropException;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -8,24 +10,15 @@ import java.util.Map;
 
 @Provider
 public class VisualExceptionMapper implements ExceptionMapper<RuntimeException> {
-
-    @Override
     public Response toResponse(RuntimeException exception) {
-        if (exception instanceof IllegalArgumentException) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .type(MediaType.APPLICATION_JSON)
-                    .entity(Map.of("error", exception.getMessage()))
-                    .build();
-        }
-        if (exception instanceof VisualGenerationException) {
-            return Response.status(Response.Status.BAD_GATEWAY)
-                    .type(MediaType.APPLICATION_JSON)
-                    .entity(Map.of("error", exception.getMessage()))
-                    .build();
-        }
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+        if (exception instanceof WebApplicationException web) return web.getResponse();
+        int status = exception instanceof CropException crop
+                ? crop.status()
+                : exception instanceof IllegalArgumentException ? 400 : 500;
+        String message = status == 500 ? "Erreur interne de génération du visuel." : exception.getMessage();
+        return Response.status(status)
                 .type(MediaType.APPLICATION_JSON)
-                .entity(Map.of("error", exception.getMessage() != null ? exception.getMessage() : "Erreur interne"))
+                .entity(Map.of("error", message == null ? "Requête invalide." : message))
                 .build();
     }
 }

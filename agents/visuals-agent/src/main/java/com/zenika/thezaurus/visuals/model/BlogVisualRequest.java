@@ -12,4 +12,10 @@ public record BlogVisualRequest(
         String title,
 
         @NotEmpty(message = "Au moins un auteur (writer) est requis") @JsonAlias("writer")
-        List<PersonInput> writers) {}
+        List<PersonInput> writers,
+
+        Boolean autoCrop) {
+    public BlogVisualRequest(String title, List<PersonInput> writers) {
+        this(title, writers, null);
+    }
+}

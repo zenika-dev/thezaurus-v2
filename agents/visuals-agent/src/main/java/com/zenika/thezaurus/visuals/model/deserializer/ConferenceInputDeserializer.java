@@ -21,6 +21,13 @@ public class ConferenceInputDeserializer extends JsonDeserializer<ConferenceInpu
         }
         if (p.currentToken() == JsonToken.START_OBJECT) {
             JsonNode node = p.getCodec().readTree(p);
+            var fields = node.fieldNames();
+            while (fields.hasNext()) {
+                if (!java.util.Set.of("name", "conferenceName", "logoBase64", "logo", "conferenceLogoBase64")
+                        .contains(fields.next())) {
+                    ctxt.reportInputMismatch(ConferenceInput.class, "Champ inconnu.");
+                }
+            }
             String name = null;
             if (node.hasNonNull("name")) {
                 name = node.get("name").asText().trim();

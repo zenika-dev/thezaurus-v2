@@ -23,6 +23,13 @@ public class PersonInputDeserializer extends JsonDeserializer<PersonInput> {
         }
         if (p.currentToken() == JsonToken.START_OBJECT) {
             JsonNode node = p.getCodec().readTree(p);
+            var fields = node.fieldNames();
+            while (fields.hasNext()) {
+                if (!java.util.Set.of("name", "photo", "photoUrl", "photoBase64")
+                        .contains(fields.next())) {
+                    ctxt.reportInputMismatch(PersonInput.class, "Champ de personne inconnu.");
+                }
+            }
             String name = node.hasNonNull("name") ? node.get("name").asText().trim() : null;
 
             String url = null;
@@ -31,6 +38,12 @@ public class PersonInputDeserializer extends JsonDeserializer<PersonInput> {
             if (node.hasNonNull("photo")) {
                 JsonNode photoNode = node.get("photo");
                 if (photoNode.isObject()) {
+                    var photoFields = photoNode.fieldNames();
+                    while (photoFields.hasNext()) {
+                        if (!java.util.Set.of("url", "base64").contains(photoFields.next())) {
+                            ctxt.reportInputMismatch(PersonInput.class, "Champ de photo inconnu.");
+                        }
+                    }
                     if (photoNode.hasNonNull("url")) {
                         url = sanitizeValue(photoNode.get("url").asText());
                     }

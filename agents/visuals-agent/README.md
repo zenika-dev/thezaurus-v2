@@ -1,120 +1,83 @@
-# visuals-agent
+# Visuals Agent
 
-Agent Quarkus (Java 21) de génération de visuels de communication pour les **talks de conférence**, **articles de blog** et **événements NightClazz** reposant sur le SDK officiel [Google GenAI pour Java (`googleapis/java-genai`)](https://github.com/googleapis/java-genai) et le modèle **Gemini 2.5 Flash Image** (`gemini-2.5-flash-image`).
+Service Quarkus autonome en Java 21. Il vit dans `agents` et expose une API HTTP utilisable par d’autres applications, sans dépendance à l’API métier, à sa base ou au frontend TheZaurus. Le recadrage manuel du POC n’est plus exposé.
 
-## Structure du projet
+Java2D assemble les photos et les textes sur les huit templates embarqués. Les fonds nettoyés conservent les éléments graphiques d’origine ; les textes sont rendus avec les polices Nunito embarquées et les dimensions ajustées pendant la validation du POC. Gemini analyse uniquement les boîtes du sujet et du visage ; il ne génère ni ne modifie les pixels du visuel.
 
-```text
-agents/visuals-agent/
-├── pom.xml
-├── src/main/
-│   ├── docker/Dockerfile.jvm
-│   ├── java/com/zenika/thezaurus/visuals/
-│   │   ├── client/          # Intégration SDK Google GenAI (com.google.genai.Client)
-│   │   ├── exception/       # Gestion centralisée des erreurs HTTP
-│   │   ├── model/           # DTOs dédiés par type de visuel, réponses et événements SSE
-│   │   ├── resource/        # Endpoints REST et SSE (Server-Sent Events)
-│   │   └── service/         # Catalogue de templates et orchestration de génération
-│   └── resources/
-│       ├── application.properties
-│       ├── templates.json   # Définition des 8 templates et prompts associés
-│       └── templates/       # Fichiers d'images des templates (conf-1, conf-2, blog, nc...)
-└── src/test/                # Tests unitaires et @QuarkusTest (100 % sans appel IA)
+## Lancer localement
+
+Depuis ce dossier, avec un JDK 21 :
+
+```powershell
+.\scripts\run-local.ps1 -Build
+# Ou sélectionner explicitement le JDK :
+.\scripts\run-local.ps1 -JavaHome 'C:\chemin\vers\jdk-21'
 ```
 
-## Catalogue des 8 templates intégrés
+Le service écoute sur `http://127.0.0.1:8087`. `-Port` permet de changer ce port. Le lanceur lit uniquement les variables de configuration listées ci-dessous, dans cet ordre : `.env` du dépôt principal, `.env` du worktree, `.env` de ce module, puis un éventuel `-EnvFile`. Les variables déjà présentes dans le processus ont priorité. Il ne copie ni n’affiche les secrets et restaure l’environnement du processus à l’arrêt. Un chemin ADC relatif est résolu depuis le dossier du fichier qui le définit.
 
-| Nom du template | Catégorie | Fichier image | Cas d'usage (routage automatique) |
-| --- | --- | --- | --- |
-| `generate-image-speaker-event` | `TALK` | `templates/conf-1.png` | Talk à une conférence avec **1 speaker** |
-| `generate-image-2-speaker-event` | `TALK` | `templates/conf-1-binome.png` | Talk en binôme avec **2 speakers** |
-| `generate-image-3-speaker-event` | `TALK` | `templates/conf-1-trinome.png` | Talk en trinôme avec **3 speakers** |
-| `generate-image-2-talks-event` | `TALK` | `templates/conf-2.png` | **2 talks distincts** à une même conférence (`talks` de taille 2) |
-| `generate-image-blog-post` | `BLOG` | `templates/blog.png` | Article de blog avec **1 auteur (`writers`)** |
-| `generate-image-2-blog-post` | `BLOG` | `templates/blog-2.png` | Article de blog avec **2 co-auteurs (`writers`)** |
-| `generate-image-nightclazz` | `NIGHT_CLAZZ` | `templates/nc.png` | Événement NightClazz (**1 ou 2 speakers**, sans partenaire) |
-| `generate-image-nightclazz-partner` | `NIGHT_CLAZZ` | `templates/nc-partenaire.png` | Événement NightClazz **en partenariat** (`partner` renseigné, 1 speaker) |
+Sous Linux/macOS :
 
-### Fournir ou surcharger des templates
-
-Deux options sont disponibles :
-1. **Dans le composant (`src/main/resources/templates/`)** : remplacez directement les fichiers PNG ou ajoutez vos propres entrées dans `src/main/resources/templates.json`.
-2. **Via un dossier externe (`VISUALS_TEMPLATES_DIR`)** : montez un volume ou configurez la variable d'environnement `VISUALS_TEMPLATES_DIR=/chemin/vers/dossier` pour surcharger les fichiers d'images sans recompiler l'application.
-
-## Endpoints exposés
-
-| Méthode | Endpoint | Body | Mode | Description |
-| --- | --- | --- | --- | --- |
-| `GET` | `/visuals/templates` | — | REST (`application/json`) | Liste les templates disponibles (`?category=TALK`, `BLOG` ou `NIGHT_CLAZZ`) |
-| `POST` | `/visuals/talks` | `TalkVisualRequest` | REST (`application/json`) | Génère un visuel de talk (métadonnées + Base64) |
-| `POST` | `/visuals/talks/image` | `TalkVisualRequest` | **Image (`image/png`)** | Génère et renvoie directement l'image PNG du talk (affichable dans Swagger UI / Postman) |
-| `POST` | `/visuals/talks/stream` | `TalkVisualRequest` | **SSE (`text/event-stream`)** | Flux SSE pour visuel de talk |
-| `POST` | `/visuals/blogs` | `BlogVisualRequest` | REST (`application/json`) | Génère un visuel de blog (métadonnées + Base64) |
-| `POST` | `/visuals/blogs/image` | `BlogVisualRequest` | **Image (`image/png`)** | Génère et renvoie directement l'image PNG du blog (affichable dans Swagger UI / Postman) |
-| `POST` | `/visuals/blogs/stream` | `BlogVisualRequest` | **SSE (`text/event-stream`)** | Flux SSE pour visuel de blog |
-| `POST` | `/visuals/nightclazz` | `NightClazzVisualRequest` | REST (`application/json`) | Génère un visuel NightClazz (métadonnées + Base64) |
-| `POST` | `/visuals/nightclazz/image` | `NightClazzVisualRequest` | **Image (`image/png`)** | Génère et renvoie directement l'image PNG du NightClazz (affichable dans Swagger UI / Postman) |
-| `POST` | `/visuals/nightclazz/stream` | `NightClazzVisualRequest` | **SSE (`text/event-stream`)** | Flux SSE pour visuel NightClazz |
-
-### Structures de données en entrée
-
-#### 1. Talk (`TalkVisualRequest` — `/visuals/talks`)
-- `title` : Titre du talk (obligatoire).
-- `conference` : Conférence visée (chaîne simple `"Devoxx France"` ou objet `{"name": "...", "logoBase64": "..."}`).
-- `speakers` : Liste des speakers (1, 2 ou 3 chaînes ou objets `{"name": "Jean-Phi", "photo": {"url": "...", "base64": "..."}}`). Si aucune photo valide n'est fournie, une icône représentant une personne est automatiquement intégrée au visuel.
-
-#### 2. Blog (`BlogVisualRequest` — `/visuals/blogs`)
-- `title` : Titre de l'article de blog (obligatoire).
-- `writers` : Liste des rédacteurs / auteurs (1 ou 2 chaînes ou objets `{"name": "Jean-Phi", "photo": {"url": "...", "base64": "..."}}`). Si aucune photo valide n'est fournie, une icône représentant une personne est automatiquement intégrée au visuel.
-
-#### 3. NightClazz (`NightClazzVisualRequest` — `/visuals/nightclazz`)
-- `title` : Titre du NightClazz (obligatoire).
-- `date`, `hour`, `location` : Informations pratiques (ex. `"19/11"`, `"18h30-21h"`, `"Zenika Nantes"`).
-- `speakers` : Liste des speakers (1 ou 2 chaînes ou objets `{"name": "Jean-Phi", "photo": {"url": "...", "base64": "..."}}`). Si aucune photo valide n'est fournie, une icône représentant une personne est automatiquement intégrée au visuel.
-- `partner` : *(Optionnel, active le template `nc-partenaire.png`)* Partenaire (chaîne simple ou objet `{"name": "...", "logoBase64": "..."}`).
-
-## Configuration
-
-L'agent charge automatiquement le fichier `.env` situé à la **racine du dépôt** (`../../.env` — initialisé depuis le `.env-template` racine) :
-
-```bash
-cp ../../.env-template ../../.env
+```sh
+./mvnw package
+java -Djava.awt.headless=true -jar target/quarkus-app/quarkus-run.jar
 ```
 
-| Variable d'environnement | Propriété Quarkus | Défaut | Description |
-| --- | --- | --- | --- |
-| `VISUALS_AGENT_PORT` | `quarkus.http.port` | `8082` | Port d'écoute HTTP du service |
-| `GEMINI_MODEL` | `visuals.gemini.model` | `gemini-2.5-flash-image` | Modèle utilisé pour générer les visuels |
-| `GEMINI_TIMEOUT_MS` | `visuals.gemini.timeout-ms` | `120000` | Timeout HTTP des requêtes vers Gemini (en ms) |
-| `GOOGLE_API_KEY` | `visuals.gemini.api-key` | *(vide)* | Clé d'API Gemini Developer API |
-| `GOOGLE_GENAI_USE_VERTEXAI` | `visuals.gemini.vertex-ai` | `false` | Activer Vertex AI (`true`) au lieu de Gemini Developer API |
-| `GOOGLE_CLOUD_PROJECT_ID` | `visuals.gemini.project` | *(vide)* | Projet GCP (si Vertex AI est activé) |
-| `GCP_REGION` / `GOOGLE_CLOUD_LOCATION` | `visuals.gemini.location` | `europe-west1` | Région GCP (si Vertex AI est activé) |
-| `VISUALS_TEMPLATES_DIR` | `visuals.templates.dir` | *(vide)* | Dossier externe optionnel pour surcharger les images de templates |
-| `VISUALS_SSE_HEARTBEAT_MS` | `visuals.sse.heartbeat-interval-ms` | `3000` | Intervalle des événements `HEARTBEAT` en mode SSE |
+| Variable | Usage |
+| --- | --- |
+| `GOOGLE_CLOUD_PROJECT_ID` | Projet Vertex AI ; alias `GOOGLE_CLOUD_PROJECT` |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Chemin du fichier ADC ; alias local `GCLOUD_ADC` |
+| `GOOGLE_CLOUD_LOCATION` | Région Vertex, `global` par défaut ; alias `GCP_REGION` |
+| `GOOGLE_API_KEY` | Alternative à Vertex ADC ; alias `GEMINI_API_KEY` |
+| `GEMINI_CROP_MODEL` | `gemini-3.1-flash-lite` par défaut |
+| `VISUALS_AI_ENABLED` | `true` par défaut ; `false` désactive l’analyse Gemini |
+| `VISUALS_API_KEY` | Si définie, exige l’en-tête `X-API-Key` sur l’API de rendu |
+| `VISUALS_AGENT_HOST`, `VISUALS_AGENT_PORT` | Adresse et port du service hors lanceur local |
 
-## Lancer l'agent
+ADC doit permettre d’appeler Vertex AI dans le projet configuré. Sans configuration Gemini/Vertex, une demande de cadrage automatique retourne une erreur de configuration. `autoCrop: false` permet un rendu centré sans appel IA.
 
-### En mode développement (Quarkus Dev)
+## API
 
-Depuis la **racine du dépôt** (pour prendre en compte le fichier .env) :
-```bash
-./agents/visuals-agent/mvnw -f agents/visuals-agent/pom.xml quarkus:dev
+L’architecture de la PR 190 est conservée : `resource` expose REST/SSE, `model` porte les DTO compatibles, `service` orchestre catalogue, cadrage et rendu, `client` charge les images, `exception` centralise les erreurs. Les packages `crop` et `render` isolent l’analyse Gemini et le rendu déterministe.
+
+La documentation interactive est disponible sur `/q/swagger-ui`, le contrat sur `/q/openapi` et la santé sur `/q/health`.
+
+| Route | Résultat |
+| --- | --- |
+| `GET /visuals/templates` | Catalogue de la PR 190, filtrable par catégorie |
+| `POST /visuals/talks`, `/visuals/blogs`, `/visuals/nightclazz` | JSON contenant le PNG en base64, les cadrages et l’utilisation IA |
+| `POST /visuals/{talks,blogs,nightclazz}/image` | PNG directement, avec le même corps de requête |
+| `POST /visuals/{talks,blogs,nightclazz}/stream` | SSE : STARTED, GENERATING puis COMPLETED ou FAILED |
+
+Exemple de corps JSON :
+
+```json
+{
+  "title": "Une conférence",
+  "conference": "Devoxx France",
+  "speakers": [{"name": "Prénom Nom", "photo": {"base64": "BASE64_DE_LA_PHOTO"}}],
+  "autoCrop": true
+}
 ```
 
-Swagger UI est alors accessible sur [http://localhost:8082/q/swagger-ui/](http://localhost:8082/q/swagger-ui/).
+Les entrées reprennent les DTO de la PR 190 : `speakers` pour talks/NightClazz, `writers` pour blogs ; `conference` et `partner` acceptent une chaîne ou un objet `{name, logoBase64}`. NightClazz accepte aussi `date`, `hour` et `location`. Les personnes peuvent être des noms simples (silhouette par défaut) ou des objets avec photo. Le base64 brut et les data URL PNG/JPEG sont acceptés ; les URL distantes sont refusées avec HTTP 400. `autoCrop` est optionnel, activé par défaut.
 
-### Avec Docker Compose (avec les autres composants)
+Pour deux talks, envoyer `conference` et `talks: [{"title":"Premier talk","speakers":["Alice"]},{"title":"Second talk","speakers":["Bob"]}]` sans `speakers` racine. Chaque talk a exactement un speaker. Le routage sélectionne automatiquement les huit templates. Les noms publics restent ceux de la PR 190 (`generate-image-speaker-event`, etc.). Les identifiants internes sont `conf-1`, `conf-1-binome`, `conf-1-trinome`, `conf-2`, `blog`, `blog-2`, `nc` et `nc-partenaire`. Les modèles blog produisent un PNG 1080 × 1350 ; les autres un PNG 1080 × 1080.
 
-Depuis la racine du dépôt :
-```bash
-docker compose up --build
+Une application cliente envoie les photos en base64 et récupère le PNG sans interface intermédiaire. Si `VISUALS_API_KEY` est configurée, elle joint `X-API-Key: ...`. La configuration d’un accès distant et de son authentification appartient au déploiement du service.
+
+## Cadrage et coût
+
+L’analyse de chaque photo est réutilisée dans un cache mémoire borné à 64 entrées. La géométrie du cadrage et le contrôle des marges sont déterministes. Une analyse valide donne lieu à un seul appel Gemini ; jusqu’à deux corrections supplémentaires sont autorisées si sa réponse JSON ou ses boîtes sont invalides. Une géométrie impossible dans le template ne déclenche pas de nouvelle analyse payante. La réponse JSON restitue les cadrages, leurs limites et les compteurs d’utilisation pour observer ces cas.
+
+Les photos ne sont pas enregistrées par le service. Les nouvelles photos de validation et les galeries locales doivent rester sous `target/manual-fixtures` ou `target`, exclus de Git. Aucun portrait réel ni fichier ADC ne doit entrer dans l’image Docker ou les sources.
+
+## Vérifier et conteneuriser
+
+```sh
+./mvnw verify
+docker build -f src/main/docker/Dockerfile.jvm -t visuals-agent:local .
+docker run --rm -p 127.0.0.1:8087:8087 -e VISUALS_AI_ENABLED=false visuals-agent:local
 ```
 
-## Exécuter les tests (sans appel IA)
-
-Tous les tests unitaires et d'intégration mockent l'interface `GenAiVisualClient` afin de garantir **zéro coût et zéro appel réseau vers Gemini** :
-
-```bash
-./mvnw test
-```
+Les tests automatiques utilisent un transport simulé et ne consomment pas Gemini. Les tests réels nécessitent les credentials locaux et les photos de validation fournies. Les vérifications visuelles locales utilisent le navigateur invisible via la skill `background-browser`. Le service et son conteneur n’ont besoin ni de Node ni d’un navigateur pour produire les PNG. Pour Vertex dans un conteneur, fournir une identité ou monter le fichier ADC en lecture seule et définir `GOOGLE_APPLICATION_CREDENTIALS` ; ne pas incorporer de credentials dans l’image.
