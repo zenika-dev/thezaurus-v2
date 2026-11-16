@@ -21,6 +21,13 @@ public class PartnerInputDeserializer extends JsonDeserializer<PartnerInput> {
         }
         if (p.currentToken() == JsonToken.START_OBJECT) {
             JsonNode node = p.getCodec().readTree(p);
+            var fields = node.fieldNames();
+            while (fields.hasNext()) {
+                if (!java.util.Set.of("name", "partnerName", "logoBase64", "logo", "partnerLogoBase64")
+                        .contains(fields.next())) {
+                    ctxt.reportInputMismatch(PartnerInput.class, "Champ inconnu.");
+                }
+            }
             String name = null;
             if (node.hasNonNull("name")) {
                 name = node.get("name").asText().trim();

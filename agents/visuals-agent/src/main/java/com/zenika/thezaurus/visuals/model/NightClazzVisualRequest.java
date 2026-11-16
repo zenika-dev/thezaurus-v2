@@ -18,7 +18,13 @@ public record NightClazzVisualRequest(
         @NotEmpty(message = "Au moins un speaker est requis") @JsonAlias("speaker")
         List<PersonInput> speakers,
 
-        PartnerInput partner) {
+        PartnerInput partner,
+        Boolean autoCrop) {
+
+    public NightClazzVisualRequest(
+            String title, String date, String hour, String location, List<PersonInput> speakers, PartnerInput partner) {
+        this(title, date, hour, location, speakers, partner, null);
+    }
 
     public NightClazzVisualRequest(
             String title, String date, String hour, String location, List<PersonInput> speakers) {

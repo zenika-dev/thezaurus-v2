@@ -1,288 +1,297 @@
 package com.zenika.thezaurus.visuals.resource;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import com.zenika.thezaurus.visuals.client.GenAiVisualClient;
-import com.zenika.thezaurus.visuals.client.GenAiVisualClient.GeneratedImage;
-import com.zenika.thezaurus.visuals.client.GenAiVisualClient.InlineMediaPart;
-import com.zenika.thezaurus.visuals.model.BlogVisualRequest;
-import com.zenika.thezaurus.visuals.model.ConferenceInput;
-import com.zenika.thezaurus.visuals.model.NightClazzVisualRequest;
-import com.zenika.thezaurus.visuals.model.PartnerInput;
-import com.zenika.thezaurus.visuals.model.PersonInput;
-import com.zenika.thezaurus.visuals.model.PhotoInput;
-import com.zenika.thezaurus.visuals.model.TalkVisualRequest;
-import com.zenika.thezaurus.visuals.model.VisualGenerationResponse;
-import com.zenika.thezaurus.visuals.model.VisualStreamEvent;
-import com.zenika.thezaurus.visuals.model.VisualTemplate;
-import com.zenika.thezaurus.visuals.model.VisualType;
-import com.zenika.thezaurus.visuals.service.VisualGenerationService;
-import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
-import jakarta.validation.ConstraintViolationException;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
+import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.TestProfile;
+import io.restassured.response.Response;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
-import org.jboss.resteasy.reactive.RestResponse;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
-/**
- * Tests d'intégration Quarkus ({@link QuarkusTest}) des endpoints de {@link VisualResource}.
- */
 @QuarkusTest
+@TestProfile(VisualResourceTest.RenderingOnly.class)
 class VisualResourceTest {
-
-    private static final byte[] FAKE_GENERATED_PNG = "fake-generated-image-bytes".getBytes(StandardCharsets.UTF_8);
-    private static final String EXPECTED_BASE64 = Base64.getEncoder().encodeToString(FAKE_GENERATED_PNG);
-
-    @Inject
-    VisualResource visualResource;
-
-    @InjectMock
-    GenAiVisualClient genAiVisualClient;
-
-    @BeforeEach
-    void setUp() {
-        when(genAiVisualClient.generateImage(anyString(), anyString(), anyList()))
-                .thenReturn(new GeneratedImage(FAKE_GENERATED_PNG, "image/png"));
+    /** No credential or live AI request is needed for HTTP rendering tests. */
+    public static class RenderingOnly implements QuarkusTestProfile {
+        @Override
+        public Map<String, String> getConfigOverrides() {
+            return Map.of("visuals.crop.enabled", "false", "visuals.api-key", "");
+        }
     }
 
     @Test
-    void shouldListAvailableVisualTemplates() {
-        List<VisualTemplate> allTemplates = visualResource.listTemplates(null);
-        assertEquals(8, allTemplates.size());
-
-        List<VisualTemplate> talkTemplates = visualResource.listTemplates(VisualType.TALK);
-        assertEquals(4, talkTemplates.size());
-        assertTrue(talkTemplates.stream().allMatch(t -> t.category() == VisualType.TALK));
-
-        List<VisualTemplate> blogTemplates = visualResource.listTemplates(VisualType.BLOG);
-        assertEquals(2, blogTemplates.size());
-        assertTrue(blogTemplates.stream().allMatch(t -> t.category() == VisualType.BLOG));
-
-        List<VisualTemplate> nightClazzTemplates = visualResource.listTemplates(VisualType.NIGHT_CLAZZ);
-        assertEquals(2, nightClazzTemplates.size());
-        assertTrue(nightClazzTemplates.stream().allMatch(t -> t.category() == VisualType.NIGHT_CLAZZ));
+    void exposesTheEightPrTemplatesAndCategoryFilters() {
+        given().get("/visuals/templates").then().statusCode(200).body("", hasSize(8));
+        given().queryParam("category", "TALK")
+                .get("/visuals/templates")
+                .then()
+                .statusCode(200)
+                .body("", hasSize(4));
+        given().queryParam("category", "BLOG")
+                .get("/visuals/templates")
+                .then()
+                .statusCode(200)
+                .body("", hasSize(2));
+        given().queryParam("category", "NIGHT_CLAZZ")
+                .get("/visuals/templates")
+                .then()
+                .statusCode(200)
+                .body("", hasSize(2));
     }
 
     @Test
-    void shouldGenerateTalkVisualUsingDynamicRoutingWithoutTemplateInput() {
-        String validPngBase64 = Base64.getEncoder().encodeToString(VisualGenerationService.getDefaultPersonIconPng());
-
-        TalkVisualRequest request = new TalkVisualRequest(
-                "Architecture Hexagonale avec Quarkus",
-                new ConferenceInput("Devoxx France 2026", validPngBase64),
-                List.of(new PersonInput("Jean-Philippe Baconnais", PhotoInput.ofBase64(validPngBase64))));
-
-        RestResponse<VisualGenerationResponse> restResponse = visualResource.generateTalkVisual(request);
-        assertEquals(200, restResponse.getStatus());
-
-        VisualGenerationResponse body = restResponse.getEntity();
-        assertNotNull(body);
-        assertEquals(VisualType.TALK, body.category());
-        assertEquals("generate-image-speaker-event", body.templateName());
-        assertEquals("gemini-2.5-flash-image", body.model());
-        assertEquals("image/png", body.mimeType());
-        assertEquals(EXPECTED_BASE64, body.imageBase64());
-        assertTrue(body.promptUsed().contains("Architecture Hexagonale avec Quarkus"));
-        assertTrue(body.promptUsed().contains("Jean-Philippe Baconnais"));
-        assertTrue(body.promptUsed().contains("Devoxx France 2026"));
-        assertNotNull(body.generatedAt());
-
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<InlineMediaPart>> mediaCaptor = ArgumentCaptor.forClass(List.class);
-        ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
-
-        verify(genAiVisualClient)
-                .generateImage(eq("gemini-2.5-flash-image"), promptCaptor.capture(), mediaCaptor.capture());
-        assertEquals(3, mediaCaptor.getValue().size(), "Doit inclure le template + photo speaker + logo conférence");
-        assertTrue(promptCaptor.getValue().contains("Devoxx France 2026"));
+    void rendersAllEightPrTemplatesAsNativePngsWithoutAi() throws IOException {
+        List<Case> cases = List.of(
+                new Case("talks", talk(List.of("Alice Martin")), "generate-image-speaker-event", 1080),
+                new Case(
+                        "talks",
+                        talk(List.of("Alice Martin", "Thomas Bernard")),
+                        "generate-image-2-speaker-event",
+                        1080),
+                new Case(
+                        "talks",
+                        talk(List.of("Alice Martin", "Thomas Bernard", "Camille Dupont")),
+                        "generate-image-3-speaker-event",
+                        1080),
+                new Case(
+                        "talks",
+                        Map.of(
+                                "conference",
+                                "Devoxx France",
+                                "talks",
+                                List.of(
+                                        Map.of(
+                                                "title",
+                                                "Les agents IA avec Quarkus",
+                                                "speakers",
+                                                List.of("Alice Martin")),
+                                        Map.of("title", "Java en production", "speakers", List.of("Thomas Bernard")))),
+                        "generate-image-2-talks-event",
+                        1080),
+                new Case("blogs", blog(List.of("Alice Martin")), "generate-image-blog-post", 1350),
+                new Case("blogs", blog(List.of("Alice Martin", "Thomas Bernard")), "generate-image-2-blog-post", 1350),
+                new Case(
+                        "nightclazz",
+                        night(List.of("Alice Martin", "Thomas Bernard")),
+                        "generate-image-nightclazz",
+                        1080),
+                new Case(
+                        "nightclazz",
+                        Map.of(
+                                "title",
+                                "Agents IA en production",
+                                "date",
+                                "19/11",
+                                "hour",
+                                "18h30–21h",
+                                "location",
+                                "Zenika Nantes",
+                                "speakers",
+                                List.of("Alice Martin"),
+                                "partner",
+                                "Google Cloud"),
+                        "generate-image-nightclazz-partner",
+                        1080));
+        for (Case entry : cases) {
+            Response response = given().contentType("application/json")
+                    .accept("image/png")
+                    .body(entry.body())
+                    .post("/visuals/" + entry.category() + "/image")
+                    .then()
+                    .statusCode(200)
+                    .contentType("image/png")
+                    .extract()
+                    .response();
+            assertEquals(entry.template(), response.header("X-Visual-Template"));
+            BufferedImage image = readPng(response.asByteArray());
+            assertEquals(1080, image.getWidth(), entry.template());
+            assertEquals(entry.height(), image.getHeight(), entry.template());
+        }
     }
 
     @Test
-    void shouldGenerateBlogVisualUsingDefaultPersonIconWhenNoPhotoProvided() {
-        BlogVisualRequest request = new BlogVisualRequest(
-                "Créer des visuels avec Google GenAI et Quarkus", List.of(new PersonInput("Jean-Philippe Baconnais")));
-
-        RestResponse<VisualGenerationResponse> restResponse = visualResource.generateBlogVisual(request);
-        assertEquals(200, restResponse.getStatus());
-
-        VisualGenerationResponse body = restResponse.getEntity();
-        assertNotNull(body);
-        assertEquals(VisualType.BLOG, body.category());
-        assertEquals("generate-image-blog-post", body.templateName());
-        assertEquals("gemini-2.5-flash-image", body.model());
-        assertEquals("image/png", body.mimeType());
-        assertEquals(EXPECTED_BASE64, body.imageBase64());
-        assertTrue(body.promptUsed().contains("Créer des visuels avec Google GenAI et Quarkus"));
-        assertTrue(body.promptUsed().contains("Jean-Philippe Baconnais"));
-
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<InlineMediaPart>> mediaCaptor = ArgumentCaptor.forClass(List.class);
-        verify(genAiVisualClient).generateImage(eq("gemini-2.5-flash-image"), anyString(), mediaCaptor.capture());
-        assertEquals(
-                2,
-                mediaCaptor.getValue().size(),
-                "Doit inclure l'image du template de blog + l'icône de personne par défaut");
-        assertArrayEquals(
-                VisualGenerationService.getDefaultPersonIconPng(),
-                mediaCaptor.getValue().get(1).data());
+    void keepsThePrJsonResponseAndReportsZeroAiUsageWhenDisabled() throws IOException {
+        String photo = "data:image/png;base64," + Base64.getEncoder().encodeToString(photo());
+        Response response = given().contentType("application/json")
+                .body(Map.of(
+                        "title",
+                        "Découvrir Java",
+                        "writers",
+                        List.of(Map.of("name", "Élodie Martin", "photo", Map.of("base64", photo))),
+                        "autoCrop",
+                        true))
+                .post("/visuals/blogs")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body(
+                        "category",
+                        equalTo("BLOG"),
+                        "templateName",
+                        equalTo("generate-image-blog-post"),
+                        "mimeType",
+                        equalTo("image/png"),
+                        "width",
+                        equalTo(1080),
+                        "height",
+                        equalTo(1350),
+                        "usage.calls",
+                        equalTo(0),
+                        "usage.inputTokens",
+                        equalTo(0),
+                        "usage.outputTokens",
+                        equalTo(0),
+                        "usage.totalTokens",
+                        equalTo(0))
+                .extract()
+                .response();
+        byte[] png = Base64.getDecoder().decode(response.jsonPath().getString("imageBase64"));
+        assertEquals(1350, readPng(png).getHeight());
+        assertNotNull(response.jsonPath().getString("generatedAt"));
     }
 
     @Test
-    void shouldGenerateNightClazzVisualUsingDynamicRouting() {
-        String validPngBase64 = Base64.getEncoder().encodeToString(VisualGenerationService.getDefaultPersonIconPng());
+    void rendersTheSoloNightClazzVariant() throws IOException {
+        byte[] png = given().contentType("application/json")
+                .body(night(List.of("Alice Martin")))
+                .post("/visuals/nightclazz/image")
+                .then()
+                .statusCode(200)
+                .contentType("image/png")
+                .extract()
+                .asByteArray();
+        assertEquals(1080, readPng(png).getHeight());
+    }
 
-        NightClazzVisualRequest request = NightClazzVisualRequest.withPartner(
-                "Découvrir Gemini 4 avec Quarkus",
+    @Test
+    void rejectsMissingFieldsAndUnsupportedSpeakerCounts() {
+        given().contentType("application/json")
+                .body(Map.of("title", "Talk", "speakers", List.of("Alice")))
+                .post("/visuals/talks/image")
+                .then()
+                .statusCode(400);
+        given().contentType("application/json")
+                .body(talk(List.of()))
+                .post("/visuals/talks/image")
+                .then()
+                .statusCode(400);
+        given().contentType("application/json")
+                .body(talk(List.of("A", "B", "C", "D")))
+                .post("/visuals/talks/image")
+                .then()
+                .statusCode(400);
+        given().contentType("application/json")
+                .body(Map.of("title", " ", "writers", List.of("Alice")))
+                .post("/visuals/blogs/image")
+                .then()
+                .statusCode(400);
+        given().contentType("application/json")
+                .body(blog(List.of("A", "B", "C")))
+                .post("/visuals/blogs/image")
+                .then()
+                .statusCode(400);
+        given().contentType("application/json")
+                .body(Map.of("title", "NightClazz", "speakers", List.of("A", "B"), "partner", "Partner"))
+                .post("/visuals/nightclazz/image")
+                .then()
+                .statusCode(400);
+        given().contentType("application/json")
+                .body("{")
+                .post("/visuals/blogs/image")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void rejectsManualCropParametersAtEveryInputLevel() throws IOException {
+        Map<String, Object> crop = Map.of("zoom", 2, "x", .3, "y", 0);
+        given().contentType("application/json")
+                .body(Map.of("title", "Talk", "conference", "Devoxx", "speakers", List.of("Alice"), "crop", crop))
+                .post("/visuals/talks/image")
+                .then()
+                .statusCode(400);
+        given().contentType("application/json")
+                .body(Map.of(
+                        "title",
+                        "Talk",
+                        "conference",
+                        "Devoxx",
+                        "speakers",
+                        List.of(Map.of("name", "Alice", "crop", crop))))
+                .post("/visuals/talks/image")
+                .then()
+                .statusCode(400);
+        given().contentType("application/json")
+                .body(Map.of(
+                        "title",
+                        "Blog",
+                        "writers",
+                        List.of(Map.of(
+                                "name",
+                                "Alice",
+                                "photo",
+                                Map.of("base64", Base64.getEncoder().encodeToString(photo()), "crop", crop)))))
+                .post("/visuals/blogs/image")
+                .then()
+                .statusCode(400);
+    }
+
+    private static Map<String, Object> talk(List<String> people) {
+        return Map.of("title", "Les agents IA avec Quarkus", "conference", "Devoxx France", "speakers", people);
+    }
+
+    private static Map<String, Object> blog(List<String> people) {
+        return Map.of("title", "Les agents IA avec Quarkus", "writers", people);
+    }
+
+    private static Map<String, Object> night(List<String> people) {
+        return Map.of(
+                "title",
+                "Les agents IA avec Quarkus",
+                "date",
                 "19/11",
-                "18h30-21h",
+                "hour",
+                "18h30–21h",
+                "location",
                 "Zenika Nantes",
-                new PersonInput("Jean-Philippe Baconnais", PhotoInput.ofBase64(validPngBase64)),
-                new PartnerInput("Google Cloud", validPngBase64));
-
-        RestResponse<VisualGenerationResponse> restResponse = visualResource.generateNightClazzVisual(request);
-        assertEquals(200, restResponse.getStatus());
-
-        VisualGenerationResponse body = restResponse.getEntity();
-        assertNotNull(body);
-        assertEquals(VisualType.NIGHT_CLAZZ, body.category());
-        assertEquals("generate-image-nightclazz-partner", body.templateName());
-        assertEquals(EXPECTED_BASE64, body.imageBase64());
-        assertTrue(body.promptUsed().contains("Découvrir Gemini 4 avec Quarkus"));
-        assertTrue(body.promptUsed().contains("Google Cloud"));
-
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<InlineMediaPart>> mediaCaptor = ArgumentCaptor.forClass(List.class);
-        verify(genAiVisualClient).generateImage(eq("gemini-2.5-flash-image"), anyString(), mediaCaptor.capture());
-        assertEquals(3, mediaCaptor.getValue().size(), "Doit inclure le template + photo speaker + logo partenaire");
+                "speakers",
+                people);
     }
 
-    @Test
-    void shouldReturnBinaryPngImageDirectlyOnImageEndpoints() {
-        BlogVisualRequest blogRequest =
-                new BlogVisualRequest("Visualisation directe PNG", List.of(new PersonInput("Jean-Phi")));
-
-        RestResponse<byte[]> imageResponse = visualResource.generateBlogVisualImage(blogRequest);
-        assertEquals(200, imageResponse.getStatus());
-        assertArrayEquals(FAKE_GENERATED_PNG, imageResponse.getEntity());
-        assertEquals("generate-image-blog-post", imageResponse.getHeaderString("X-Visual-Template"));
+    private static BufferedImage readPng(byte[] png) throws IOException {
+        assertTrue(png.length > 8);
+        BufferedImage image = javax.imageio.ImageIO.read(new ByteArrayInputStream(png));
+        assertNotNull(image, "The response must be a decodable PNG");
+        return image;
     }
 
-    @Test
-    void shouldRejectInvalidRequestsViaBeanValidation() {
-        TalkVisualRequest invalidTalkRequest = new TalkVisualRequest("", (ConferenceInput) null, null);
-        assertThrows(ConstraintViolationException.class, () -> visualResource.generateTalkVisual(invalidTalkRequest));
-
-        BlogVisualRequest invalidBlogRequest = new BlogVisualRequest("", List.of());
-        assertThrows(ConstraintViolationException.class, () -> visualResource.generateBlogVisual(invalidBlogRequest));
+    private static byte[] photo() throws IOException {
+        BufferedImage image = new BufferedImage(40, 60, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = image.createGraphics();
+        try {
+            g.setColor(new Color(20, 90, 124));
+            g.fillRect(0, 0, 40, 60);
+        } finally {
+            g.dispose();
+        }
+        ByteArrayOutputStream encoded = new ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(image, "png", encoded);
+        return encoded.toByteArray();
     }
 
-    @Test
-    void shouldStreamVisualGenerationViaSse() {
-        TalkVisualRequest talkRequest =
-                new TalkVisualRequest("SSE vs REST avec Quarkus", "Riviera DEV", List.of(new PersonInput("Jean-Phi")));
-
-        List<VisualStreamEvent> talkEvents = visualResource
-                .streamTalkVisual(talkRequest)
-                .collect()
-                .asList()
-                .await()
-                .atMost(Duration.ofSeconds(5));
-
-        assertTrue(talkEvents.stream().anyMatch(e -> e.status() == VisualStreamEvent.Status.STARTED));
-        assertTrue(talkEvents.stream().anyMatch(e -> e.status() == VisualStreamEvent.Status.TEMPLATE_LOADED));
-        assertTrue(talkEvents.stream().anyMatch(e -> e.status() == VisualStreamEvent.Status.GENERATING));
-        VisualStreamEvent completedTalk = talkEvents.get(talkEvents.size() - 1);
-        assertEquals(EXPECTED_BASE64, completedTalk.result().imageBase64());
-    }
-
-    @Inject
-    com.fasterxml.jackson.databind.ObjectMapper objectMapper;
-
-    @Test
-    void shouldDeserializeFlexibleJsonInputs() throws Exception {
-        String talkJson = """
-                {
-                    "title": "Architecture Hexagonale",
-                    "conference": "Devoxx France 2026",
-                    "speakers": ["Jean-Philippe Baconnais", "Marie Curie"]
-                }
-                """;
-
-        TalkVisualRequest req1 = objectMapper.readValue(talkJson, TalkVisualRequest.class);
-        assertEquals("Architecture Hexagonale", req1.title());
-        assertNotNull(req1.conference());
-        assertEquals("Devoxx France 2026", req1.conference().name());
-        assertEquals(2, req1.speakers().size());
-        assertEquals("Jean-Philippe Baconnais", req1.speakers().get(0).name());
-        assertEquals("Marie Curie", req1.speakers().get(1).name());
-
-        String blogJson = """
-                {
-                    "title": "Article Tech",
-                    "writers": [
-                        {
-                            "name": "Jean-Phi",
-                            "photo": {
-                                "url": "https://example.com/jean-phi.png",
-                                "base64": "fake-photo-base64"
-                            }
-                        }
-                    ]
-                }
-                """;
-
-        BlogVisualRequest req2 = objectMapper.readValue(blogJson, BlogVisualRequest.class);
-        assertEquals("Article Tech", req2.title());
-        assertEquals(1, req2.writers().size());
-        assertEquals("Jean-Phi", req2.writers().get(0).name());
-        assertNotNull(req2.writers().get(0).photo());
-        assertEquals(
-                "https://example.com/jean-phi.png",
-                req2.writers().get(0).photo().url());
-        assertEquals("fake-photo-base64", req2.writers().get(0).photo().base64());
-
-        String nightClazzJson = """
-                {
-                    "title": "Soirée IA",
-                    "date": "19/11",
-                    "hour": "18h30-21h",
-                    "location": "Zenika Nantes",
-                    "speakers": [
-                        {
-                            "name": "Jean-Phi",
-                            "photo": {
-                                "url": "string",
-                                "base64": "string"
-                            }
-                        }
-                    ],
-                    "partner": "Google Cloud"
-                }
-                """;
-
-        NightClazzVisualRequest req3 = objectMapper.readValue(nightClazzJson, NightClazzVisualRequest.class);
-        assertEquals("Soirée IA", req3.title());
-        assertEquals("19/11", req3.date());
-        assertEquals(1, req3.speakers().size());
-        assertEquals("Jean-Phi", req3.speakers().get(0).name());
-        assertNull(req3.speakers().get(0).photo(), "Les valeurs placeholder 'string' doivent être ignorées");
-        assertNotNull(req3.partner());
-        assertEquals("Google Cloud", req3.partner().name());
-    }
+    private record Case(String category, Map<String, Object> body, String template, int height) {}
 }
