@@ -1,7 +1,7 @@
 import { useState, type AnchorHTMLAttributes } from "react";
 import type { LinkProps } from "next/link";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render as renderComponent, screen, waitFor } from "@testing-library/react";
 import { SideMenuClient } from "./SideMenuClient";
 import { useUnsavedTemplate } from "@/features/admin/model/useUnsavedTemplate";
 
@@ -30,6 +30,23 @@ const links = [
   { label: "Statistiques", path: "/conferences/statistics" },
 ];
 
+const mediaQueries = new Map<MediaList, string>();
+
+function render(ui: Parameters<typeof renderComponent>[0]) {
+  const result = renderComponent(ui);
+  // jsdom 31 evaluates CSS against a fixed 1024px viewport, ignoring innerWidth.
+  // Resolve the menu's desktop query locally so CSS and matchMedia agree.
+  for (const sheet of document.styleSheets) {
+    for (const rule of sheet.cssRules) {
+      if (rule instanceof CSSMediaRule && rule.conditionText === "(min-width: 768px)") {
+        mediaQueries.set(rule.media, rule.media.mediaText);
+        rule.media.mediaText = window.innerWidth >= 768 ? "all" : "not all";
+      }
+    }
+  }
+  return result;
+}
+
 async function navigateFromMobileMenu(label: string, blocked = false) {
   const toggle = screen.getByRole("button", { name: "Ouvrir la navigation" });
   fireEvent.click(toggle);
@@ -55,9 +72,10 @@ function DirtyFormAndRealMenu() {
   </>;
 }
 
-beforeEach(() => {
+function setViewport(width: number) {
+  vi.stubGlobal("innerWidth", width);
   vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
-    matches: query === "(max-width: 767px)",
+    matches: query === "(max-width: 767px)" && width <= 767,
     media: query,
     onchange: null,
     addListener: vi.fn(),
@@ -66,11 +84,17 @@ beforeEach(() => {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })));
+}
+
+beforeEach(() => {
+  setViewport(500);
   router.push.mockReset();
   window.history.replaceState({}, "", "/start");
 });
 afterEach(() => {
   cleanup();
+  for (const [media, query] of mediaQueries) media.mediaText = query;
+  mediaQueries.clear();
   vi.unstubAllGlobals();
   Reflect.deleteProperty(window, "navigation");
 });
