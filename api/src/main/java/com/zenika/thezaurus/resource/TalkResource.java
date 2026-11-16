@@ -9,7 +9,9 @@ import com.zenika.thezaurus.model.TalkReviewResponse;
 import com.zenika.thezaurus.model.TalkStatus;
 import com.zenika.thezaurus.service.TalkReviewService;
 import com.zenika.thezaurus.service.TalkService;
+import com.zenika.thezaurus.service.TalkVisualService;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -44,6 +46,20 @@ public class TalkResource {
 
     @Inject
     SecurityIdentity identity;
+
+    @Inject
+    TalkVisualService visuals;
+
+    @POST
+    @Path("/{id}/visual")
+    @Produces("image/png")
+    @RunOnVirtualThread
+    public Response visual(@PathParam("id") String id) throws ExecutionException, InterruptedException {
+        return Response.ok(visuals.generate(id), "image/png")
+                .header("Content-Disposition", "attachment; filename=\"talk-visual.png\"")
+                .header("Cache-Control", "no-store")
+                .build();
+    }
 
     @GET
     public PagedResult<Talk> list(

@@ -1,4 +1,19 @@
 services:
+  visuals-agent:
+    build:
+      context: ./agents/visuals-agent
+      dockerfile: src/main/docker/Dockerfile.jvm
+    environment:
+      - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID:-}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-global}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-${GEMINI_API_KEY:-}}
+      - GEMINI_CROP_MODEL=${GEMINI_CROP_MODEL:-gemini-3.1-flash-lite}
+      - VISUALS_AI_ENABLED=${VISUALS_AI_ENABLED:-true}
+      - VISUALS_API_KEY=${VISUALS_API_KEY:-}
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
+    volumes:
+      - ${GCLOUD_ADC:-${HOME}/.config/gcloud/application_default_credentials.json}:/tmp/credentials.json:ro
+
   gcs:
     image: fsouza/fake-gcs-server:1.56.1
     container_name: thezaurus-gcs-emulator
@@ -51,6 +66,8 @@ services:
       retries: 10
   api:
     environment:
+      - VISUALS_AGENT_URL=http://visuals-agent:8087
+      - VISUALS_API_KEY=${VISUALS_API_KEY:-}
       - QUARKUS_PROFILE=dev
       - PROFILE_PHOTOS_BUCKET=thezaurus-photos-local
       - GCS_EMULATOR_HOST=http://gcs:4443
@@ -68,6 +85,8 @@ services:
       - FEEDBACK_REMINDER_TIME_ZONE=${FEEDBACK_REMINDER_TIME_ZONE:-Europe/Paris}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-dummy-client-id}
     depends_on:
+      visuals-agent:
+        condition: service_started
       gcs:
         condition: service_healthy
       mailpit:
