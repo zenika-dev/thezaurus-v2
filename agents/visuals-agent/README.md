@@ -7,10 +7,10 @@ Java2D assemble les photos et les textes sur les huit templates embarqués. Les 
 ## Lancer localement
 
 Depuis l’application standard, `docker compose up --build` démarre aussi l’agent via
-`docker-compose.override.yml`. Dans la fiche d’un talk enregistré avec un seul
-intervenant et une conférence, le bouton **Télécharger le visuel** appelle le modèle
-talk à un intervenant et télécharge son PNG. Enregistrer les modifications du talk
-avant de générer. L’intervenant doit disposer d’une photo et avoir autorisé son
+`docker-compose.override.yml`. Dans la fiche d’un talk enregistré avec un à trois
+intervenants et une conférence, le bouton **Télécharger le visuel** sélectionne le modèle
+adapté au nombre d’intervenants et télécharge son PNG. Enregistrer les modifications du talk
+avant de générer. Chaque intervenant doit disposer d’une photo et avoir autorisé son
 utilisation par l’IA dans son profil. L’API contrôle cette autorisation avant chaque
 envoi à l’agent. Le cadrage automatique utilise la configuration Vertex/ADC ou
 `GOOGLE_API_KEY` du Compose local. `VISUALS_AI_ENABLED=false` permet un rendu sans
