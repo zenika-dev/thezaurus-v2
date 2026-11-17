@@ -26,9 +26,3 @@ resource "google_storage_bucket" "terraform_state" {
   }
 }
 
-# Renommage terraform-state -> terraform_state : déplace l'adresse dans le state au lieu de détruire/recréer.
-# À supprimer après le prochain apply.
-moved {
-  from = google_storage_bucket.terraform-state
-  to   = google_storage_bucket.terraform_state
-}

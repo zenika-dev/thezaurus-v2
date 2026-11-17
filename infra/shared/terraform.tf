@@ -1,5 +1,8 @@
 terraform {
-
+  backend "gcs" {
+    bucket = "thezaurus-494709-tfstate"
+    prefix = "shared"
+  }
   required_providers {
     google = {
       source  = "hashicorp/google"
