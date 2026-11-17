@@ -10,3 +10,7 @@ aux graisses utilisées par les templates ; leur licence est dans fonts/OFL.txt.
 Le service ne nécessite ni navigateur, ni Node.js, ni génération d'image par IA.
 Java2D compose les textes, logos et photos sur ces fonds. Gemini fournit seulement
 des coordonnées de cadrage. Les photos de vérification ne font pas partie des assets.
+
+`branding/zenika-mark.png` reprend le symbole circulaire de `templates/blog-2.png`
+(zone 378,1174–475,1271), avec un masque circulaire transparent.
+Il remplace les photos non transmises, sans analyse Gemini.

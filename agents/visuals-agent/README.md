@@ -10,12 +10,16 @@ Depuis l’application standard, `docker compose up --build` démarre aussi l’
 `docker-compose.override.yml`. Dans la fiche d’un talk enregistré avec un à trois
 intervenants et une conférence, le bouton **Télécharger le visuel** sélectionne le modèle
 adapté au nombre d’intervenants et télécharge son PNG. Enregistrer les modifications du talk
-avant de générer. Chaque intervenant doit disposer d’une photo et avoir autorisé son
-utilisation par l’IA dans son profil. L’API contrôle cette autorisation avant chaque
-envoi à l’agent. Le cadrage automatique utilise la configuration Vertex/ADC ou
+avant de générer. L’API contrôle l’autorisation photo IA avant chaque envoi à l’agent.
+Si une personne refuse, seul son nom est transmis et le logo Zenika remplace
+sa photo, sans appel Gemini pour cet emplacement. Le cadrage automatique utilise la configuration Vertex/ADC ou
 `GOOGLE_API_KEY` du Compose local. `VISUALS_AI_ENABLED=false` permet un rendu sans
 appel Gemini. Le service reste interne au réseau Compose ; aucun déploiement de
 production n’est ajouté.
+
+Le bouton est aussi disponible dans la fiche d’un article de blog enregistré avec
+un ou deux auteurs. Il appelle `/visuals/blogs/image` et télécharge un PNG
+1080 × 1350 avec le modèle correspondant au nombre d’auteurs. Le même remplacement par le logo Zenika s’applique aux auteurs sans autorisation photo IA.
 
 Depuis ce dossier, avec un JDK 21 :
 
@@ -71,7 +75,7 @@ Exemple de corps JSON :
 }
 ```
 
-Les entrées reprennent les DTO de la PR 190 : `speakers` pour talks/NightClazz, `writers` pour blogs ; `conference` et `partner` acceptent une chaîne ou un objet `{name, logoBase64}`. NightClazz accepte aussi `date`, `hour` et `location`. Les personnes peuvent être des noms simples (silhouette par défaut) ou des objets avec photo. Le base64 brut et les data URL PNG/JPEG sont acceptés ; les URL distantes sont refusées avec HTTP 400. `autoCrop` est optionnel, activé par défaut.
+Les entrées reprennent les DTO de la PR 190 : `speakers` pour talks/NightClazz, `writers` pour blogs ; `conference` et `partner` acceptent une chaîne ou un objet `{name, logoBase64}`. NightClazz accepte aussi `date`, `hour` et `location`. Les personnes peuvent être des noms simples (logo Zenika par défaut) ou des objets avec photo. Le base64 brut et les data URL PNG/JPEG sont acceptés ; les URL distantes sont refusées avec HTTP 400. `autoCrop` est optionnel, activé par défaut.
 
 Pour deux talks, envoyer `conference` et `talks: [{"title":"Premier talk","speakers":["Alice"]},{"title":"Second talk","speakers":["Bob"]}]` sans `speakers` racine. Chaque talk a exactement un speaker. Le routage sélectionne automatiquement les huit templates. Les noms publics restent ceux de la PR 190 (`generate-image-speaker-event`, etc.). Les identifiants internes sont `conf-1`, `conf-1-binome`, `conf-1-trinome`, `conf-2`, `blog`, `blog-2`, `nc` et `nc-partenaire`. Les modèles blog produisent un PNG 1080 × 1350 ; les autres un PNG 1080 × 1080.
 
