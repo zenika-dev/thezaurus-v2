@@ -32,3 +32,9 @@ variable "github_repository" {
   type        = string
   default     = "zenika-dev/thezaurus-v2"
 }
+
+variable "data_location" {
+  description = "Région des données (secrets, Firestore)"
+  type        = string
+  default     = "europe-west9"
+}
