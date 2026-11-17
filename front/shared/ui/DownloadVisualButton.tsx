@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Alert, Button, CircularProgress, IconButton, Snackbar, Tooltip } from "@mui/material";
 import { Download } from "lucide-react";
+import { apiFetch } from "@/shared/api/backend";
 
 
 export function DownloadVisualButton({ endpoint, filename, disabled = false, disabledReason, iconOnly = false,
@@ -17,7 +18,8 @@ export function DownloadVisualButton({ endpoint, filename, disabled = false, dis
     setPending(true);
     setError(null);
     try {
-      const response = await fetch(endpoint, { method: "POST" });
+      const response = await apiFetch(endpoint, { method: "POST" });
+      if (response.status === 401) return;
       if (!response.ok) {
         throw new Error(response.status === 403
           ? forbiddenError
