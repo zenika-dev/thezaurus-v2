@@ -25,6 +25,37 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(VisualResourceTest.RenderingOnly.class)
 class VisualResourceTest {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({
+        "talks,speakers,speakerName,speakerPhotoBase64",
+        "blogs,writers,authorName,authorPhotoBase64"
+    })
+    void acceptsHistoricalPersonAliases(String category, String peopleField, String nameField, String photoField)
+            throws IOException {
+        var body = new java.util.HashMap<String, Object>();
+        body.put("title", "Compatibilité");
+        body.put(
+                peopleField,
+                List.of(Map.of(
+                        nameField, "Alice", photoField, Base64.getEncoder().encodeToString(photo()))));
+        body.put("autoCrop", false);
+        if (category.equals("talks")) body.put("conference", "Devoxx");
+        given().contentType("application/json")
+                .body(body)
+                .post("/visuals/" + category)
+                .then()
+                .statusCode(200)
+                .body("crops[0].status", equalTo("disabled"));
+    }
+
+    @Test
+    void documentsTheDeterministicCatalogInsteadOfLegacyGenerationPrompts() {
+        given().get("/visuals/templates?category=BLOG")
+                .then()
+                .statusCode(200)
+                .body("[0].fields", org.hamcrest.Matchers.contains("title", "writers", "autoCrop"))
+                .body("[0].prompt", org.hamcrest.Matchers.nullValue());
+    }
     /** No credential or live AI request is needed for HTTP rendering tests. */
     public static class RenderingOnly implements QuarkusTestProfile {
         @Override

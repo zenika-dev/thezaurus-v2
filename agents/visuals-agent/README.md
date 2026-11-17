@@ -11,7 +11,7 @@ Depuis l’application standard, `docker compose up --build` démarre aussi l’
 intervenants et une conférence, le bouton **Télécharger le visuel** sélectionne le modèle
 adapté au nombre d’intervenants et télécharge son PNG. Enregistrer les modifications du talk
 avant de générer. L’API contrôle l’autorisation photo IA avant chaque envoi à l’agent.
-Si une personne refuse, seul son nom est transmis et le logo Zenika remplace
+Si une personne refuse ou ne dispose pas de photo, seul son nom est transmis et le logo Zenika remplace
 sa photo, sans appel Gemini pour cet emplacement. Le cadrage automatique utilise la configuration Vertex/ADC ou
 `GOOGLE_API_KEY` du Compose local. `VISUALS_AI_ENABLED=false` permet un rendu sans
 appel Gemini. Le service reste interne au réseau Compose ; aucun déploiement de
@@ -53,13 +53,13 @@ ADC doit permettre d’appeler Vertex AI dans le projet configuré. Sans configu
 
 ## API
 
-L’architecture de la PR 190 est conservée : `resource` expose REST/SSE, `model` porte les DTO compatibles, `service` orchestre catalogue, cadrage et rendu, `client` charge les images, `exception` centralise les erreurs. Les packages `crop` et `render` isolent l’analyse Gemini et le rendu déterministe.
+L’architecture de la PR 190 est conservée : `resource` expose REST/SSE, `model` porte les DTO des champs pris en charge, `service` orchestre catalogue, cadrage et rendu, `client` charge les images, `exception` centralise les erreurs. Les packages `crop` et `render` isolent l’analyse Gemini et le rendu déterministe.
 
 La documentation interactive est disponible sur `/q/swagger-ui`, le contrat sur `/q/openapi` et la santé sur `/q/health`.
 
 | Route | Résultat |
 | --- | --- |
-| `GET /visuals/templates` | Catalogue de la PR 190, filtrable par catégorie |
+| `GET /visuals/templates` | Catalogue du rendu déterministe, filtrable par catégorie |
 | `POST /visuals/talks`, `/visuals/blogs`, `/visuals/nightclazz` | JSON contenant le PNG en base64, les cadrages et l’utilisation IA |
 | `POST /visuals/{talks,blogs,nightclazz}/image` | PNG directement, avec le même corps de requête |
 | `POST /visuals/{talks,blogs,nightclazz}/stream` | SSE : STARTED, GENERATING puis COMPLETED ou FAILED |
@@ -75,7 +75,19 @@ Exemple de corps JSON :
 }
 ```
 
-Les entrées reprennent les DTO de la PR 190 : `speakers` pour talks/NightClazz, `writers` pour blogs ; `conference` et `partner` acceptent une chaîne ou un objet `{name, logoBase64}`. NightClazz accepte aussi `date`, `hour` et `location`. Les personnes peuvent être des noms simples (logo Zenika par défaut) ou des objets avec photo. Le base64 brut et les data URL PNG/JPEG sont acceptés ; les URL distantes sont refusées avec HTTP 400. `autoCrop` est optionnel, activé par défaut.
+Les entrées conservent les structures principales de la PR 190 : `speakers` pour talks/NightClazz, `writers` pour blogs ; `conference` et `partner` acceptent une chaîne ou un objet `{name, logoBase64}`. NightClazz accepte aussi `date`, `hour` et `location`. Les personnes peuvent être des noms simples (logo Zenika par défaut) ou des objets avec photo. Le base64 brut et les data URL PNG/JPEG sont acceptés ; les URL distantes sont refusées avec HTTP 400. `autoCrop` est optionnel, activé par défaut.
+
+Les anciens alias de personne `speakerName`, `authorName`, `speakerPhotoBase64` et
+`authorPhotoBase64` sont aussi acceptés. Les champs modernes `name` et `photo`
+ont priorité lorsqu’ils sont renseignés. Les URL distantes restent volontairement
+refusées : les applications clientes fournissent les pixels autorisés en base64.
+
+Le catalogue conserve les huit noms publics et leurs chemins d’images. Il ne
+reproduit pas le catalogue de prompts Gemini de la PR 190 : `description` décrit
+le modèle de rendu, `fields` énumère les paramètres du DTO attendu, et `prompt`
+est `null` (comme `promptUsed` dans les réponses). Le choix validé est un rendu
+Java déterministe avec analyse du cadrage uniquement ; aucun prompt de génération
+d’image n’est exécuté ni reconstitué pour maintenir artificiellement ce champ.
 
 Pour deux talks, envoyer `conference` et `talks: [{"title":"Premier talk","speakers":["Alice"]},{"title":"Second talk","speakers":["Bob"]}]` sans `speakers` racine. Chaque talk a exactement un speaker. Le routage sélectionne automatiquement les huit templates. Les noms publics restent ceux de la PR 190 (`generate-image-speaker-event`, etc.). Les identifiants internes sont `conf-1`, `conf-1-binome`, `conf-1-trinome`, `conf-2`, `blog`, `blog-2`, `nc` et `nc-partenaire`. Les modèles blog produisent un PNG 1080 × 1350 ; les autres un PNG 1080 × 1080.
 
@@ -96,3 +108,14 @@ docker run --rm -p 127.0.0.1:8087:8087 -e VISUALS_AI_ENABLED=false visuals-agent
 ```
 
 Les tests automatiques utilisent un transport simulé et ne consomment pas Gemini. Les tests réels nécessitent les credentials locaux et les photos de validation fournies. Les vérifications visuelles locales utilisent le navigateur invisible via la skill `background-browser`. Le service et son conteneur n’ont besoin ni de Node ni d’un navigateur pour produire les PNG. Pour Vertex dans un conteneur, fournir une identité ou monter le fichier ADC en lecture seule et définir `GOOGLE_APPLICATION_CREDENTIALS` ; ne pas incorporer de credentials dans l’image.
+
+## ADC privé avec Docker Compose
+
+L’override monte le fichier hôte en lecture seule, sans modifier son propriétaire
+ni son mode (y compris `0600` sous Linux). Le point d’entrée démarre brièvement en
+root, copie les credentials avec le mode `0400` pour l’UID/GID 10001 dans un tmpfs
+`/run/visuals`, puis exécute Java via `gosu` sous cet utilisateur non privilégié.
+Cette copie disparaît avec le conteneur et n’entre ni dans l’image ni dans un volume
+persistant. Hors Compose, l’image reste non-root par défaut ; fournir une identité
+ou un fichier déjà lisible par l’utilisateur du conteneur. Aucun déploiement cloud
+n’est ajouté : la CI vérifie l’agent avec `mvnw verify`, sans appel réel à Gemini.

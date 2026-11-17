@@ -3,6 +3,10 @@ services:
     build:
       context: ./agents/visuals-agent
       dockerfile: src/main/docker/Dockerfile.jvm
+    # Bootstrap copies private ADC to tmpfs, then drops to UID/GID 10001 before Java.
+    user: "0:0"
+    tmpfs:
+      - /run/visuals:mode=0700,uid=10001,gid=10001
     environment:
       - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID:-}
       - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-global}
@@ -10,9 +14,10 @@ services:
       - GEMINI_CROP_MODEL=${GEMINI_CROP_MODEL:-gemini-3.1-flash-lite}
       - VISUALS_AI_ENABLED=${VISUALS_AI_ENABLED:-true}
       - VISUALS_API_KEY=${VISUALS_API_KEY:-}
-      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
+      - GOOGLE_APPLICATION_CREDENTIALS=/run/visuals/credentials.json
+      - VISUALS_ADC_SOURCE=/run/host-credentials.json
     volumes:
-      - ${GCLOUD_ADC:-${HOME}/.config/gcloud/application_default_credentials.json}:/tmp/credentials.json:ro
+      - ${GCLOUD_ADC:-${HOME}/.config/gcloud/application_default_credentials.json}:/run/host-credentials.json:ro
 
   gcs:
     image: fsouza/fake-gcs-server:1.56.1
