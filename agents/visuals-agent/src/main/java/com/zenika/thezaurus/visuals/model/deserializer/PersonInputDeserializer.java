@@ -25,12 +25,20 @@ public class PersonInputDeserializer extends JsonDeserializer<PersonInput> {
             JsonNode node = p.getCodec().readTree(p);
             var fields = node.fieldNames();
             while (fields.hasNext()) {
-                if (!java.util.Set.of("name", "photo", "photoUrl", "photoBase64")
+                if (!java.util.Set.of(
+                                "name",
+                                "photo",
+                                "photoUrl",
+                                "photoBase64",
+                                "speakerName",
+                                "authorName",
+                                "speakerPhotoBase64",
+                                "authorPhotoBase64")
                         .contains(fields.next())) {
                     ctxt.reportInputMismatch(PersonInput.class, "Champ de personne inconnu.");
                 }
             }
-            String name = node.hasNonNull("name") ? node.get("name").asText().trim() : null;
+            String name = firstValue(node, "name", "speakerName", "authorName");
 
             String url = null;
             String base64 = null;
@@ -65,12 +73,20 @@ public class PersonInputDeserializer extends JsonDeserializer<PersonInput> {
             if (url == null && node.hasNonNull("photoUrl")) {
                 url = sanitizeValue(node.get("photoUrl").asText());
             }
-            if (base64 == null && node.hasNonNull("photoBase64")) {
-                base64 = sanitizeValue(node.get("photoBase64").asText());
-            }
+            if (base64 == null) base64 = firstValue(node, "photoBase64", "speakerPhotoBase64", "authorPhotoBase64");
 
             PhotoInput photo = (url != null || base64 != null) ? new PhotoInput(url, base64) : null;
             return new PersonInput(name, photo);
+        }
+        return null;
+    }
+
+    private static String firstValue(JsonNode node, String... keys) {
+        for (String key : keys) {
+            if (node.hasNonNull(key)) {
+                String value = sanitizeValue(node.get(key).asText());
+                if (value != null) return value;
+            }
         }
         return null;
     }
