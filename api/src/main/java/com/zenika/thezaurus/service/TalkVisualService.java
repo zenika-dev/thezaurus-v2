@@ -3,10 +3,7 @@ package com.zenika.thezaurus.service;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
-import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -16,7 +13,7 @@ public class TalkVisualService {
     TalkService talks;
 
     @Inject
-    ProfilePhotoService photos;
+    VisualParticipantsService participants;
 
     @Inject
     VisualAgentClient agent;
@@ -33,24 +30,7 @@ public class TalkVisualService {
                 || talk.conference().getName().isBlank()) {
             throw new BadRequestException("Un à trois intervenants et une conférence sont requis.");
         }
-        var speakers = new ArrayList<Map<String, Object>>();
-        for (var speaker : talk.speakers()) {
-            if (speaker == null || speaker.email() == null || speaker.email().isBlank()) {
-                throw new BadRequestException(
-                        "Chaque intervenant doit avoir un profil avec une photo autorisée pour l’IA.");
-            }
-            try {
-                var photo = photos.getForAgent(speaker.email());
-                speakers.add(Map.of(
-                        "name",
-                        speaker.name(),
-                        "photo",
-                        Map.of("base64", Base64.getEncoder().encodeToString(photo.bytes()))));
-            } catch (ForbiddenException denied) {
-                // A missing photo selects the local Zenika logo, without sending private pixels to the agent.
-                speakers.add(Map.of("name", speaker.name()));
-            }
-        }
+        var speakers = participants.prepare(talk.speakers());
         return agent.generate(
                 "talks",
                 Map.of(
