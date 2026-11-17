@@ -59,6 +59,8 @@ jobs:
             FIRESTORE_DATABASE_ID=${{ vars.FIRESTORE_DATABASE_ID }}
             FIRESTORE_COLLECTION_PREFIX=${{ vars.FIRESTORE_COLLECTION_PREFIX }}
             PROFILE_PHOTOS_BUCKET=${{ vars.PROFILE_PHOTOS_BUCKET }}
+            MAILGUN_DOMAIN=${{ vars.MAILGUN_DOMAIN }}
+            SMTP_FROM=${{ vars.SMTP_FROM }}
         run: |
           MISSING=0
           for pair in $REQUIRED; do
@@ -90,6 +92,15 @@ jobs:
           FIRESTORE_DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID }}
           FIRESTORE_COLLECTION_PREFIX: ${{ vars.FIRESTORE_COLLECTION_PREFIX }}
           PROFILE_PHOTOS_BUCKET: ${{ vars.PROFILE_PHOTOS_BUCKET }}
+          SCHEDULER_SERVICE_ACCOUNT: ${{ vars.SCHEDULER_SERVICE_ACCOUNT }}
+          FEEDBACK_REMINDER_AUDIENCE: ${{ vars.FEEDBACK_REMINDER_AUDIENCE }}
+          # Emails via l'API HTTP Mailgun : la Sending Key vient de Secret Manager
+          # (thezaurus-mailgun-sending-key), le reste des vars de l'environnement GitHub.
+          MAILGUN_DOMAIN: ${{ vars.MAILGUN_DOMAIN }}
+          MAILGUN_BASE_URL: ${{ vars.MAILGUN_BASE_URL || 'https://api.eu.mailgun.net' }}
+          SMTP_FROM: ${{ vars.SMTP_FROM }}
+          # Interrupteur des rappels post-talk : false tant que la var n'est pas créée
+          FEEDBACK_REMINDER_ENABLED: ${{ vars.FEEDBACK_REMINDER_ENABLED || 'false' }}
         run: |
           # Une valeur de label n'accepte ni points ni majuscules
           VERSION_LABEL=$(echo "$VERSION" | tr '.' '-' | tr '[:upper:]' '[:lower:]')
@@ -98,7 +109,10 @@ jobs:
           # seules ces variables sont substituées
           envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE}
                     ${GCP_PROJECT_ID} ${RUNTIME_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
-                    ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${PROFILE_PHOTOS_BUCKET}' \
+                    ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${PROFILE_PHOTOS_BUCKET}
+                    ${SCHEDULER_SERVICE_ACCOUNT} ${FEEDBACK_REMINDER_AUDIENCE}
+                    ${MAILGUN_DOMAIN} ${MAILGUN_BASE_URL} ${SMTP_FROM}
+                    ${FEEDBACK_REMINDER_ENABLED}' \
             > service.rendered.yaml <<'MANIFEST'
           apiVersion: serving.knative.dev/v1
           kind: Service
@@ -174,6 +188,28 @@ jobs:
                         value: "${PROFILE_PHOTOS_BUCKET}"
                       - name: GOOGLE_CLIENT_ID
                         value: "${GOOGLE_CLIENT_ID}"
+                      # URL publique de l'appli : liens absolus des emails ({{talksUrl}})
+                      - name: THEZAURUS_PUBLIC_URL
+                        value: "${NEXTAUTH_URL}"
+                      - name: FEEDBACK_REMINDER_ENABLED
+                        value: "${FEEDBACK_REMINDER_ENABLED}"
+                      - name: FEEDBACK_REMINDER_AUDIENCE
+                        value: "${FEEDBACK_REMINDER_AUDIENCE}"
+                      # Seul compte autorisé à déclencher les rappels post-talk (Cloud Scheduler)
+                      - name: FEEDBACK_REMINDER_INVOKER
+                        value: "${SCHEDULER_SERVICE_ACCOUNT}"
+                      # Envoi des emails de rappel post-talk via l'API HTTP Mailgun (région EU)
+                      - name: SMTP_FROM
+                        value: "${SMTP_FROM}"
+                      - name: MAILGUN_DOMAIN
+                        value: "${MAILGUN_DOMAIN}"
+                      - name: MAILGUN_BASE_URL
+                        value: "${MAILGUN_BASE_URL}"
+                      - name: MAILGUN_SENDING_KEY
+                        valueFrom:
+                          secretKeyRef:
+                            name: thezaurus-mailgun-sending-key
+                            key: latest
                       - name: SLACK_BOT_TOKEN
                         valueFrom:
                           secretKeyRef:

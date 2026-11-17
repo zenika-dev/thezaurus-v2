@@ -53,8 +53,7 @@ class TalkFeedbackReminderServiceTest {
                     "thezaurus.feedback-reminder.enabled", "true",
                     "quarkus.mailer.from", "thezaurus@example.com",
                     "thezaurus.public-url", "https://thezaurus.example",
-                    "thezaurus.slack.bot-token", "xoxb-test",
-                    "quarkus.scheduler.enabled", "false");
+                    "thezaurus.slack.bot-token", "xoxb-test");
         }
     }
 
