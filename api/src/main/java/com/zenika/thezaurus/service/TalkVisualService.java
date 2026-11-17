@@ -1,23 +1,14 @@
 package com.zenika.thezaurus.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.WebApplicationException;
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class TalkVisualService {
@@ -28,20 +19,10 @@ public class TalkVisualService {
     ProfilePhotoService photos;
 
     @Inject
-    ObjectMapper json;
-
-    @ConfigProperty(name = "visuals.agent.url", defaultValue = "")
-    Optional<String> agentUrl;
-
-    @ConfigProperty(name = "visuals.agent.api-key", defaultValue = "")
-    Optional<String> apiKey;
-
-    final HttpClient http =
-            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    VisualAgentClient agent;
 
     public byte[] generate(String id) throws ExecutionException, InterruptedException {
-        if (agentUrl.isEmpty() || agentUrl.get().isBlank())
-            throw new WebApplicationException("Agent visuel non configuré.", 503);
+        agent.requireConfigured();
         var talk = talks.findById(id);
         if (talk == null) throw new NotFoundException();
         if (talk.speakers() == null
@@ -58,37 +39,28 @@ public class TalkVisualService {
                 throw new BadRequestException(
                         "Chaque intervenant doit avoir un profil avec une photo autorisée pour l’IA.");
             }
-            var photo = photos.getForAgent(speaker.email());
-            speakers.add(Map.of(
-                    "name",
-                    speaker.name(),
-                    "photo",
-                    Map.of("base64", Base64.getEncoder().encodeToString(photo.bytes()))));
-        }
-        try {
-            var body = Map.of(
-                    "title",
-                    talk.title(),
-                    "conference",
-                    talk.conference().getName(),
-                    "speakers",
-                    speakers,
-                    "autoCrop",
-                    true);
-            var request = HttpRequest.newBuilder(URI.create(agentUrl.orElseThrow() + "/visuals/talks/image"))
-                    .timeout(Duration.ofSeconds(120))
-                    .header("Content-Type", "application/json")
-                    .header("Accept", "image/png")
-                    .POST(HttpRequest.BodyPublishers.ofByteArray(json.writeValueAsBytes(body)));
-            apiKey.filter(key -> !key.isBlank()).ifPresent(key -> request.header("X-API-Key", key));
-            var response = http.send(request.build(), HttpResponse.BodyHandlers.ofByteArray());
-            if (response.statusCode() != 200
-                    || !response.headers().firstValue("Content-Type").orElse("").startsWith("image/png")) {
-                throw new WebApplicationException("La génération du visuel a échoué. Vous pouvez réessayer.", 502);
+            try {
+                var photo = photos.getForAgent(speaker.email());
+                speakers.add(Map.of(
+                        "name",
+                        speaker.name(),
+                        "photo",
+                        Map.of("base64", Base64.getEncoder().encodeToString(photo.bytes()))));
+            } catch (ForbiddenException denied) {
+                // A missing photo selects the local Zenika logo, without sending private pixels to the agent.
+                speakers.add(Map.of("name", speaker.name()));
             }
-            return response.body();
-        } catch (IOException e) {
-            throw new WebApplicationException("L’agent visuel est indisponible. Vous pouvez réessayer.", 502);
         }
+        return agent.generate(
+                "talks",
+                Map.of(
+                        "title",
+                        talk.title(),
+                        "conference",
+                        talk.conference().getName(),
+                        "speakers",
+                        speakers,
+                        "autoCrop",
+                        true));
     }
 }

@@ -45,6 +45,7 @@ export function AiPhotoSection({ profile }: { profile: UserProfile }) {
       <p className="text-sm text-text-muted">
         Ce choix reste valable si toi ou un admin changez ta photo. Le retrait bloque les
         prochaines récupérations ; les visuels déjà créés sont conservés.
+        Sans ton accord, le logo Zenika remplace ta photo dans les nouveaux visuels.
       </p>
       {mutation.isError && (
         <Alert severity="error">L’autorisation n’a pas pu être enregistrée. Réessaie.</Alert>

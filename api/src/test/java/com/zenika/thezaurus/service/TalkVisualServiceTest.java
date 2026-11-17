@@ -22,10 +22,11 @@ class TalkVisualServiceTest {
 
     private void setup(int speakers) throws Exception {
         service.talks = mock(TalkService.class);
+        service.agent = new VisualAgentClient();
         service.photos = mock(ProfilePhotoService.class);
-        service.json = new ObjectMapper();
-        service.agentUrl = java.util.Optional.of("http://localhost:1");
-        service.apiKey = java.util.Optional.empty();
+        service.agent.json = new ObjectMapper();
+        service.agent.agentUrl = java.util.Optional.of("http://localhost:1");
+        service.agent.apiKey = java.util.Optional.empty();
         var talk = mock(Talk.class);
         var conference = mock(Conference.class);
         when(service.talks.findById("talk")).thenReturn(talk);
@@ -52,10 +53,17 @@ class TalkVisualServiceTest {
     }
 
     @Test
-    void enforcesPhotoConsentBeforeCallingAgent() throws Exception {
+    void generatesWithPlaceholderWhenOnlyPersonDeclinesPhoto() throws Exception {
         setup(1);
+        service.agent = mock(VisualAgentClient.class);
+        when(service.agent.generate(eq("talks"), anyMap())).thenReturn(new byte[] {4, 5, 6});
         when(service.photos.getForAgent("alice@example.com")).thenThrow(new ForbiddenException());
-        assertThrows(ForbiddenException.class, () -> service.generate("talk"));
+        assertArrayEquals(new byte[] {4, 5, 6}, service.generate("talk"));
+        var body = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        verify(service.agent).generate(eq("talks"), body.capture());
+        var request = new ObjectMapper().valueToTree(body.getValue());
+        assertEquals("Speaker 0", request.path("speakers").get(0).path("name").asText());
+        assertFalse(request.path("speakers").get(0).has("photo"));
     }
 
     @ParameterizedTest
@@ -79,11 +87,11 @@ class TalkVisualServiceTest {
         });
         server.start();
         try {
-            service.agentUrl = java.util.Optional.of(
+            service.agent.agentUrl = java.util.Optional.of(
                     "http://127.0.0.1:" + server.getAddress().getPort());
-            service.apiKey = java.util.Optional.of("test-key");
+            service.agent.apiKey = java.util.Optional.of("test-key");
             assertArrayEquals(new byte[] {4, 5, 6}, service.generate("talk"));
-            var request = service.json.readTree(body.get());
+            var request = service.agent.json.readTree(body.get());
             assertEquals("Mon talk", request.path("title").asText());
             assertEquals("Devoxx", request.path("conference").asText());
             assertEquals(count, request.path("speakers").size());
@@ -107,14 +115,25 @@ class TalkVisualServiceTest {
 
     @ParameterizedTest
     @ValueSource(ints = {2, 3})
-    void refusesGenerationIfLastSpeakerHasNotAuthorizedTheirPhoto(int count) throws Exception {
+    void usesPlaceholderOnlyForLastPersonWhoDeclinedPhoto(int count) throws Exception {
         setup(count);
         for (int i = 0; i < count - 1; i++) {
             when(service.photos.getForAgent(email(i)))
                     .thenReturn(new ProfilePhotoService.Photo(new byte[] {1}, "image/png"));
         }
         when(service.photos.getForAgent(email(count - 1))).thenThrow(new ForbiddenException());
-        assertThrows(ForbiddenException.class, () -> service.generate("talk"));
+        service.agent = mock(VisualAgentClient.class);
+        when(service.agent.generate(eq("talks"), anyMap())).thenReturn(new byte[] {4, 5, 6});
+        assertArrayEquals(new byte[] {4, 5, 6}, service.generate("talk"));
+        var body = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        verify(service.agent).generate(eq("talks"), body.capture());
+        var request = new ObjectMapper().valueToTree(body.getValue());
+        assertEquals(count, request.path("speakers").size());
+        for (int i = 0; i < count; i++) {
+            assertEquals(i < count - 1, request.path("speakers").get(i).has("photo"));
+            assertEquals(
+                    "Speaker " + i, request.path("speakers").get(i).path("name").asText());
+        }
         for (int i = 0; i < count; i++) verify(service.photos).getForAgent(email(i));
     }
 

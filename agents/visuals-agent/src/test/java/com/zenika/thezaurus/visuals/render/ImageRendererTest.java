@@ -24,6 +24,25 @@ class ImageRendererTest {
     private final ImageRenderer renderer = new ImageRenderer(catalog);
 
     @Test
+    void missingPhotosDisplayZenikaLogoInEachSlot() throws IOException {
+        for (String id : List.of("conf-1", "conf-1-binome", "conf-1-trinome", "blog", "blog-2")) {
+            var spec = catalog.require(id);
+            var people = spec.photos().stream()
+                    .map(slot -> new RenderData.Person("Sans accord", null, null))
+                    .toList();
+            var image = decode(renderer.render(data(id, people, null)).png());
+            for (var slot : spec.photos()) {
+                var box = slot.box();
+                double size = Math.min(box.get(2), box.get(3)) * .70;
+                int x = (int) (box.get(0) + box.get(2) / 2);
+                int y = (int) (box.get(1) + (box.get(3) - size) / 2 + size * .12);
+                var color = new Color(image.getRGB(x, y), true);
+                assertTrue(color.getRed() > 200 && color.getGreen() < 80, "Zenika red logo: " + id);
+            }
+        }
+    }
+
+    @Test
     void loadsEightImmutableNativeTemplatesAndRendersStandalonePngs() throws IOException {
         assertEquals(8, catalog.list().size());
         assertThrows(UnsupportedOperationException.class, () -> catalog.list().clear());
@@ -102,7 +121,7 @@ class ImageRendererTest {
     }
 
     @Test
-    void drawsAMissingPhotoSilhouetteWithoutAFlatBackgroundRectangle() throws IOException {
+    void drawsAMissingPhotoLogoWithoutAFlatBackgroundRectangle() throws IOException {
         TemplateSpec spec = catalog.require("blog");
         BufferedImage actual =
                 decode(renderer.render(data(spec.id(), List.of(new RenderData.Person("Alice", null, null)), null))
@@ -110,10 +129,10 @@ class ImageRendererTest {
         BufferedImage background = background(spec.background());
         List<Double> b = spec.photos().getFirst().box();
         int x = (int) (b.get(0) + b.get(2) / 2), y = (int) (b.get(1) + b.get(3) * .05);
-        assertEquals(
-                background.getRGB(x, y), actual.getRGB(x, y), "Empty space above silhouette keeps native background");
-        assertTrue(actual.getRGB(x, (int) (b.get(1) + b.get(3) * .35))
-                != background.getRGB(x, (int) (b.get(1) + b.get(3) * .35)));
+        assertEquals(background.getRGB(x, y), actual.getRGB(x, y), "Empty space above logo keeps native background");
+        double size = Math.min(b.get(2), b.get(3)) * .70;
+        int logoY = (int) (b.get(1) + (b.get(3) - size) / 2 + size * .12);
+        assertTrue(actual.getRGB(x, logoY) != background.getRGB(x, logoY));
     }
 
     @Test

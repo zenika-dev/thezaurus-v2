@@ -5,6 +5,8 @@ import com.zenika.thezaurus.model.BlogPostStatus;
 import com.zenika.thezaurus.model.PagedResult;
 import com.zenika.thezaurus.model.Role;
 import com.zenika.thezaurus.service.BlogPostService;
+import com.zenika.thezaurus.service.BlogPostVisualService;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -19,6 +21,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.util.concurrent.ExecutionException;
 import org.jboss.resteasy.reactive.RestResponse;
 
@@ -30,6 +33,20 @@ public class BlogPostResource {
 
     @Inject
     BlogPostService service;
+
+    @Inject
+    BlogPostVisualService visuals;
+
+    @POST
+    @Path("/{id}/visual")
+    @Produces("image/png")
+    @RunOnVirtualThread
+    public Response visual(@PathParam("id") String id) throws ExecutionException, InterruptedException {
+        return Response.ok(visuals.generate(id), "image/png")
+                .header("Content-Disposition", "attachment; filename=\"blog-post-visual.png\"")
+                .header("Cache-Control", "no-store")
+                .build();
+    }
 
     @GET
     public PagedResult<BlogPost> list(

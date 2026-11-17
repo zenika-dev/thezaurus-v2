@@ -1036,6 +1036,37 @@
         } ]
       }
     },
+    "/blog-posts/{id}/visual" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "image/png" : { }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "summary" : "Visual",
+        "tags" : [ "Blog Post Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN", "DT", "CONSULTANT" ]
+        } ]
+      }
+    },
     "/conferences" : {
       "get" : {
         "responses" : {

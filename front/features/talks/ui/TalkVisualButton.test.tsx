@@ -21,17 +21,29 @@ it.each([1, 2, 3])("downloads the generated PNG for %i speakers", async (count) 
   expect(createUrl).toHaveBeenCalledWith(expect.any(Blob));
 });
 
-it("explains photo consent failures and allows retrying", async () => {
+it("explains access failures and allows retrying", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 403 }));
   render(<TalkVisualButton talk={talk} />);
   await userEvent.click(screen.getByRole("button", { name: "Télécharger le visuel" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("autoriser l’utilisation de sa photo par l’IA");
+  expect(await screen.findByRole("alert")).toHaveTextContent("pas accès à la génération");
   expect(screen.getByRole("button", { name: "Télécharger le visuel" })).toBeEnabled();
 });
 
-it.each([0, 4])("hides generation for %i speakers and disables it without a conference", (count) => {
+it.each([0, 4])("disables generation for %i speakers and without a conference", (count) => {
   const { rerender } = render(<TalkVisualButton talk={{ ...talk, speakers: Array.from({ length: count }, () => talk.speakers[0]) }} />);
-  expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  expect(screen.getByRole("button")).toBeDisabled();
   rerender(<TalkVisualButton talk={{ ...talk, conference: null }} />);
   expect(screen.getByRole("button")).toBeDisabled();
+});
+
+it("explains the participant limit when hovering over the disabled list action", async () => {
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+  render(<TalkVisualButton talk={{ ...talk, title: "Trop de personnes", speakers: Array.from({ length: 4 }, () => talk.speakers[0]) }} iconOnly />);
+  const button = screen.getByRole("button", { name: "Télécharger le visuel du talk : Trop de personnes" });
+  expect(button).toBeDisabled();
+  await userEvent.hover(button.parentElement!);
+  expect(await screen.findByRole("tooltip")).toHaveTextContent("3 intervenants maximum");
+  expect(button.parentElement).toHaveAttribute("tabindex", "0");
+  expect(fetchMock).not.toHaveBeenCalled();
 });

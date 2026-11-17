@@ -30,6 +30,7 @@ import javax.imageio.ImageIO;
 /** Pure Java2D composition over approved blank PNG assets; no image generation. */
 @ApplicationScoped
 public class ImageRenderer {
+    private static final BufferedImage ZENIKA_MARK = readResourceImage("branding/zenika-mark.png");
     private final TemplateCatalog catalog;
     private final Map<String, BufferedImage> backgrounds = new ConcurrentHashMap<>();
     private final Map<Integer, Font> fonts = new ConcurrentHashMap<>();
@@ -168,13 +169,11 @@ public class ImageRenderer {
                 placement.scale(scale, scale);
                 g.drawImage(photo, placement, null);
             } else {
-                // The silhouette floats over the approved card background, without a flat placeholder.
-                Color background = g.getBackground();
-                double luminance =
-                        background.getRed() * .2126 + background.getGreen() * .7152 + background.getBlue() * .0722;
-                g.setColor(luminance < 160 ? new Color(255, 255, 255, 160) : new Color(107, 114, 128, 128));
-                g.fill(new Ellipse2D.Double(x + w * .35, y + h * .20, w * .30, h * .30));
-                g.fill(new Ellipse2D.Double(x + w * .18, y + h * .55, w * .64, h * .60));
+                double size = Math.min(w, h) * .70;
+                AffineTransform placement =
+                        AffineTransform.getTranslateInstance(x + (w - size) / 2, y + (h - size) / 2);
+                placement.scale(size / ZENIKA_MARK.getWidth(), size / ZENIKA_MARK.getHeight());
+                g.drawImage(ZENIKA_MARK, placement, null);
             }
             BufferedImage mask = new BufferedImage(layerWidth, layerHeight, BufferedImage.TYPE_INT_ARGB);
             Graphics2D mg = mask.createGraphics();
