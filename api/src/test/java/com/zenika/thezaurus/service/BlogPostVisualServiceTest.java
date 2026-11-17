@@ -22,7 +22,13 @@ class BlogPostVisualServiceTest {
     private void setup(int speakers) throws Exception {
         service.posts = mock(BlogPostService.class);
         service.agent = new VisualAgentClient();
-        service.photos = mock(ProfilePhotoService.class);
+        service.participants = new VisualParticipantsService();
+        service.participants.photos = mock(ProfilePhotoService.class);
+        when(service.participants.photos.requireUser(anyString()))
+                .thenAnswer(invocation -> User.builder()
+                        .email(invocation.getArgument(0))
+                        .aiPhotoAllowed(true)
+                        .build());
         service.agent.json = new ObjectMapper();
         service.agent.agentUrl = java.util.Optional.of("http://localhost:1");
         service.agent.apiKey = java.util.Optional.empty();
@@ -45,7 +51,7 @@ class BlogPostVisualServiceTest {
     void refusesUnsupportedSpeakerCountsBeforeReadingPhotos(int count) throws Exception {
         setup(count);
         assertThrows(BadRequestException.class, () -> service.generate("talk"));
-        verifyNoInteractions(service.photos);
+        verifyNoInteractions(service.participants.photos);
     }
 
     @Test
@@ -53,7 +59,7 @@ class BlogPostVisualServiceTest {
         setup(1);
         service.agent = mock(VisualAgentClient.class);
         when(service.agent.generate(eq("blogs"), anyMap())).thenReturn(new byte[] {4, 5, 6});
-        when(service.photos.getForAgent("alice@example.com")).thenThrow(new ForbiddenException());
+        when(service.participants.photos.getForAgent("alice@example.com")).thenThrow(new ForbiddenException());
         assertArrayEquals(new byte[] {4, 5, 6}, service.generate("talk"));
         var body = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
         verify(service.agent).generate(eq("blogs"), body.capture());
@@ -67,7 +73,7 @@ class BlogPostVisualServiceTest {
     void sendsSavedTalkAndAuthorizedPhotosInOrderAndReturnsPng(int count) throws Exception {
         setup(count);
         for (int i = 0; i < count; i++) {
-            when(service.photos.getForAgent(email(i)))
+            when(service.participants.photos.getForAgent(email(i)))
                     .thenReturn(new ProfilePhotoService.Photo(new byte[] {(byte) i, 2, 3}, "image/png"));
         }
         var body = new AtomicReference<String>();
@@ -114,10 +120,10 @@ class BlogPostVisualServiceTest {
     void usesPlaceholderOnlyForLastPersonWhoDeclinedPhoto(int count) throws Exception {
         setup(count);
         for (int i = 0; i < count - 1; i++) {
-            when(service.photos.getForAgent(email(i)))
+            when(service.participants.photos.getForAgent(email(i)))
                     .thenReturn(new ProfilePhotoService.Photo(new byte[] {1}, "image/png"));
         }
-        when(service.photos.getForAgent(email(count - 1))).thenThrow(new ForbiddenException());
+        when(service.participants.photos.getForAgent(email(count - 1))).thenThrow(new ForbiddenException());
         service.agent = mock(VisualAgentClient.class);
         when(service.agent.generate(eq("blogs"), anyMap())).thenReturn(new byte[] {4, 5, 6});
         assertArrayEquals(new byte[] {4, 5, 6}, service.generate("talk"));
@@ -130,13 +136,13 @@ class BlogPostVisualServiceTest {
             assertEquals(
                     "Speaker " + i, request.path("writers").get(i).path("name").asText());
         }
-        for (int i = 0; i < count; i++) verify(service.photos).getForAgent(email(i));
+        for (int i = 0; i < count; i++) verify(service.participants.photos).getForAgent(email(i));
     }
 
     @Test
     void unavailableAgentReturnsGatewayError() throws Exception {
         setup(1);
-        when(service.photos.getForAgent("alice@example.com"))
+        when(service.participants.photos.getForAgent("alice@example.com"))
                 .thenReturn(new ProfilePhotoService.Photo(new byte[] {1}, "image/png"));
         assertEquals(
                 502,

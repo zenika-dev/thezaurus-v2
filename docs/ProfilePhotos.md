@@ -1,6 +1,6 @@
 # Photos de profil et autorisation IA
 
-Le profil permet de charger une photo JPEG, PNG ou WebP de 5 Mo maximum, sans recadrage. Le backend décode réellement l’image et la réencode en PNG sans métadonnées ; il limite les dimensions à 20 mégapixels pour borner la mémoire nécessaire au décodage. La photo personnalisée est utilisée dans le profil et les avatars des contributeurs. Un admin peut la remplacer ou rétablir Google depuis la gestion des utilisateurs.
+Le profil permet de charger une photo JPEG, PNG ou WebP de 5 Mo maximum, sans recadrage. Le backend décode réellement l’image et la réencode sans métadonnées : un JPEG reste en JPEG (qualité 90 %), les PNG et WebP sont encodés en PNG pour préserver la transparence ; il limite les dimensions à 20 mégapixels pour borner la mémoire nécessaire au décodage. La photo personnalisée est utilisée dans le profil et les avatars des contributeurs. Un admin peut la remplacer ou rétablir Google depuis la gestion des utilisateurs.
 
 La connexion synchronise la photo Google uniquement lorsqu’aucune photo personnalisée n’existe. Le retour à Google restaure la dernière URL Google connue ; la prochaine connexion l’actualise. En l’absence de photo, les avatars affichent les initiales.
 
@@ -54,3 +54,11 @@ Le remplacement et la réinitialisation échangent la référence de la photo da
 `ProfilePhotoService.getForAgent(email)` est le point d’entrée interne des futurs agents. Il relit l’utilisateur et refuse l’accès sans autorisation explicite (`ForbiddenException`), retourne la photo personnalisée en priorité, ou signale son absence (`NotFoundException`). Il revérifie l’autorisation après la lecture distante pour appliquer un retrait intervenu pendant celle-ci. Le raccordement réseau et l’authentification machine seront ajoutés avec les agents ; leur intégration doit utiliser ce service.
 
 L’autorisation couvre la photo courante même après remplacement par un admin. Le retrait concerne les récupérations futures ; les visuels existants et les copies déjà transmises sont conservés.
+
+Pour les visuels, les participants sont préparés ensemble. L’absence de photo ou
+le refus de son utilisation sélectionne le logo Zenika pour la personne concernée.
+Un profil inexistant reste une erreur 404, comme un talk ou un article inexistant.
+Après la dernière lecture distante, toutes les autorisations sont relues avant
+l’appel à l’agent ; les photos dont l’autorisation a été retirée sont omises. Les
+copies destinées à l’agent sont limitées à 1536 pixels sur leur plus grand côté,
+en conservant le JPEG ou la transparence PNG, sans modifier les originaux stockés.
