@@ -10,7 +10,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -25,6 +24,9 @@ public class VisualAgentClient {
     @ConfigProperty(name = "visuals.agent.api-key", defaultValue = "")
     Optional<String> apiKey;
 
+    @ConfigProperty(name = "visuals.agent.timeout", defaultValue = "PT120S")
+    Duration timeout = Duration.ofSeconds(120);
+
     final HttpClient http =
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
@@ -33,11 +35,11 @@ public class VisualAgentClient {
             throw new WebApplicationException("Agent visuel non configuré.", 503);
     }
 
-    public byte[] generate(String category, Map<String, Object> body) throws InterruptedException {
+    public byte[] generate(String category, VisualAgentRequest body) throws InterruptedException {
         requireConfigured();
         try {
             var request = HttpRequest.newBuilder(URI.create(agentUrl.orElseThrow() + "/visuals/" + category + "/image"))
-                    .timeout(Duration.ofSeconds(120))
+                    .timeout(timeout)
                     .header("Content-Type", "application/json")
                     .header("Accept", "image/png")
                     .POST(HttpRequest.BodyPublishers.ofByteArray(json.writeValueAsBytes(body)));

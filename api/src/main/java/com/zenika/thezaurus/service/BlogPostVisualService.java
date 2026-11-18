@@ -4,7 +4,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 @ApplicationScoped
@@ -27,7 +26,7 @@ public class BlogPostVisualService {
                 || post.getWriters().size() > 2) {
             throw new BadRequestException("Un ou deux auteurs sont requis.");
         }
-        var writers = participants.prepare(post.getWriters());
-        return agent.generate("blogs", Map.of("title", post.getTitle(), "writers", writers, "autoCrop", true));
+        var writers = participants.prepareAuthors(post.getWriters());
+        return agent.generate("blogs", new VisualAgentRequest.Blog(post.getTitle(), writers, true));
     }
 }

@@ -43,7 +43,7 @@ class VisualParticipantsServiceTest {
     }
 
     @Test
-    void discardsFirstPhotoWhenConsentIsRevokedDuringSecondPhotoRead() throws Exception {
+    void discardsFirstPhotoWhenAiPhotoAuthorizationIsRevokedDuringSecondPhotoRead() throws Exception {
         var revoked = new AtomicBoolean();
         when(users.findByEmail(alice.email()))
                 .thenAnswer(invocation ->
@@ -57,15 +57,15 @@ class VisualParticipantsServiceTest {
 
         var payload = participants.prepare(List.of(alice, bob));
 
-        assertEquals("Alice", payload.get(0).get("name"));
-        assertFalse(payload.get(0).containsKey("photo"));
-        assertTrue(payload.get(1).containsKey("photo"));
+        assertEquals("Alice", payload.get(0).name());
+        assertNull(payload.get(0).photo());
+        assertNotNull(payload.get(1).photo());
     }
 
     @Test
     void missingPhotoUsesLogoButMissingProfileIsStillNotFound() throws Exception {
         when(storage.read("alice")).thenThrow(new NotFoundException());
-        assertFalse(participants.prepare(List.of(alice)).getFirst().containsKey("photo"));
+        assertNull(participants.prepare(List.of(alice)).getFirst().photo());
         when(users.findByEmail(alice.email())).thenReturn(null);
         assertThrows(NotFoundException.class, () -> participants.prepare(List.of(alice)));
     }
@@ -74,7 +74,7 @@ class VisualParticipantsServiceTest {
     void refusedPhotoIsNeverRead() throws Exception {
         when(users.findByEmail(alice.email()))
                 .thenReturn(alice.toBuilder().aiPhotoAllowed(false).build());
-        assertFalse(participants.prepare(List.of(alice)).getFirst().containsKey("photo"));
+        assertNull(participants.prepare(List.of(alice)).getFirst().photo());
         verifyNoInteractions(storage);
     }
 
@@ -89,6 +89,35 @@ class VisualParticipantsServiceTest {
         when(users.findByEmail(alice.email())).thenReturn(alice, alice, null);
         when(storage.read("alice")).thenReturn(photo());
         assertThrows(NotFoundException.class, () -> participants.prepare(List.of(alice)));
+    }
+
+    @Test
+    void freeAuthorsAndUnknownProfilesUseLogoWithoutReadingPixels() throws Exception {
+        var free = User.builder().name("Auteur libre").build();
+        when(users.findByEmail("unknown@example.test")).thenReturn(null);
+        var unknown =
+                User.builder().name("Externe").email("unknown@example.test").build();
+        var result = participants.prepareAuthors(List.of(free, unknown));
+        assertEquals("Auteur libre", result.getFirst().name());
+        assertEquals("Externe", result.get(1).name());
+        assertTrue(result.stream().allMatch(person -> person.photo() == null));
+        verifyNoInteractions(storage);
+    }
+
+    @Test
+    void blankEmbeddedNameUsesCurrentProfileName() throws Exception {
+        when(users.findByEmail(alice.email()))
+                .thenReturn(alice.toBuilder().aiPhotoAllowed(false).build());
+        var result = participants.prepare(List.of(alice.toBuilder().name(" ").build()));
+        assertEquals("Alice", result.getFirst().name());
+    }
+
+    @Test
+    void freeAuthorWithoutNameIsRejected() {
+        assertThrows(
+                jakarta.ws.rs.BadRequestException.class,
+                () -> participants.prepareAuthors(
+                        List.of(User.builder().name(" ").build())));
     }
 
     private static byte[] photo() throws Exception {

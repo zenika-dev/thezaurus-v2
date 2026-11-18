@@ -62,10 +62,10 @@ class TalkVisualServiceTest {
     void generatesWithPlaceholderWhenOnlyPersonDeclinesPhoto() throws Exception {
         setup(1);
         service.agent = mock(VisualAgentClient.class);
-        when(service.agent.generate(eq("talks"), anyMap())).thenReturn(new byte[] {4, 5, 6});
+        when(service.agent.generate(eq("talks"), any(VisualAgentRequest.class))).thenReturn(new byte[] {4, 5, 6});
         when(service.participants.photos.getForAgent("alice@example.com")).thenThrow(new ForbiddenException());
         assertArrayEquals(new byte[] {4, 5, 6}, service.generate("talk"));
-        var body = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        var body = org.mockito.ArgumentCaptor.forClass(VisualAgentRequest.class);
         verify(service.agent).generate(eq("talks"), body.capture());
         var request = new ObjectMapper().valueToTree(body.getValue());
         assertEquals("Speaker 0", request.path("speakers").get(0).path("name").asText());
@@ -129,9 +129,9 @@ class TalkVisualServiceTest {
         }
         when(service.participants.photos.getForAgent(email(count - 1))).thenThrow(new ForbiddenException());
         service.agent = mock(VisualAgentClient.class);
-        when(service.agent.generate(eq("talks"), anyMap())).thenReturn(new byte[] {4, 5, 6});
+        when(service.agent.generate(eq("talks"), any(VisualAgentRequest.class))).thenReturn(new byte[] {4, 5, 6});
         assertArrayEquals(new byte[] {4, 5, 6}, service.generate("talk"));
-        var body = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        var body = org.mockito.ArgumentCaptor.forClass(VisualAgentRequest.class);
         verify(service.agent).generate(eq("talks"), body.capture());
         var request = new ObjectMapper().valueToTree(body.getValue());
         assertEquals(count, request.path("speakers").size());

@@ -4,7 +4,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 @ApplicationScoped
@@ -33,14 +32,6 @@ public class TalkVisualService {
         var speakers = participants.prepare(talk.speakers());
         return agent.generate(
                 "talks",
-                Map.of(
-                        "title",
-                        talk.title(),
-                        "conference",
-                        talk.conference().getName(),
-                        "speakers",
-                        speakers,
-                        "autoCrop",
-                        true));
+                new VisualAgentRequest.Talk(talk.title(), talk.conference().getName(), speakers, true));
     }
 }
