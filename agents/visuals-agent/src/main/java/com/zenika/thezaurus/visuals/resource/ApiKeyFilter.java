@@ -22,8 +22,9 @@ public class ApiKeyFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext request) {
-        String path = request.getUriInfo().getPath();
-        if (!(path.equals("visuals") || path.startsWith("visuals/")) || apiKey.isEmpty()) return;
+        String path = request.getUriInfo().getPath().replaceFirst("^/+", "");
+        if (!(path.equals("visuals") || path.startsWith("visuals/"))
+                || apiKey.filter(key -> !key.isBlank()).isEmpty()) return;
         String supplied = request.getHeaderString("X-API-Key");
         if (supplied == null
                 || !MessageDigest.isEqual(
