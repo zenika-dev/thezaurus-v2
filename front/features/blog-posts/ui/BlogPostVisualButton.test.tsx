@@ -14,7 +14,7 @@ const post: BlogPostData = { id: "post-1", title: "Article de test", writers: [{
 
 
 
-afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+afterEach(() => { window.dispatchEvent(new Event("pagehide")); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 
 

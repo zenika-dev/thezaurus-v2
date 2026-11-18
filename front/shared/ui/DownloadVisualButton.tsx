@@ -34,7 +34,9 @@ export function DownloadVisualButton({ endpoint, filename, disabled = false, dis
       document.body.appendChild(link);
       link.click();
       link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      // Anchor downloads expose no completion event. Keep the URL alive until
+      // the document is left, including when it enters the back/forward cache.
+      window.addEventListener("pagehide", () => URL.revokeObjectURL(url), { once: true });
     } catch (error) {
       setError(error instanceof Error ? error.message : "Impossible de télécharger le visuel.");
     } finally {

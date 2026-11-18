@@ -10,5 +10,5 @@ export function TalkVisualButton({ talk, disabled = false, iconOnly = false }: {
     filename={`talk-${talk.id}.png`} disabled={disabled} disabledReason={disabledReason} iconOnly={iconOnly}
     label={iconOnly ? `Télécharger le visuel du talk : ${talk.title}` : undefined}
     forbiddenError="Vous n’avez pas accès à la génération de ce visuel."
-    missingError="Le talk ou la photo d’un intervenant est introuvable." />;
+    missingError="Le talk ou le profil d’un intervenant est introuvable." />;
 }

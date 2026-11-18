@@ -6,7 +6,7 @@ import { TalkVisualButton } from "./TalkVisualButton";
 
 const talk = { id: "talk-1", speakers: [{ name: "Alice" }], conference: { name: "Devoxx" } } as TalkData;
 
-afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+afterEach(() => { window.dispatchEvent(new Event("pagehide")); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 it.each([1, 2, 3])("downloads the generated PNG for %i speakers", async (count) => {
   const fetchMock = vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(["png"], { type: "image/png" }) });
