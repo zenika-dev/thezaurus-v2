@@ -211,6 +211,11 @@ class VisualResourceTest {
     @Test
     void rejectsMissingFieldsAndUnsupportedSpeakerCounts() {
         given().contentType("application/json")
+                .body(blog(List.of()))
+                .post("/visuals/blogs/image")
+                .then()
+                .statusCode(400);
+        given().contentType("application/json")
                 .body(Map.of("title", "Talk", "speakers", List.of("Alice")))
                 .post("/visuals/talks/image")
                 .then()
