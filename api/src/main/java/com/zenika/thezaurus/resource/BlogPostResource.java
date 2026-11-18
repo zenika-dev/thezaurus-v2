@@ -23,6 +23,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.concurrent.ExecutionException;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.jboss.resteasy.reactive.RestResponse;
 
 @Path("/blog-posts")
@@ -41,6 +43,13 @@ public class BlogPostResource {
     @Path("/{id}/visual")
     @Produces("image/png")
     @RunOnVirtualThread
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "Visuel PNG"),
+        @APIResponse(responseCode = "400", description = "Auteurs invalides"),
+        @APIResponse(responseCode = "404", description = "Article introuvable"),
+        @APIResponse(responseCode = "502", description = "Échec ou indisponibilité de l’agent visuel"),
+        @APIResponse(responseCode = "503", description = "Agent non configuré ou stockage indisponible")
+    })
     public Response visual(@PathParam("id") String id) throws ExecutionException, InterruptedException {
         return Response.ok(visuals.generate(id), "image/png")
                 .header("Content-Disposition", "attachment; filename=\"blog-post-visual.png\"")

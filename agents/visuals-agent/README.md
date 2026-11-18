@@ -119,3 +119,15 @@ Cette copie disparaît avec le conteneur et n’entre ni dans l’image ni dans 
 persistant. Hors Compose, l’image reste non-root par défaut ; fournir une identité
 ou un fichier déjà lisible par l’utilisateur du conteneur. Aucun déploiement cloud
 n’est ajouté : la CI vérifie l’agent avec `mvnw verify`, sans appel réel à Gemini.
+
+## Contrat autonome et intégration TheZaurus
+
+TheZaurus consomme uniquement les endpoints PNG `/visuals/talks/image` (1 à 3 intervenants)
+et `/visuals/blogs/image` (1 à 2 auteurs). Les réponses JSON, les flux SSE, le catalogue,
+les modèles NightClazz et double-talk ainsi que les alias d’entrée appartiennent au contrat
+HTTP autonome du POC. Ils restent couverts par ses tests, sans bouton ni appel correspondant
+dans l’application standard. Leur présence ne constitue pas un déploiement de ces fonctionnalités.
+
+Le timeout de l’appel depuis l’API TheZaurus est configurable avec `VISUALS_AGENT_TIMEOUT`
+(durée ISO-8601, `PT120S` par défaut). Une clé `VISUALS_API_KEY` vide désactive volontairement
+l’authentification de service pour l’usage local ; une clé non vide protège tous les chemins `/visuals`.

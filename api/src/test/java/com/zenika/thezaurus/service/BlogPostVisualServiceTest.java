@@ -58,10 +58,10 @@ class BlogPostVisualServiceTest {
     void generatesWithPlaceholderWhenOnlyPersonDeclinesPhoto() throws Exception {
         setup(1);
         service.agent = mock(VisualAgentClient.class);
-        when(service.agent.generate(eq("blogs"), anyMap())).thenReturn(new byte[] {4, 5, 6});
+        when(service.agent.generate(eq("blogs"), any(VisualAgentRequest.class))).thenReturn(new byte[] {4, 5, 6});
         when(service.participants.photos.getForAgent("alice@example.com")).thenThrow(new ForbiddenException());
         assertArrayEquals(new byte[] {4, 5, 6}, service.generate("talk"));
-        var body = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        var body = org.mockito.ArgumentCaptor.forClass(VisualAgentRequest.class);
         verify(service.agent).generate(eq("blogs"), body.capture());
         var request = new ObjectMapper().valueToTree(body.getValue());
         assertEquals("Speaker 0", request.path("writers").get(0).path("name").asText());
@@ -111,6 +111,24 @@ class BlogPostVisualServiceTest {
         }
     }
 
+    @Test
+    void generatesForFreeAuthorWithoutProfile() throws Exception {
+        setup(1);
+        var post = service.posts.findById("talk");
+        when(post.getWriters())
+                .thenReturn(
+                        java.util.List.of(User.builder().name("Auteur libre").build()));
+        service.agent = mock(VisualAgentClient.class);
+        when(service.agent.generate(eq("blogs"), any(VisualAgentRequest.class))).thenReturn(new byte[] {1});
+        assertArrayEquals(new byte[] {1}, service.generate("talk"));
+        var body = org.mockito.ArgumentCaptor.forClass(VisualAgentRequest.class);
+        verify(service.agent).generate(eq("blogs"), body.capture());
+        var author = ((VisualAgentRequest.Blog) body.getValue()).writers().getFirst();
+        assertEquals("Auteur libre", author.name());
+        assertNull(author.photo());
+        verifyNoInteractions(service.participants.photos);
+    }
+
     private static String email(int index) {
         return index == 0 ? "alice@example.com" : "speaker" + index + "@example.com";
     }
@@ -125,9 +143,9 @@ class BlogPostVisualServiceTest {
         }
         when(service.participants.photos.getForAgent(email(count - 1))).thenThrow(new ForbiddenException());
         service.agent = mock(VisualAgentClient.class);
-        when(service.agent.generate(eq("blogs"), anyMap())).thenReturn(new byte[] {4, 5, 6});
+        when(service.agent.generate(eq("blogs"), any(VisualAgentRequest.class))).thenReturn(new byte[] {4, 5, 6});
         assertArrayEquals(new byte[] {4, 5, 6}, service.generate("talk"));
-        var body = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        var body = org.mockito.ArgumentCaptor.forClass(VisualAgentRequest.class);
         verify(service.agent).generate(eq("blogs"), body.capture());
         var request = new ObjectMapper().valueToTree(body.getValue());
         assertEquals(count, request.path("writers").size());

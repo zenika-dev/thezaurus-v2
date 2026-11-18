@@ -1518,7 +1518,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
+                /** @description Visuel PNG */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1526,6 +1526,13 @@ export interface paths {
                     content: {
                         "image/png": unknown;
                     };
+                };
+                /** @description Auteurs invalides */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
                 /** @description Not Authorized */
                 401: {
@@ -1536,6 +1543,27 @@ export interface paths {
                 };
                 /** @description Not Allowed */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Article introuvable */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Échec ou indisponibilité de l’agent visuel */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Agent non configuré ou stockage indisponible */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2413,7 +2441,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
+                /** @description Visuel PNG */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2421,6 +2449,13 @@ export interface paths {
                     content: {
                         "image/png": unknown;
                     };
+                };
+                /** @description Participants ou conférence invalides */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
                 /** @description Not Authorized */
                 401: {
@@ -2431,6 +2466,27 @@ export interface paths {
                 };
                 /** @description Not Allowed */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Contenu ou profil introuvable */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Échec ou indisponibilité de l’agent visuel */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Agent non configuré ou stockage indisponible */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };

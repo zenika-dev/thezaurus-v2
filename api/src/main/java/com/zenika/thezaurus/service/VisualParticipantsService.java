@@ -8,9 +8,7 @@ import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /** Resolves photos privately, then checks all participants again after the last remote read. */
@@ -19,29 +17,54 @@ public class VisualParticipantsService {
     @Inject
     ProfilePhotoService photos;
 
-    public List<Map<String, Object>> prepare(List<User> people) throws ExecutionException, InterruptedException {
-        var result = new ArrayList<Map<String, Object>>();
+    public List<VisualAgentRequest.Person> prepare(List<User> people) throws ExecutionException, InterruptedException {
+        return prepare(people, false);
+    }
+
+    public List<VisualAgentRequest.Person> prepareAuthors(List<User> people)
+            throws ExecutionException, InterruptedException {
+        return prepare(people, true);
+    }
+
+    private List<VisualAgentRequest.Person> prepare(List<User> people, boolean allowFreeAuthors)
+            throws ExecutionException, InterruptedException {
+        var result = new ArrayList<VisualAgentRequest.Person>();
         for (var person : people) {
-            if (person == null || person.email() == null || person.email().isBlank()) {
-                throw new BadRequestException("Chaque participant doit avoir un profil.");
+            if (person == null) throw new BadRequestException("Participant invalide.");
+            var user = profile(person.email(), allowFreeAuthors);
+            var name = person.name();
+            if (name == null || name.isBlank()) name = user == null ? null : user.name();
+            if (name == null || name.isBlank()) throw new BadRequestException("Chaque participant doit avoir un nom.");
+            VisualAgentRequest.Photo photo = null;
+            if (user != null) {
+                try {
+                    var image = photos.getForAgent(person.email());
+                    photo = new VisualAgentRequest.Photo(Base64.getEncoder().encodeToString(image.bytes()));
+                } catch (ForbiddenException | NotFoundException noPhoto) {
+                    // Omit the pixels: the renderer uses its local Zenika logo.
+                }
             }
-            // A missing profile is an error, unlike a missing or refused photograph.
-            photos.requireUser(person.email());
-            var entry = new HashMap<String, Object>();
-            entry.put("name", person.name());
-            try {
-                var photo = photos.getForAgent(person.email());
-                entry.put("photo", Map.of("base64", Base64.getEncoder().encodeToString(photo.bytes())));
-            } catch (ForbiddenException | NotFoundException noPhoto) {
-                // Omit the pixels: the renderer uses its local Zenika logo.
-            }
-            result.add(entry);
+            result.add(new VisualAgentRequest.Person(name, photo));
         }
-        // No image downloads remain after this check. A deletion still returns 404.
         for (int i = 0; i < people.size(); i++) {
-            if (!photos.requireUser(people.get(i).email()).allowsAiPhoto())
-                result.get(i).remove("photo");
+            var user = profile(people.get(i).email(), allowFreeAuthors);
+            if (user == null || !user.allowsAiPhoto()) {
+                result.set(i, new VisualAgentRequest.Person(result.get(i).name(), null));
+            }
         }
-        return result;
+        return List.copyOf(result);
+    }
+
+    private User profile(String email, boolean allowFreeAuthors) throws ExecutionException, InterruptedException {
+        if (email == null || email.isBlank()) {
+            if (allowFreeAuthors) return null;
+            throw new BadRequestException("Chaque intervenant doit avoir un profil.");
+        }
+        try {
+            return photos.requireUser(email);
+        } catch (NotFoundException missing) {
+            if (allowFreeAuthors) return null;
+            throw missing;
+        }
     }
 }

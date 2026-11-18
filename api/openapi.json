@@ -1048,10 +1048,22 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "OK",
+            "description" : "Visuel PNG",
             "content" : {
               "image/png" : { }
             }
+          },
+          "400" : {
+            "description" : "Auteurs invalides"
+          },
+          "404" : {
+            "description" : "Article introuvable"
+          },
+          "502" : {
+            "description" : "Échec ou indisponibilité de l’agent visuel"
+          },
+          "503" : {
+            "description" : "Agent non configuré ou stockage indisponible"
           },
           "401" : {
             "description" : "Not Authorized"
@@ -1742,10 +1754,22 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "OK",
+            "description" : "Visuel PNG",
             "content" : {
               "image/png" : { }
             }
+          },
+          "400" : {
+            "description" : "Participants ou conférence invalides"
+          },
+          "404" : {
+            "description" : "Contenu ou profil introuvable"
+          },
+          "502" : {
+            "description" : "Échec ou indisponibilité de l’agent visuel"
+          },
+          "503" : {
+            "description" : "Agent non configuré ou stockage indisponible"
           },
           "401" : {
             "description" : "Not Authorized"

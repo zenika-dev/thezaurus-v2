@@ -57,7 +57,7 @@ L’autorisation couvre la photo courante même après remplacement par un admin
 
 Pour les visuels, les participants sont préparés ensemble. L’absence de photo ou
 le refus de son utilisation sélectionne le logo Zenika pour la personne concernée.
-Un profil inexistant reste une erreur 404, comme un talk ou un article inexistant.
+Un auteur libre ou dont le profil n’existe plus utilise aussi le logo, avec son nom enregistré dans l’article. Pour un talk, un profil inexistant reste une erreur 404, comme un talk ou un article inexistant. Un nom embarqué vide est remplacé par le nom du profil courant ; sans aucun nom, la requête est refusée en 400.
 Après la dernière lecture distante, toutes les autorisations sont relues avant
 l’appel à l’agent ; les photos dont l’autorisation a été retirée sont omises. Les
 copies destinées à l’agent sont limitées à 1536 pixels sur leur plus grand côté,
