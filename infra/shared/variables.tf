@@ -38,3 +38,8 @@ variable "data_location" {
   type        = string
   default     = "europe-west9"
 }
+
+variable "service_name" {
+  description = "Nom du service Cloud Run : thezaurus-v2 (prod), thezaurus-staging"
+  type        = string
+}

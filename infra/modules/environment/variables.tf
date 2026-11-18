@@ -44,3 +44,23 @@ variable "region" {
   description = "Région des ressources applicatives (Cloud Run, bucket, Scheduler) : europe-west1"
   type        = string
 }
+
+variable "service_name" {
+  description = "Nom du service Cloud Run : thezaurus-v2 (prod), thezaurus-staging"
+  type        = string
+}
+
+variable "scheduler_job_name" {
+  description = "Nom du job Cloud Scheduler des rappels : talk-feedback-reminder (prod)"
+  type        = string
+}
+
+variable "scheduler_service_account_email" {
+  description = "Email du SA utilisé par Cloud Scheduler pour signer le token OIDC (créé dans shared)"
+  type        = string
+}
+
+variable "feedback_reminder_paused" {
+  description = "true pour suspendre le job (staging : évite d'envoyer de vrais rappels Slack / email)"
+  type        = bool
+}
