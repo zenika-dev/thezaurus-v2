@@ -9,5 +9,5 @@ export function BlogPostVisualButton({ post, disabled = false, iconOnly = false 
     filename={`blog-post-${post.id}.png`} disabled={disabled} disabledReason={disabledReason} iconOnly={iconOnly}
     label={iconOnly ? `Télécharger le visuel de l’article : ${post.title}` : undefined}
     forbiddenError="Vous n’avez pas accès à la génération de ce visuel."
-    missingError="L’article ou la photo d’un auteur est introuvable." />;
+    missingError="L’article est introuvable." />;
 }
