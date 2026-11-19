@@ -1,0 +1,31 @@
+# Terraform — fichiers locaux, jamais versionnés.
+# .terraform.lock.hcl reste versionné (versions et hashes des providers).
+
+# Providers et modules téléchargés par terraform init
+**/.terraform/*
+
+# States locaux et leurs sauvegardes (le state vit dans le bucket GCS)
+*.tfstate
+*.tfstate.*
+
+# Plans sauvegardés (terraform plan -out) : peuvent contenir des valeurs sensibles
+*.tfplan
+tfplan
+
+# Logs de crash
+crash.log
+crash.*.log
+
+# Variables locales : peuvent contenir des secrets
+*.tfvars
+*.tfvars.json
+
+# Surcharges locales
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Config CLI locale
+.terraformrc
+terraform.rc

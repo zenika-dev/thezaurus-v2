@@ -39,7 +39,8 @@ variable "data_location" {
   default     = "europe-west9"
 }
 
-variable "service_name" {
-  description = "Nom du service Cloud Run : thezaurus-v2 (prod), thezaurus-staging"
-  type        = string
+variable "tf_admin_actor_ids" {
+  description = "IDs numériques GitHub autorisés à lancer infra-env.yml (gh api users/<login> --jq .id)"
+  type        = list(string)
+  default     = ["290412554"]
 }
