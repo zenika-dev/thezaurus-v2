@@ -40,15 +40,22 @@ jobs:
 
       # Ne jamais reconstruire une version déjà publiée.
       # `tags list` n'interroge que l'API Artifact Registry (`images describe` appelle aussi
-      # Container Analysis, droit que le compte CI n'a pas). Tag absent → sortie vide ;
-      # toute autre erreur (droits, auth) fait échouer le step au lieu d'être masquée.
+      # Container Analysis, droit que le compte CI n'a pas). Un premier déploiement
+      # peut aussi renvoyer NOT_FOUND pour l'image entière ; les autres erreurs restent bloquantes.
       - name: Vérifier si l'image existe déjà
         id: check
         run: |
           set -o pipefail
-          DIGEST=$(gcloud artifacts docker tags list "${IMAGE}" \
+          if DIGEST=$(gcloud artifacts docker tags list "${IMAGE}" \
             --format='value(tag.basename(),version.basename())' \
-            | awk -v v="${VERSION}" '$1 == v {print $2}')
+            2> lookup-error.txt | awk -v v="${VERSION}" '$1 == v {print $2}'); then
+            :
+          elif grep -Eq '(^|[[:space:](])NOT_FOUND([[:space:]:)]|$)' lookup-error.txt; then
+            DIGEST=""
+          else
+            cat lookup-error.txt >&2
+            exit 1
+          fi
           if [ -n "${DIGEST}" ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
             echo "${IMAGE}:${VERSION} existe déjà (${DIGEST}), pas de rebuild"
