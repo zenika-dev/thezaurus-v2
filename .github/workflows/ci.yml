@@ -36,9 +36,23 @@ permissions:
   contents: read
 
 jobs:
+  deployment:
+    name: Contrat de déploiement Cloud Run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Vérifier le rendu et le câblage de la release
+        run: |
+          python3 -m venv /tmp/deployment-tests
+          /tmp/deployment-tests/bin/pip install --disable-pip-version-check PyYAML==6.0.3
+          /tmp/deployment-tests/bin/python -m unittest discover -s .github/tests -v
+
   visuals-agent:
     name: Agent visuels (Quarkus)
-    if: ${{ github.event_name == 'pull_request' || inputs.agent }}
+    if: ${{ github.event_name == 'pull_request' || inputs.api_front || inputs.agent }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:

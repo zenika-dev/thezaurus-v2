@@ -4,10 +4,10 @@ name: Release
 # Rien n'est publié ni déployé si un test du même commit échoue.
 on:
   workflow_dispatch:
-    # Cocher les deux pour tout livrer.
+    # API/front inclut le sidecar visuels ; agent sélectionne uniquement talks-agent.
     inputs:
       api_front:
-        description: "API et front"
+        description: "API, front et agent visuels"
         type: boolean
         default: true
       agent:
@@ -58,7 +58,9 @@ jobs:
         run: |
           services=()
           [ "${API_FRONT}" = "true" ] && services+=(api front)
-          [ "${AGENT}" = "true" ] && services+=(agents)
+          if [ "${API_FRONT}" = "true" ] || [ "${AGENT}" = "true" ]; then
+            services+=(agents)
+          fi
           echo "list=${services[*]}" >> "$GITHUB_OUTPUT"
 
       - uses: ./.github/actions/semantic-release
@@ -92,10 +94,20 @@ jobs:
     with:
       version: ${{ needs.release.outputs.front_version }}
 
+  image-visuals-agent:
+    needs: [release]
+    if: ${{ inputs.api_front && needs.release.outputs.agents_version != '' }}
+    uses: ./.github/workflows/_image-visuals-agent.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      version: ${{ needs.release.outputs.agents_version }}
+
   # Images référencées par digest (immuables) : ce qui est déployé est exactement
   # ce qui a été construit, même si un tag est réécrit entre-temps.
   deploy-production:
-    needs: [version, image-api, image-front]
+    needs: [version, image-api, image-front, image-visuals-agent]
     uses: ./.github/workflows/_deploy.yml
     permissions:
       contents: read
@@ -105,6 +117,7 @@ jobs:
       version: ${{ needs.version.outputs.version }}
       api_image: ${{ needs.image-api.outputs.image }}
       front_image: ${{ needs.image-front.outputs.image }}
+      visuals_image: ${{ needs.image-visuals-agent.outputs.image }}
 
   # En parallèle des images et du déploiement Cloud Run.
   deploy-agent:
