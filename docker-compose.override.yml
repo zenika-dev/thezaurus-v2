@@ -73,6 +73,7 @@ services:
     environment:
       - VISUALS_AGENT_URL=http://visuals-agent:8087
       - VISUALS_API_KEY=${VISUALS_API_KEY:-}
+      - VISUALS_AGENT_TIMEOUT=${VISUALS_AGENT_TIMEOUT:-PT120S}
       - QUARKUS_PROFILE=dev
       - PROFILE_PHOTOS_BUCKET=thezaurus-photos-local
       - GCS_EMULATOR_HOST=http://gcs:4443

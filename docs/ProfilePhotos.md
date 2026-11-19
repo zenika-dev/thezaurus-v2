@@ -51,7 +51,9 @@ Le remplacement et la réinitialisation échangent la référence de la photo da
 - `PUT /api/me/profile/ai-photo` : corps `{ "allowed": true|false }`. La cible vient exclusivement de l’identité authentifiée. Aucun endpoint admin ne permet de modifier cette autorisation pour autrui.
 - `GET /api/users/{email}/photo` : affichage ordinaire pour les utilisateurs authentifiés disposant d’un rôle ; indépendant de l’autorisation IA. L’URL Google et la clé GCS restent privées.
 
-`ProfilePhotoService.getForAgent(email)` est le point d’entrée interne des futurs agents. Il relit l’utilisateur et refuse l’accès sans autorisation explicite (`ForbiddenException`), retourne la photo personnalisée en priorité, ou signale son absence (`NotFoundException`). Il revérifie l’autorisation après la lecture distante pour appliquer un retrait intervenu pendant celle-ci. Le raccordement réseau et l’authentification machine seront ajoutés avec les agents ; leur intégration doit utiliser ce service.
+`ProfilePhotoService.getForAgent(email)` est le point d’entrée interne utilisé pour préparer les photos destinées à l’agent visuels. Il relit l’utilisateur et refuse l’accès sans autorisation explicite (`ForbiddenException`), retourne la photo personnalisée en priorité, ou signale son absence (`NotFoundException`). Il revérifie l’autorisation après la lecture distante pour appliquer un retrait intervenu pendant celle-ci.
+
+L’API prépare les participants via `VisualParticipantsService`, puis transmet les photos autorisées en base64 à l’agent HTTP via `VisualAgentClient`. Si `VISUALS_API_KEY` est configurée, l’API la fournit dans l’en-tête `X-API-Key`, contrôlé par l’agent. Cette intégration est disponible localement dans Docker Compose ; le déploiement distant et la configuration de ses accès restent à définir.
 
 L’autorisation couvre la photo courante même après remplacement par un admin. Le retrait concerne les récupérations futures ; les visuels existants et les copies déjà transmises sont conservés.
 
