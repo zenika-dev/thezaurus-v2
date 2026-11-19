@@ -21,22 +21,24 @@ Le bouton est aussi disponible dans la fiche d’un article de blog enregistré 
 un ou deux auteurs. Il appelle `/visuals/blogs/image` et télécharge un PNG
 1080 × 1350 avec le modèle correspondant au nombre d’auteurs. Le même remplacement par le logo Zenika s’applique aux auteurs sans autorisation photo IA.
 
-Depuis ce dossier, avec un JDK 21 :
-
-```powershell
-.\scripts\run-local.ps1 -Build
-# Ou sélectionner explicitement le JDK :
-.\scripts\run-local.ps1 -JavaHome 'C:\chemin\vers\jdk-21'
-```
-
-Le service écoute sur `http://127.0.0.1:8087`. `-Port` permet de changer ce port. Le lanceur lit uniquement les variables de configuration listées ci-dessous, dans cet ordre : `.env` du dépôt principal, `.env` du worktree, `.env` de ce module, puis un éventuel `-EnvFile`. Les variables déjà présentes dans le processus ont priorité. Il ne copie ni n’affiche les secrets et restaure l’environnement du processus à l’arrêt. Un chemin ADC relatif est résolu depuis le dossier du fichier qui le définit.
-
-Sous Linux/macOS :
+Pour lancer uniquement l'agent, depuis la racine du dépôt, sur toute plateforme disposant de Docker Compose :
 
 ```sh
-./mvnw package
+docker compose up --build visuals-agent
+```
+
+Le service écoute sur le port 8087 dans le réseau Compose. Pour un lancement Java
+hors conteneur, compiler avec le wrapper Maven standard (`./mvnw package`, ou
+`mvnw.cmd package` sous Windows), puis exécuter depuis ce module :
+
+```sh
 java -Djava.awt.headless=true -jar target/quarkus-app/quarkus-run.jar
 ```
+
+Java 21 est requis. Configurer les variables ci-dessous dans l'environnement du
+processus avant le lancement Java ; le chargement du `.env` racine par Docker Compose
+est utilisé pour le lancement conteneurisé. Hors conteneur, le service écoute par
+défaut sur `http://127.0.0.1:8087`.
 
 | Variable | Usage |
 | --- | --- |
@@ -47,7 +49,7 @@ java -Djava.awt.headless=true -jar target/quarkus-app/quarkus-run.jar
 | `GEMINI_CROP_MODEL` | `gemini-3.1-flash-lite` par défaut |
 | `VISUALS_AI_ENABLED` | `true` par défaut ; `false` désactive l’analyse Gemini |
 | `VISUALS_API_KEY` | Si définie, exige l’en-tête `X-API-Key` sur l’API de rendu |
-| `VISUALS_AGENT_HOST`, `VISUALS_AGENT_PORT` | Adresse et port du service hors lanceur local |
+| `VISUALS_AGENT_HOST`, `VISUALS_AGENT_PORT` | Adresse et port du service hors Compose |
 
 ADC doit permettre d’appeler Vertex AI dans le projet configuré. Sans configuration Gemini/Vertex, une demande de cadrage automatique retourne une erreur de configuration. `autoCrop: false` permet un rendu centré sans appel IA.
 
