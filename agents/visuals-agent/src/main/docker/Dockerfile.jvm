@@ -5,7 +5,8 @@ COPY src ./src
 RUN mvn -B package -DskipTests
 
 FROM eclipse-temurin:21-jre-jammy
-RUN apt-get update \
+RUN sed -i 's|http://|https://|g' /etc/apt/sources.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends fontconfig libfreetype6 gosu \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 app \
