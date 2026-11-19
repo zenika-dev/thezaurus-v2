@@ -19,10 +19,6 @@ on:
         description: Image front par digest
         required: true
         type: string
-      visuals_image:
-        description: Image de l'agent visuels par digest
-        required: true
-        type: string
 
 jobs:
   deploy:
@@ -46,6 +42,7 @@ jobs:
       SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE }}
       GCP_REGION: ${{ vars.GCP_REGION }}
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      VISUALS_SERVICE_NAME: ${{ vars.CLOUD_RUN_VISUALS_SERVICE }}
       TARGET_ENV: ${{ inputs.environment }}
     steps:
       # Échoue tout de suite si l'environnement GitHub est incomplet, plutôt que de
@@ -56,6 +53,7 @@ jobs:
             GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
             GCP_REGION=${{ vars.GCP_REGION }}
             CLOUD_RUN_SERVICE=${{ vars.CLOUD_RUN_SERVICE }}
+            CLOUD_RUN_VISUALS_SERVICE=${{ vars.CLOUD_RUN_VISUALS_SERVICE }}
             WIF_PROVIDER=${{ vars.WIF_PROVIDER }}
             WIF_SERVICE_ACCOUNT=${{ vars.WIF_SERVICE_ACCOUNT }}
             RUNTIME_SERVICE_ACCOUNT=${{ vars.RUNTIME_SERVICE_ACCOUNT }}
@@ -81,7 +79,15 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
-      # Service Cloud Run multi-conteneurs (front ingress + API et visuels sidecars), défini ici et appliqué
+      - name: Résoudre l’URL du service visuels indépendant
+        id: visuals
+        run: |
+          URL=$(gcloud run services describe "$VISUALS_SERVICE_NAME" \
+            --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format='value(status.url)')
+          test -n "$URL"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      # Service Cloud Run multi-conteneurs (front ingress + API sidecar), défini ici et appliqué
       # avec `gcloud run services replace` : ce bloc est la source de vérité de la config de prod.
       # Toute modification manuelle dans la console sera écrasée au déploiement suivant.
       - name: Rendre le manifeste Cloud Run
@@ -89,11 +95,9 @@ jobs:
           VERSION: ${{ inputs.version }}
           API_IMAGE: ${{ inputs.api_image }}
           FRONT_IMAGE: ${{ inputs.front_image }}
-          VISUALS_IMAGE: ${{ inputs.visuals_image }}
+          VISUALS_AGENT_URL: ${{ steps.visuals.outputs.url }}
           VISUALS_AGENT_TIMEOUT: ${{ vars.VISUALS_AGENT_TIMEOUT || 'PT120S' }}
           VISUALS_API_KEY_VERSION: ${{ vars.VISUALS_API_KEY_VERSION || '1' }}
-          GEMINI_CROP_MODEL: ${{ vars.GEMINI_CROP_MODEL || 'gemini-3.1-flash-lite' }}
-          GOOGLE_CLOUD_LOCATION: ${{ vars.GOOGLE_CLOUD_LOCATION || 'global' }}
           RUNTIME_SERVICE_ACCOUNT: ${{ vars.RUNTIME_SERVICE_ACCOUNT }}
           NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
@@ -107,8 +111,8 @@ jobs:
           # Heredoc non interprété par le shell, puis envsubst avec une liste explicite :
           # seules ces variables sont substituées
           # shellcheck disable=SC2016
-          envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE} ${VISUALS_IMAGE}
-                    ${VISUALS_AGENT_TIMEOUT} ${VISUALS_API_KEY_VERSION} ${GEMINI_CROP_MODEL} ${GOOGLE_CLOUD_LOCATION}
+          envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE} ${VISUALS_AGENT_URL}
+                    ${VISUALS_AGENT_TIMEOUT} ${VISUALS_API_KEY_VERSION}
                     ${GCP_PROJECT_ID} ${RUNTIME_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
                     ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${PROFILE_PHOTOS_BUCKET}' \
             > service.rendered.yaml <<'MANIFEST'
@@ -130,8 +134,7 @@ jobs:
                   autoscaling.knative.dev/maxScale: "1"
                   # Le JVM démarre plus vite avec du CPU supplémentaire pendant le boot
                   run.googleapis.com/startup-cpu-boost: "true"
-                  # Chaque dépendance doit passer sa startupProbe avant le conteneur suivant.
-                  run.googleapis.com/container-dependencies: '{"front":["api"],"api":["visuals-agent"]}'
+                  run.googleapis.com/container-dependencies: '{"front":["api"]}'
               spec:
                 # Identité de l'application, distincte du compte de la CI (WIF_SERVICE_ACCOUNT) :
                 # Firestore, Secret Manager et Vertex AI uniquement, aucun droit de déploiement.
@@ -197,7 +200,7 @@ jobs:
                             name: thezaurus-slack-signing-secret
                             key: latest
                       - name: VISUALS_AGENT_URL
-                        value: http://localhost:8087
+                        value: "${VISUALS_AGENT_URL}"
                       - name: VISUALS_AGENT_TIMEOUT
                         value: "${VISUALS_AGENT_TIMEOUT}"
                       - name: VISUALS_API_KEY
@@ -222,41 +225,6 @@ jobs:
                         port: 8080
                       periodSeconds: 30
 
-                  - name: visuals-agent
-                    image: "${VISUALS_IMAGE}"
-                    env:
-                      - name: VISUALS_AGENT_HOST
-                        value: "0.0.0.0"
-                      - name: VISUALS_AGENT_PORT
-                        value: "8087"
-                      - name: GOOGLE_CLOUD_PROJECT_ID
-                        value: "${GCP_PROJECT_ID}"
-                      - name: GOOGLE_CLOUD_LOCATION
-                        value: "${GOOGLE_CLOUD_LOCATION}"
-                      - name: GEMINI_CROP_MODEL
-                        value: "${GEMINI_CROP_MODEL}"
-                      - name: VISUALS_AI_ENABLED
-                        value: "true"
-                      - name: VISUALS_API_KEY
-                        valueFrom:
-                          secretKeyRef:
-                            name: thezaurus-visuals-api-key
-                            key: "${VISUALS_API_KEY_VERSION}"
-                    resources:
-                      limits:
-                        cpu: "1"
-                        memory: 1Gi
-                    startupProbe:
-                      httpGet:
-                        path: /q/health/ready
-                        port: 8087
-                      periodSeconds: 5
-                      failureThreshold: 24
-                    livenessProbe:
-                      httpGet:
-                        path: /q/health/live
-                        port: 8087
-                      periodSeconds: 30
             traffic:
               - percent: 100
                 latestRevision: true
@@ -318,7 +286,6 @@ jobs:
           NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
           API_IMAGE: ${{ inputs.api_image }}
           FRONT_IMAGE: ${{ inputs.front_image }}
-          VISUALS_IMAGE: ${{ inputs.visuals_image }}
           PREVIOUS_REVISION: ${{ steps.previous.outputs.revision || 'aucune' }}
           JOB_STATUS: ${{ job.status }}
         run: |
@@ -327,7 +294,6 @@ jobs:
             echo "- URL : ${NEXTAUTH_URL}"
             echo "- API : \`${API_IMAGE}\`"
             echo "- Front : \`${FRONT_IMAGE}\`"
-            echo "- Agent visuels : \`${VISUALS_IMAGE}\`"
             echo "- Révision précédente : ${PREVIOUS_REVISION}"
             echo "- Statut : ${JOB_STATUS}"
           } >> "$GITHUB_STEP_SUMMARY"

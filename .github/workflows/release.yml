@@ -4,10 +4,14 @@ name: Release
 # Rien n'est publié ni déployé si un test du même commit échoue.
 on:
   workflow_dispatch:
-    # API/front inclut le sidecar visuels ; agent sélectionne uniquement talks-agent.
+    # Sélectionner séparément l’application, le service visuels et talks-agent.
     inputs:
       api_front:
-        description: "API, front et agent visuels"
+        description: "API et front"
+        type: boolean
+        default: true
+      visuals:
+        description: "Service indépendant de génération de visuels"
         type: boolean
         default: true
       agent:
@@ -25,11 +29,12 @@ concurrency:
 jobs:
   # Tests des services cochés, en parallèle.
   ci:
-    if: ${{ inputs.api_front || inputs.agent }}
+    if: ${{ inputs.api_front || inputs.visuals || inputs.agent }}
     uses: ./.github/workflows/ci.yml
     with:
       api_front: ${{ inputs.api_front }}
       agent: ${{ inputs.agent }}
+      visuals: ${{ inputs.visuals }}
 
   # Une release par service (tags api-vX.Y.Z / front-vX.Y.Z / agents-vX.Y.Z), sur main uniquement (cf. .releaserc.json).
   release:
@@ -55,10 +60,11 @@ jobs:
         env:
           API_FRONT: ${{ inputs.api_front }}
           AGENT: ${{ inputs.agent }}
+          VISUALS: ${{ inputs.visuals }}
         run: |
           services=()
           [ "${API_FRONT}" = "true" ] && services+=(api front)
-          if [ "${API_FRONT}" = "true" ] || [ "${AGENT}" = "true" ]; then
+          if [ "${VISUALS}" = "true" ] || [ "${AGENT}" = "true" ]; then
             services+=(agents)
           fi
           echo "list=${services[*]}" >> "$GITHUB_OUTPUT"
@@ -96,7 +102,7 @@ jobs:
 
   image-visuals-agent:
     needs: [release]
-    if: ${{ inputs.api_front && needs.release.outputs.agents_version != '' }}
+    if: ${{ inputs.visuals && needs.release.outputs.agents_version != '' }}
     uses: ./.github/workflows/_image-visuals-agent.yml
     permissions:
       contents: read
@@ -104,10 +110,25 @@ jobs:
     with:
       version: ${{ needs.release.outputs.agents_version }}
 
+  deploy-visuals:
+    needs: [version, image-visuals-agent]
+    uses: ./.github/workflows/_deploy-visuals.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: production
+      version: ${{ needs.version.outputs.version }}
+      image: ${{ needs.image-visuals-agent.outputs.image }}
+
   # Images référencées par digest (immuables) : ce qui est déployé est exactement
   # ce qui a été construit, même si un tag est réécrit entre-temps.
   deploy-production:
-    needs: [version, image-api, image-front, image-visuals-agent]
+    needs: [version, image-api, image-front, deploy-visuals]
+    if: >-
+      ${{ !cancelled() && inputs.api_front
+        && needs.image-api.result == 'success' && needs.image-front.result == 'success'
+        && (needs.deploy-visuals.result == 'success' || needs.deploy-visuals.result == 'skipped') }}
     uses: ./.github/workflows/_deploy.yml
     permissions:
       contents: read
@@ -117,7 +138,6 @@ jobs:
       version: ${{ needs.version.outputs.version }}
       api_image: ${{ needs.image-api.outputs.image }}
       front_image: ${{ needs.image-front.outputs.image }}
-      visuals_image: ${{ needs.image-visuals-agent.outputs.image }}
 
   # En parallèle des images et du déploiement Cloud Run.
   deploy-agent:
@@ -133,11 +153,11 @@ jobs:
   # Release GitHub globale (vAAAA.MM.JJ-<sha>) qui regroupe les notes api/front/agents.
   # Seulement une fois la prod à jour : au moins un déploiement réussi, aucun en échec.
   umbrella-release:
-    needs: [version, release, deploy-production, deploy-agent]
+    needs: [version, release, deploy-production, deploy-visuals, deploy-agent]
     if: >-
       ${{ !cancelled()
         && !contains(needs.*.result, 'failure')
-        && (needs.deploy-production.result == 'success' || needs.deploy-agent.result == 'success') }}
+        && (needs.deploy-production.result == 'success' || needs.deploy-visuals.result == 'success' || needs.deploy-agent.result == 'success') }}
     uses: ./.github/workflows/_umbrella-release.yml
     permissions:
       contents: write
