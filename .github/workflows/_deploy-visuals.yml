@@ -1,0 +1,178 @@
+name: (interne) Deploy service visuels
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      image:
+        description: Image visuels par digest
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: Service visuels (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: ${{ inputs.environment }}
+    concurrency:
+      group: deploy-visuals-${{ inputs.environment }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SERVICE_NAME: ${{ vars.CLOUD_RUN_VISUALS_SERVICE }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Vérifier la configuration
+        env:
+          REQUIRED: >-
+            CLOUD_RUN_VISUALS_SERVICE=${{ vars.CLOUD_RUN_VISUALS_SERVICE }}
+            GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
+            GCP_REGION=${{ vars.GCP_REGION }}
+            WIF_PROVIDER=${{ vars.WIF_PROVIDER }}
+            WIF_SERVICE_ACCOUNT=${{ vars.WIF_SERVICE_ACCOUNT }}
+            VISUALS_RUNTIME_SERVICE_ACCOUNT=${{ vars.VISUALS_RUNTIME_SERVICE_ACCOUNT }}
+        run: |
+          for pair in $REQUIRED; do
+            if [ -z "${pair#*=}" ]; then
+              echo "::error::Variable ${pair%%=*} manquante"
+              exit 1
+            fi
+          done
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+      - name: Rendre le manifeste du service visuels
+        env:
+          IMAGE: ${{ inputs.image }}
+          VERSION: ${{ inputs.version }}
+          VISUALS_RUNTIME_SERVICE_ACCOUNT: ${{ vars.VISUALS_RUNTIME_SERVICE_ACCOUNT }}
+          VISUALS_API_KEYS_VERSION: ${{ vars.VISUALS_API_KEYS_VERSION || '1' }}
+          GEMINI_CROP_MODEL: ${{ vars.GEMINI_CROP_MODEL || 'gemini-3.1-flash-lite' }}
+          GOOGLE_CLOUD_LOCATION: ${{ vars.GOOGLE_CLOUD_LOCATION || 'global' }}
+        run: |
+          VERSION_LABEL=$(echo "$VERSION" | tr '.' '-' | tr '[:upper:]' '[:lower:]')
+          export VERSION_LABEL
+          # shellcheck disable=SC2016
+          envsubst '${SERVICE_NAME} ${GCP_REGION} ${GCP_PROJECT_ID} ${IMAGE} ${VERSION_LABEL}
+                    ${VISUALS_RUNTIME_SERVICE_ACCOUNT} ${VISUALS_API_KEYS_VERSION}
+                    ${GEMINI_CROP_MODEL} ${GOOGLE_CLOUD_LOCATION}' > visuals.rendered.yaml <<'MANIFEST'
+          apiVersion: serving.knative.dev/v1
+          kind: Service
+          metadata:
+            name: "${SERVICE_NAME}"
+            labels:
+              cloud.googleapis.com/location: "${GCP_REGION}"
+            annotations:
+              run.googleapis.com/ingress: all
+              # HTTPS accessible hors GCP ; l’agent exige une clé API sur toutes les routes /visuals.
+              run.googleapis.com/invoker-iam-disabled: 'true'
+          spec:
+            template:
+              metadata:
+                labels:
+                  app-version: "${VERSION_LABEL}"
+                annotations:
+                  autoscaling.knative.dev/minScale: '0'
+                  autoscaling.knative.dev/maxScale: '1'
+                  run.googleapis.com/startup-cpu-boost: 'true'
+              spec:
+                serviceAccountName: "${VISUALS_RUNTIME_SERVICE_ACCOUNT}"
+                containerConcurrency: 8
+                timeoutSeconds: 240
+                containers:
+                  - name: visuals-agent
+                    image: "${IMAGE}"
+                    ports:
+                      - name: http1
+                        containerPort: 8087
+                    env:
+                      - name: VISUALS_AGENT_HOST
+                        value: '0.0.0.0'
+                      - name: VISUALS_AGENT_PORT
+                        value: '8087'
+                      - name: GOOGLE_CLOUD_PROJECT_ID
+                        value: "${GCP_PROJECT_ID}"
+                      - name: GOOGLE_CLOUD_LOCATION
+                        value: "${GOOGLE_CLOUD_LOCATION}"
+                      - name: GEMINI_CROP_MODEL
+                        value: "${GEMINI_CROP_MODEL}"
+                      - name: VISUALS_AI_ENABLED
+                        value: 'true'
+                      - name: VISUALS_REQUIRE_API_KEY
+                        value: 'true'
+                      - name: VISUALS_API_KEYS_JSON
+                        valueFrom:
+                          secretKeyRef:
+                            name: visuals-client-api-keys
+                            key: "${VISUALS_API_KEYS_VERSION}"
+                    resources:
+                      limits:
+                        cpu: '1'
+                        memory: 1Gi
+                    startupProbe:
+                      httpGet:
+                        path: /q/health/ready
+                        port: 8087
+                      periodSeconds: 5
+                      failureThreshold: 24
+                    livenessProbe:
+                      httpGet:
+                        path: /q/health/live
+                        port: 8087
+                      periodSeconds: 30
+            traffic:
+              - percent: 100
+                latestRevision: true
+          MANIFEST
+          cat visuals.rendered.yaml
+      - name: Révision actuelle
+        id: previous
+        run: |
+          REV=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" \
+            --project "$GCP_PROJECT_ID" --format='value(status.traffic[0].revisionName)' 2>/dev/null || true)
+          echo "revision=$REV" >> "$GITHUB_OUTPUT"
+      - name: Déployer le service indépendant
+        id: deploy
+        run: |
+          gcloud run services replace visuals.rendered.yaml --region "$GCP_REGION" --project "$GCP_PROJECT_ID"
+          URL=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" \
+            --project "$GCP_PROJECT_ID" --format='value(status.url)')
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+      - name: Vérifier l’accès HTTPS et le refus sans clé
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-all-errors "$URL/q/health/ready"
+          STATUS=$(curl --silent --show-error -o /dev/null -w '%{http_code}' \
+            -H 'Content-Type: application/json' -d '{"title":"Smoke","writers":["Alice"]}' "$URL/visuals/blogs/image")
+          test "$STATUS" = 401
+      - name: Rollback du service visuels
+        if: failure() && steps.previous.outputs.revision != ''
+        env:
+          PREVIOUS_REVISION: ${{ steps.previous.outputs.revision }}
+        run: |
+          gcloud run services update-traffic "$SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+            --to-revisions="${PREVIOUS_REVISION}=100"
+      - name: Résumé
+        if: always()
+        env:
+          IMAGE: ${{ inputs.image }}
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          echo "Service visuels : $URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "Image : $IMAGE" >> "$GITHUB_STEP_SUMMARY"

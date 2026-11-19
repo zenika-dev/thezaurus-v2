@@ -11,6 +11,10 @@ on:
         description: "Tester l'API et le front"
         type: boolean
         default: true
+      visuals:
+        description: "Tester l’agent visuels"
+        type: boolean
+        default: true
       agent:
         description: "Tester les agents"
         type: boolean
@@ -19,6 +23,10 @@ on:
     inputs:
       api_front:
         description: "API et front"
+        type: boolean
+        default: true
+      visuals:
+        description: "Tester l’agent visuels"
         type: boolean
         default: true
       agent:
@@ -52,7 +60,7 @@ jobs:
 
   visuals-agent:
     name: Agent visuels (Quarkus)
-    if: ${{ github.event_name == 'pull_request' || inputs.api_front || inputs.agent }}
+    if: ${{ github.event_name == 'pull_request' || inputs.visuals }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
