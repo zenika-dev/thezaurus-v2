@@ -15,7 +15,7 @@ Si une personne refuse ou ne dispose pas de photo, seul son nom est transmis et 
 sa photo, sans appel Gemini pour cet emplacement. Le cadrage automatique utilise la configuration Vertex/ADC ou
 `GOOGLE_API_KEY` du Compose local. `VISUALS_AI_ENABLED=false` permet un rendu sans
 appel Gemini. En local, le service reste interne au réseau Compose. En production,
-il est déployé comme sidecar du service Cloud Run par le workflow Release ; voir le
+il est déployé comme service Cloud Run indépendant par le workflow Release ; voir le
 [guide de déploiement](../../docs/Deploiement.md).
 
 Le bouton est aussi disponible dans la fiche d’un article de blog enregistré avec
@@ -49,7 +49,9 @@ défaut sur `http://127.0.0.1:8087`.
 | `GOOGLE_API_KEY` | Alternative à Vertex ADC ; alias `GEMINI_API_KEY` |
 | `GEMINI_CROP_MODEL` | `gemini-3.1-flash-lite` par défaut |
 | `VISUALS_AI_ENABLED` | `true` par défaut ; `false` désactive l’analyse Gemini |
-| `VISUALS_API_KEY` | Si définie, exige l’en-tête `X-API-Key` sur l’API de rendu |
+| `VISUALS_API_KEY` | Clé unique optionnelle pour le lancement local |
+| `VISUALS_API_KEYS_JSON` | Registre JSON `{application: clé}` de clés distinctes, fourni par Secret Manager en production |
+| `VISUALS_REQUIRE_API_KEY` | `true` en production : refuse de démarrer sans clés |
 | `VISUALS_AGENT_HOST`, `VISUALS_AGENT_PORT` | Adresse et port du service hors Compose |
 
 ADC doit permettre d’appeler Vertex AI dans le projet configuré. Sans configuration Gemini/Vertex, une demande de cadrage automatique retourne une erreur de configuration. `autoCrop: false` permet un rendu centré sans appel IA.
@@ -94,7 +96,7 @@ d’image n’est exécuté ni reconstitué pour maintenir artificiellement ce c
 
 Pour deux talks, envoyer `conference` et `talks: [{"title":"Premier talk","speakers":["Alice"]},{"title":"Second talk","speakers":["Bob"]}]` sans `speakers` racine. Chaque talk a exactement un speaker. Le routage sélectionne automatiquement les huit templates. Les noms publics restent ceux de la PR 190 (`generate-image-speaker-event`, etc.). Les identifiants internes sont `conf-1`, `conf-1-binome`, `conf-1-trinome`, `conf-2`, `blog`, `blog-2`, `nc` et `nc-partenaire`. Les modèles blog produisent un PNG 1080 × 1350 ; les autres un PNG 1080 × 1080.
 
-Une application cliente envoie les photos en base64 et récupère le PNG sans interface intermédiaire. Si `VISUALS_API_KEY` est configurée, elle joint `X-API-Key: ...`. La configuration d’un accès distant et de son authentification appartient au déploiement du service.
+Une application cliente envoie les photos en base64 et récupère le PNG sans interface intermédiaire. En production, chaque application joint sa propre clé `X-API-Key: ...`, enregistrée dans `VISUALS_API_KEYS_JSON`. `VISUALS_API_KEY` reste disponible pour le lancement local à clé unique. La configuration d’un accès distant et de son authentification appartient au déploiement du service.
 
 ## Cadrage et coût
 
@@ -139,9 +141,11 @@ l’authentification de service pour l’usage local ; une clé non vide protèg
 ## Production
 
 Le workflow Release construit l’image `visuals-agent` avec la version `agents-v*`,
-la vérifie sans appel IA, puis la déploie par digest avec le front et l’API.
-L’API utilise `localhost:8087` et une clé partagée chargée depuis la même version
-Secret Manager que l’agent. Le front reste le seul conteneur ingress.
-Le cadrage utilise Vertex AI avec le compte d’exécution Cloud Run.
-Les secrets, droits IAM et variables à préparer sont décrits dans le
-[guide de déploiement](../../docs/Deploiement.md).
+la vérifie sans appel IA, puis déploie un service Cloud Run indépendant par digest.
+Il peut être livré sans déployer TheZaurus. Chaque application, hébergée sur GCP
+ou ailleurs, appelle son URL HTTPS avec sa clé `X-API-Key`. TheZaurus conserve
+uniquement sa propre clé ; l’agent lit le registre des clés depuis Secret Manager.
+Les routes `/visuals` exigent une clé valide. Les endpoints de santé et OpenAPI
+restent publics. Le cadrage utilise l’identité Cloud Run propre à l’agent pour Vertex AI.
+Les secrets, la révocation, les variables et un exemple d’appel client sont décrits
+dans le [guide de déploiement](../../docs/Deploiement.md).
