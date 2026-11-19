@@ -100,7 +100,7 @@ Pour approfondir, consultez les guides disponibles dans le dossier [`docs/`](doc
   - Job quotidien et conditions d'envoi
   - Modèles de messages administrables
 - 🚢 **[Guide de déploiement Cloud Run](docs/Deploiement.md)** :
-  - Architecture multi-conteneurs Cloud Run (front, API et agent visuels)
+  - Architecture multi-conteneurs Cloud Run (front/API et service visuels indépendant)
   - Prérequis et variables d'environnement de production
   - Commandes de déploiement et consultation des logs
 - 🤝 **[Guide de contribution](CONTRIBUTING.md)** :
@@ -112,7 +112,7 @@ Pour approfondir, consultez les guides disponibles dans le dossier [`docs/`](doc
 
 ## 🚢 Déploiement
 
-Le déploiement en production s'effectue sur **Google Cloud Run** via le workflow **Release**, qui livre le front, l’API et l’agent visuels par digest. Consultez le [Guide de déploiement détaillé](docs/Deploiement.md) pour les étapes complètes.
+Le déploiement en production s'effectue sur **Google Cloud Run** via le workflow **Release**, qui livre le front/API et le service visuels indépendant par digest. Consultez le [Guide de déploiement détaillé](docs/Deploiement.md) pour les étapes complètes.
 
 ---
 
