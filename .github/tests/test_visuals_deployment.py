@@ -117,6 +117,36 @@ class VisualsDeploymentTest(unittest.TestCase):
         deploy = workflow("_deploy.yml")
         self.assertEqual(deploy["on"]["workflow_call"]["inputs"]["visuals_image"]["required"], "true")
 
+    def test_image_lookup_handles_first_publication_without_masking_access_errors(self):
+        build = workflow("_image-visuals-agent.yml")["jobs"]["build"]
+        step = next(s for s in build["steps"] if s.get("id") == "check")
+        for mode, expected in [("present", "true"), ("absent-tag", "false"),
+                               ("absent-image", "false"), ("denied", None)]:
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                fake = Path(directory, "gcloud")
+                fake.write_text("""#!/bin/bash
+case "$LOOKUP_MODE" in
+  present) echo '1.2.3 sha256:abc';;
+  absent-tag) exit 0;;
+  absent-image) echo 'ERROR: (gcloud.artifacts.docker.tags.list) NOT_FOUND: image not found' >&2; exit 1;;
+  denied) echo 'ERROR: (gcloud.artifacts.docker.tags.list) PERMISSION_DENIED: access denied' >&2; exit 1;;
+esac
+""")
+                fake.chmod(0o755)
+                output = Path(directory, "output")
+                result = subprocess.run(["bash", "-e", "-o", "pipefail"], input=step["run"], text=True,
+                                        cwd=directory, capture_output=True,
+                                        env={**os.environ, "PATH": directory + os.pathsep + os.environ["PATH"],
+                                             "LOOKUP_MODE": mode, "VERSION": "1.2.3", "IMAGE": "registry/visuals-agent",
+                                             "GITHUB_OUTPUT": str(output)})
+                if expected is None:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("PERMISSION_DENIED", result.stderr)
+                    self.assertFalse(output.exists())
+                else:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(output.read_text().strip(), f"exists={expected}")
+
 
 if __name__ == "__main__":
     unittest.main()
