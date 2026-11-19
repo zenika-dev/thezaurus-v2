@@ -17,7 +17,7 @@ def smoke(image):
         result = subprocess.run(
             ["docker", "run", "--rm", "--name", probe, "--env", "VISUALS_AI_ENABLED=false",
              "--env", "VISUALS_REQUIRE_API_KEY=true", image],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding="utf-8", timeout=30,
         )
         assert result.returncode != 0, "Production started without client keys"
         assert "Au moins une clé API est requise" in result.stdout + result.stderr
