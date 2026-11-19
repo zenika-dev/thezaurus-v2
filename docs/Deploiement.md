@@ -45,6 +45,10 @@ du dépôt ; le compte de déploiement doit être distinct du compte d’exécut
 | `GOOGLE_CLIENT_ID` | Client OAuth Google |
 | `FIRESTORE_DATABASE_ID`, `FIRESTORE_COLLECTION_PREFIX` | Base et préfixe de production |
 | `PROFILE_PHOTOS_BUCKET` | Bucket GCS privé, voir [CloudStorage.md](CloudStorage.md) |
+| `MAILGUN_DOMAIN`, `SMTP_FROM` | Domaine Mailgun et expéditeur requis par le déploiement existant |
+| `MAILGUN_BASE_URL` | API Mailgun, `https://api.eu.mailgun.net` par défaut |
+| `SCHEDULER_SERVICE_ACCOUNT`, `FEEDBACK_REMINDER_AUDIENCE`, `SCHEDULER_CRON` | Configuration du workflow Cloud Scheduler existant ; voir [FeedbackReminders.md](FeedbackReminders.md) |
+| `FEEDBACK_REMINDER_ENABLED` | Interrupteur des rappels, `false` par défaut |
 | `VISUALS_API_KEY_VERSION` | Version numérique du secret partagé, `1` par défaut |
 | `VISUALS_AGENT_TIMEOUT` | Timeout API → agent, `PT120S` par défaut ; garder une marge sous le timeout Cloud Run de 300 s |
 | `GEMINI_CROP_MODEL` | Modèle de cadrage, `gemini-3.1-flash-lite` par défaut |
@@ -70,6 +74,7 @@ référencés par le manifeste :
 - `thezaurus-google-client-secret` : secret OAuth Google ;
 - `thezaurus-nextauth-secret` : signature des sessions ;
 - `thezaurus-slack-bot-token` et `thezaurus-slack-signing-secret` : intégration Slack existante ;
+- `thezaurus-mailgun-sending-key` : envoi des rappels déjà livré sur `main` ;
 - **`thezaurus-visuals-api-key`** : nouvelle clé aléatoire non vide, réservée aux appels API → agent.
 
 Créer le dernier secret et sa première version via Secret Manager avant le

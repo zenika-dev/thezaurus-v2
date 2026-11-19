@@ -28,6 +28,10 @@ class VisualsDeploymentTest(unittest.TestCase):
             "RUNTIME_SERVICE_ACCOUNT": "runtime@test-project.iam.gserviceaccount.com",
             "NEXTAUTH_URL": "https://thezaurus.example.test", "GOOGLE_CLIENT_ID": "test.apps.googleusercontent.com",
             "FIRESTORE_DATABASE_ID": "test", "FIRESTORE_COLLECTION_PREFIX": "test", "PROFILE_PHOTOS_BUCKET": "test-photos",
+            # Present in the integrated manifest on main (Cloud Scheduler/Mailgun).
+            "SCHEDULER_SERVICE_ACCOUNT": "scheduler@test-project.iam.gserviceaccount.com",
+            "FEEDBACK_REMINDER_AUDIENCE": "https://thezaurus.example.test/api/internal/feedback-reminders",
+            "MAILGUN_DOMAIN": "mail.example.test", "SMTP_FROM": "thezaurus@example.test",
             **{f"{name}_IMAGE": f"europe-west1-docker.pkg.dev/test/images/{name.lower()}@sha256:" + "a" * 64
                for name in ("API", "FRONT", "VISUALS")},
         }
