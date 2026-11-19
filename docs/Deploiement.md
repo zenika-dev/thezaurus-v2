@@ -1,115 +1,124 @@
 # Déploiement sur Google Cloud Run
 
-Ce document détaille la procédure de déploiement de **TheZaurus-v2** sur **Google Cloud Run**.
+## Architecture
 
----
+Le workflow [Release](../.github/workflows/release.yml) construit les images puis
+appelle [_deploy.yml](../.github/workflows/_deploy.yml). Le manifeste rendu par ce
+workflow est la source de vérité de la production ; une modification manuelle
+sur Cloud Run sera remplacée au prochain déploiement. Le Compose override sert
+au développement local.
 
-## 🏛️ Architecture Cloud Run
+Un même service Cloud Run contient trois conteneurs :
 
-TheZaurus-v2 s'exécute sur Cloud Run selon une architecture **multi-conteneurs (sidecar)** définie dans `docker-compose.yml` :
+- `front` : seul conteneur ingress, port 3000 ; il appelle l’API sur `localhost:8080`.
+- `api` : backend Quarkus, port 8080 ; il contrôle les photos et appelle l’agent sur `localhost:8087`.
+- `visuals-agent` : rendu Java2D et cadrage Vertex AI, port 8087, sans URL publique distincte.
 
-- **`front` (Conteneur Ingress)** : Frontend Next.js (port 3000) exposé publiquement (`x-google-cloudrun: ingress-container: true`), qui sert l'application et redirige les appels API vers le conteneur backend via `http://localhost:8080` / `http://api:8080`.
-- **`api` (Conteneur Backend)** : API REST Java Quarkus (port 8080), connectée nativement à Google Cloud Firestore via les identifiants gérés du Service Account Cloud Run.
-- **Base de données** : Google Cloud Firestore en mode natif (`thezaurus-prod` ou `thezaurus-dev`).
+Les startup probes imposent l’ordre `visuals-agent` → `api` → `front`.
+Les images sont référencées par digest. L’agent reste non-root et utilise
+l’identité du service Cloud Run pour Vertex AI, sans clé Google ni fichier ADC monté.
+Firestore et le bucket privé des photos restent des services GCP externes.
+Le `talks-agent` conserve son déploiement séparé sur Agent Runtime.
 
----
+## Configuration GitHub
 
-## 📋 Prérequis
+Les variables suivantes doivent être disponibles au niveau du dépôt pour la
+construction des images :
 
-1. **Google Cloud SDK (`gcloud`)** :
-   - Assurez-vous d'avoir la CLI [gcloud installée](https://cloud.google.com/sdk/docs/install) et à jour.
-   - Connectez-vous avec votre compte GCP :
-     ```bash
-     gcloud auth login
-     ```
-   - Sélectionnez le projet cible :
-     ```bash
-     gcloud config set project <your project id>
-     ```
-   - Définissez la région Cloud Run par défaut (**`europe-west1`**) :
-     ```bash
-     gcloud config set run/region europe-west1
-     ```
+| Variable | Usage |
+| --- | --- |
+| `GCP_REGISTRY` | Chemin Artifact Registry, par exemple `europe-west1-docker.pkg.dev/PROJECT/REPOSITORY` |
+| `GCP_PROJECT_ID`, `GCP_REGION` | Projet et région de déploiement |
+| `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT` | Fédération GitHub → GCP et compte de déploiement |
 
-2. **Permissions GCP** :
-   - Rôles nécessaires : `roles/run.admin`, `roles/iam.serviceAccountUser`, `roles/datastore.user`, `roles/storage.admin`.
+L’environnement GitHub `production` apporte ses règles d’approbation et les
+variables d’exécution ci-dessous. Les variables communes peuvent être héritées
+du dépôt ; le compte de déploiement doit être distinct du compte d’exécution.
 
-3. **Client OAuth Google** :
-   - Rendez-vous sur la console GCP > *APIs & Services > Credentials > OAuth 2.0 Client IDs*.
-   - Ajoutez l'URL publique de redirection autorisée de votre domaine :
-     `https://<votre-domaine-cloud-run>/api/auth/callback/google`
+| Variable | Usage / défaut |
+| --- | --- |
+| `CLOUD_RUN_SERVICE` | Nom du service existant |
+| `GCP_PROJECT_ID`, `GCP_REGION` | Projet et région de production |
+| `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT` | Authentification du workflow |
+| `RUNTIME_SERVICE_ACCOUNT` | Identité des trois conteneurs |
+| `NEXTAUTH_URL` | URL publique HTTPS ; enregistrer aussi `/api/auth/callback/google` dans le client OAuth |
+| `GOOGLE_CLIENT_ID` | Client OAuth Google |
+| `FIRESTORE_DATABASE_ID`, `FIRESTORE_COLLECTION_PREFIX` | Base et préfixe de production |
+| `PROFILE_PHOTOS_BUCKET` | Bucket GCS privé, voir [CloudStorage.md](CloudStorage.md) |
+| `VISUALS_API_KEY_VERSION` | Version numérique du secret partagé, `1` par défaut |
+| `VISUALS_AGENT_TIMEOUT` | Timeout API → agent, `PT120S` par défaut ; garder une marge sous le timeout Cloud Run de 300 s |
+| `GEMINI_CROP_MODEL` | Modèle de cadrage, `gemini-3.1-flash-lite` par défaut |
+| `GOOGLE_CLOUD_LOCATION` | Localisation Vertex AI, `global` par défaut ; choisir une localisation compatible avec le modèle |
 
----
+`VISUALS_AGENT_URL=http://localhost:8087` et `VISUALS_AI_ENABLED=true` sont définis
+par le manifeste. Les paramètres du `talks-agent` restent décrits par son
+[workflow de déploiement](../.github/workflows/_deploy-agent.yml).
 
-## ⚙️ Variables d'environnement pour la production
+## Identités et secrets à préparer avant la première release
 
-Avant de déployer, préparez les variables de production requises :
+Activer Cloud Run, Artifact Registry, Secret Manager, Firestore et Vertex AI
+(`aiplatform.googleapis.com`) dans le projet et vérifier les quotas du modèle.
+Le compte WIF construit/pousse les images et déploie Cloud Run ; il lui faut
+notamment Artifact Registry Writer, Cloud Run Admin et Service Account User sur
+le compte d’exécution. Il ne faut pas donner ces droits de déploiement au runtime.
 
-| Variable | Description | Valeur par défaut / Exemple |
-|---|---|---|
-| `GOOGLE_CLOUD_PROJECT_ID` | Identifiant du projet GCP cible | `thezaurus-494709` |
-| `GCP_REGION` | Région de déploiement Cloud Run | `europe-west1` |
-| `FIRESTORE_DATABASE_ID` | Base Firestore cible | `thezaurus-prod` *(ou `thezaurus-dev` pour la pré-prod)* |
-| `PROFILE_PHOTOS_BUCKET` | Bucket GCS privé des photos personnalisées ; configuration et droits dans [CloudStorage.md](CloudStorage.md) | Bucket distinct par environnement |
-| `FIRESTORE_COLLECTION_PREFIX` | Préfixe des collections Firestore | `prod` *(ou `dev`)* |
-| `GOOGLE_CLIENT_ID` | ID client OAuth Google | `xxxx.apps.googleusercontent.com` |
-| `GOOGLE_CLIENT_SECRET` | Secret client OAuth Google | `GOCSPX-xxxx` |
-| `NEXTAUTH_URL` / `NEXTAUTH_PUBLIC_URL` | URL publique HTTPS du front déployé | `https://thezaurus.zenika.com` |
-| `NEXTAUTH_SECRET` | Secret de signature des sessions NextAuth | `$(openssl rand -base64 32)` |
-| `REASONING_ENGINE_URL` | URL de l'agent IA Vertex AI Reasoning Engine | `https://europe-west1-aiplatform.googleapis.com/...` |
-| `SLACK_BOT_TOKEN` *(optionnel)* | Token OAuth du Bot Slack | `xoxb-...` |
-| `SLACK_SIGNING_SECRET` *(optionnel)* | Secret de signature Slack | `...` |
+Le compte `RUNTIME_SERVICE_ACCOUNT` doit conserver ses accès Firestore et aux
+photos ([CloudStorage.md](CloudStorage.md)), disposer de `roles/aiplatform.user`
+sur le projet Vertex et de `roles/secretmanager.secretAccessor` sur les secrets
+référencés par le manifeste :
 
----
+- `thezaurus-google-client-secret` : secret OAuth Google ;
+- `thezaurus-nextauth-secret` : signature des sessions ;
+- `thezaurus-slack-bot-token` et `thezaurus-slack-signing-secret` : intégration Slack existante ;
+- **`thezaurus-visuals-api-key`** : nouvelle clé aléatoire non vide, réservée aux appels API → agent.
 
-## 🚀 Procédure de déploiement
+Créer le dernier secret et sa première version via Secret Manager avant le
+premier déploiement de cette PR. L’API et l’agent lisent exactement la même version
+numérique (`VISUALS_API_KEY_VERSION`) ; la valeur n’est ni une variable GitHub ni
+une valeur inscrite dans le manifeste ou l’image. Pour une rotation, ajouter une
+version du secret, changer `VISUALS_API_KEY_VERSION`, puis relancer une release.
+Conserver les anciennes versions actives pour permettre un rollback.
 
-### 1. Exporter les variables d'environnement
+Aucune création de secret ni modification IAM n’est effectuée par le workflow.
+Un secret absent ou inaccessible empêche le démarrage de la nouvelle révision.
+Une identité sans accès Vertex empêchera le cadrage des photos autorisées.
 
-Chargez vos variables d'environnement de production en mémoire (soit depuis un fichier `.env.prod`, soit directement) :
+## Livrer
 
-```bash
-export $(grep -v '^#' .env.prod | xargs)
+1. Fusionner les PR nécessaires sur `main`, dans l’ordre de leur stack.
+2. Ouvrir **Actions → Release → Run workflow**, sur `main`.
+3. Cocher **API, front et agent visuels** pour livrer l’application complète.
+   Cette sélection teste les trois services, publie les versions `api`, `front`
+   et `agents`, puis construit ou réutilise leurs images immuables. Elle inclut
+   les visuels même lorsque **Agent (talks-agent)** est décoché.
+4. Cocher également **Agent (talks-agent)** uniquement pour son déploiement séparé.
+5. Approuver l’environnement `production` si sa protection le demande.
+
+Le nouvel agent utilise la version partagée `agents-vX.Y.Z` déjà employée pour
+le dossier `agents/`. Les images sont respectivement `api`, `front` et
+`visuals-agent` dans `GCP_REGISTRY`. Le workflow vérifie l’image visuels par son
+digest avant de déployer : utilisateur non-root, santé, refus sans clé, rendu
+PNG et limites de participants, sans appel Vertex ni credentials cloud.
+
+Cloud Run attend les startup probes avant de diriger le trafic vers la révision.
+Le smoke test après déploiement vérifie le front et NextAuth. En cas d’échec du
+déploiement ou du smoke test, le workflow restaure le trafic de la révision précédente
+quand elle existe. Le retour arrière concerne les trois conteneurs ensemble.
+
+## Vérifier après déploiement
+
+Depuis l’application avec un compte autorisé, télécharger un visuel de talk et
+un visuel d’article, dont un cas avec photo autorisée pour vérifier Vertex AI,
+puis un cas sans photo ou avec autorisation refusée pour vérifier le logo Zenika.
+Ce contrôle authentifié n’est pas couvert par le smoke test NextAuth ni par le
+test d’image sans IA. Ne pas envoyer de portrait réel sans autorisation photo IA.
+
+Consulter le résumé du workflow (digests et révision précédente) et les logs :
+
+```sh
+gcloud run services logs read SERVICE --project PROJECT --region REGION --limit 100
 ```
 
-Ou exportez-les manuellement :
-
-```bash
-export GOOGLE_CLOUD_PROJECT_ID=<your project id>
-export GCP_REGION=europe-west1
-export FIRESTORE_DATABASE_ID=<your database id>
-export FIRESTORE_COLLECTION_PREFIX=prod
-export NEXTAUTH_PUBLIC_URL=https://votre-service-url.run.app
-export NEXTAUTH_SECRET="<your secret>"
-export GOOGLE_CLIENT_ID="<your client id>"
-export GOOGLE_CLIENT_SECRET="<your client secret>"
-export REASONING_ENGINE_URL="<your reasoning engine url>"
-```
-
-### 2. Lancer le déploiement Cloud Run
-
-Exécutez la commande `gcloud run compose` en spécifiant la région (**`europe-west1`**) et le fichier `docker-compose.yml` :
-
-```bash
-gcloud run compose up docker-compose.yml --region ${GCP_REGION:-europe-west1} --allow-unauthenticated
-```
-
-*(Ou simplement `gcloud run compose up --region ${GCP_REGION:-europe-west1} --allow-unauthenticated` car `docker-compose.yml` est le fichier chargé automatiquement).*
-
----
-
-## 🔍 Vérification et logs
-
-1. **Vérifier l'état du service déployé** :
-   ```bash
-   gcloud run services list --region ${GCP_REGION:-europe-west1}
-   ```
-
-2. **Consulter les logs en temps réel** :
-   ```bash
-   gcloud run services logs tail thezaurus-v2 --region ${GCP_REGION:-europe-west1}
-   ```
-
-3. **Mise à jour de la configuration de l'application Slack (si utilisée)** :
-   - Si l'URL publique de l'application a changé, mettez à jour l'URL d'interactivité et des commandes slash (`/talk`) sur la console [Slack API](https://api.slack.com/apps) :
-     `https://<votre-domaine-cloud-run>/slack/events`
+Le front est l’unique endpoint exposé ; ne pas créer un accès public supplémentaire
+pour les ports 8080 ou 8087. Le workflow ne modifie pas la politique d’accès ingress
+existante ni les réglages OAuth/IAP du service.

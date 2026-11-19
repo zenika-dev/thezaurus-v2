@@ -14,8 +14,9 @@ avant de générer. L’API contrôle l’autorisation photo IA avant chaque env
 Si une personne refuse ou ne dispose pas de photo, seul son nom est transmis et le logo Zenika remplace
 sa photo, sans appel Gemini pour cet emplacement. Le cadrage automatique utilise la configuration Vertex/ADC ou
 `GOOGLE_API_KEY` du Compose local. `VISUALS_AI_ENABLED=false` permet un rendu sans
-appel Gemini. Le service reste interne au réseau Compose ; aucun déploiement de
-production n’est ajouté.
+appel Gemini. En local, le service reste interne au réseau Compose. En production,
+il est déployé comme sidecar du service Cloud Run par le workflow Release ; voir le
+[guide de déploiement](../../docs/Deploiement.md).
 
 Le bouton est aussi disponible dans la fiche d’un article de blog enregistré avec
 un ou deux auteurs. Il appelle `/visuals/blogs/image` et télécharge un PNG
@@ -119,8 +120,9 @@ root, copie les credentials avec le mode `0400` pour l’UID/GID 10001 dans un t
 `/run/visuals`, puis exécute Java via `gosu` sous cet utilisateur non privilégié.
 Cette copie disparaît avec le conteneur et n’entre ni dans l’image ni dans un volume
 persistant. Hors Compose, l’image reste non-root par défaut ; fournir une identité
-ou un fichier déjà lisible par l’utilisateur du conteneur. Aucun déploiement cloud
-n’est ajouté : la CI vérifie l’agent avec `mvnw verify`, sans appel réel à Gemini.
+ou un fichier déjà lisible par l’utilisateur du conteneur. Sur Cloud Run, les ADC
+viennent de l’identité du service, sans fichier ni bootstrap root. La CI vérifie
+l’agent avec `mvnw verify`, sans appel réel à Gemini.
 
 ## Contrat autonome et intégration TheZaurus
 
@@ -128,8 +130,18 @@ TheZaurus consomme uniquement les endpoints PNG `/visuals/talks/image` (1 à 3 i
 et `/visuals/blogs/image` (1 à 2 auteurs). Les réponses JSON, les flux SSE, le catalogue,
 les modèles NightClazz et double-talk ainsi que les alias d’entrée appartiennent au contrat
 HTTP autonome du POC. Ils restent couverts par ses tests, sans bouton ni appel correspondant
-dans l’application standard. Leur présence ne constitue pas un déploiement de ces fonctionnalités.
+dans l’application standard. Leur présence ne les intègre pas aux parcours de cette application.
 
 Le timeout de l’appel depuis l’API TheZaurus est configurable avec `VISUALS_AGENT_TIMEOUT`
 (durée ISO-8601, `PT120S` par défaut). Une clé `VISUALS_API_KEY` vide désactive volontairement
 l’authentification de service pour l’usage local ; une clé non vide protège tous les chemins `/visuals`.
+
+## Production
+
+Le workflow Release construit l’image `visuals-agent` avec la version `agents-v*`,
+la vérifie sans appel IA, puis la déploie par digest avec le front et l’API.
+L’API utilise `localhost:8087` et une clé partagée chargée depuis la même version
+Secret Manager que l’agent. Le front reste le seul conteneur ingress.
+Le cadrage utilise Vertex AI avec le compte d’exécution Cloud Run.
+Les secrets, droits IAM et variables à préparer sont décrits dans le
+[guide de déploiement](../../docs/Deploiement.md).
