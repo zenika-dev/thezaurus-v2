@@ -12,6 +12,10 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[2]
+RENDER_WORKFLOWS = {
+    "_deploy.yml": ("Rendre le manifeste Cloud Run", "service.rendered.yaml"),
+    "_deploy-visuals.yml": ("Rendre le manifeste du service visuels", "visuals.rendered.yaml"),
+}
 
 
 def workflow(name):
@@ -21,7 +25,7 @@ def workflow(name):
 class VisualsDeploymentTest(unittest.TestCase):
     def render(self, workflow_name="_deploy.yml", **overrides):
         deploy = workflow(workflow_name)
-        step_name = "Rendre le manifeste Cloud Run" if workflow_name == "_deploy.yml" else "Rendre le manifeste du service visuels"
+        step_name, output_file = RENDER_WORKFLOWS[workflow_name]
         step = next(s for s in deploy["jobs"]["deploy"]["steps"] if s.get("name") == step_name)
         values = {
             "SERVICE_NAME": "thezaurus-test", "VERSION": "2026.11.19-abc1234",
@@ -50,9 +54,40 @@ class VisualsDeploymentTest(unittest.TestCase):
             # Run the production renderer, rather than a test-specific replacement.
             subprocess.run(["bash", "-e", "-o", "pipefail"], input=step["run"], text=True,
                            cwd=directory, env={**os.environ, **values}, check=True, capture_output=True)
-            rendered = Path(directory, "service.rendered.yaml" if workflow_name == "_deploy.yml" else "visuals.rendered.yaml").read_text(encoding="utf-8")
+            rendered = Path(directory, output_file).read_text(encoding="utf-8")
         self.assertNotRegex(rendered, r"\$\{")
         return yaml.load(rendered, Loader=yaml.BaseLoader)
+
+    def test_url_resolution_reports_prerequisites_and_never_exports_an_empty_url(self):
+        step = next(s for s in workflow("_deploy.yml")["jobs"]["deploy"]["steps"] if s.get("id") == "visuals")
+        for mode in ("ready", "empty", "missing"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                fake = Path(directory, "gcloud")
+                fake.write_text("""#!/bin/bash
+case "$LOOKUP_MODE" in
+  ready) echo 'https://visuals.example.run.app';;
+  empty) exit 0;;
+  missing) echo 'ERROR: NOT_FOUND: service not found' >&2; exit 1;;
+esac
+""")
+                fake.chmod(0o755)
+                output = Path(directory, "output")
+                result = subprocess.run(["bash", "-e"], input=step["run"], text=True,
+                                        capture_output=True, encoding="utf-8",
+                                        env={**os.environ, "PATH": directory + os.pathsep + os.environ["PATH"],
+                                             "LOOKUP_MODE": mode, "VISUALS_SERVICE_NAME": "visuals-test",
+                                             "GCP_PROJECT_ID": "test-project", "GCP_REGION": "europe-west1",
+                                             "GITHUB_OUTPUT": str(output)})
+                if mode == "ready":
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(output.read_text().strip(), "url=https://visuals.example.run.app")
+                else:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("::error::", result.stdout)
+                    self.assertIn("Déployez d’abord le Service indépendant de génération de visuels", result.stdout)
+                    self.assertIn("test-project", result.stdout)
+                    self.assertIn("visuals-test", result.stdout)
+                    self.assertFalse(output.exists())
 
     def test_application_uses_remote_agent_without_a_sidecar(self):
         template = self.render()["spec"]["template"]

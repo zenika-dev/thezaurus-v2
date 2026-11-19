@@ -84,9 +84,15 @@ jobs:
       - name: Résoudre l’URL du service visuels indépendant
         id: visuals
         run: |
-          URL=$(gcloud run services describe "$VISUALS_SERVICE_NAME" \
-            --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format='value(status.url)')
-          test -n "$URL"
+          if ! URL=$(gcloud run services describe "$VISUALS_SERVICE_NAME" \
+            --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format='value(status.url)'); then
+            echo "::error::Impossible de résoudre le service visuels '$VISUALS_SERVICE_NAME' dans le projet '$GCP_PROJECT_ID' ($GCP_REGION). Déployez d’abord le Service indépendant de génération de visuels via Release, puis vérifiez le nom du service et les droits du compte de déploiement."
+            exit 1
+          fi
+          if [ -z "$URL" ]; then
+            echo "::error::Le service visuels '$VISUALS_SERVICE_NAME' ne fournit aucune URL dans le projet '$GCP_PROJECT_ID' ($GCP_REGION). Déployez d’abord le Service indépendant de génération de visuels via Release et attendez qu’il soit prêt avant de déployer l’application."
+            exit 1
+          fi
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       # Service Cloud Run multi-conteneurs (front ingress + API sidecar), défini ici et appliqué
