@@ -27,6 +27,7 @@ public class PersonInputDeserializer extends JsonDeserializer<PersonInput> {
             while (fields.hasNext()) {
                 if (!java.util.Set.of(
                                 "name",
+                                "autoCrop",
                                 "photo",
                                 "photoUrl",
                                 "photoBase64",
@@ -76,7 +77,13 @@ public class PersonInputDeserializer extends JsonDeserializer<PersonInput> {
             if (base64 == null) base64 = firstValue(node, "photoBase64", "speakerPhotoBase64", "authorPhotoBase64");
 
             PhotoInput photo = (url != null || base64 != null) ? new PhotoInput(url, base64) : null;
-            return new PersonInput(name, photo);
+            Boolean autoCrop = null;
+            if (node.hasNonNull("autoCrop")) {
+                if (!node.get("autoCrop").isBoolean())
+                    ctxt.reportInputMismatch(PersonInput.class, "autoCrop doit être un booléen.");
+                autoCrop = node.get("autoCrop").booleanValue();
+            }
+            return new PersonInput(name, photo, autoCrop);
         }
         return null;
     }

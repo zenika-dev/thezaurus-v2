@@ -6,7 +6,11 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection
 @JsonDeserialize(using = PersonInputDeserializer.class)
-public record PersonInput(String name, PhotoInput photo) {
+public record PersonInput(String name, PhotoInput photo, Boolean autoCrop) {
+
+    public PersonInput(String name, PhotoInput photo) {
+        this(name, photo, null);
+    }
 
     public PersonInput(String name) {
         this(name, (PhotoInput) null);

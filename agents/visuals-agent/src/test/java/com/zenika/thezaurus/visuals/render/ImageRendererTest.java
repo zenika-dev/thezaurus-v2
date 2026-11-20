@@ -24,6 +24,48 @@ class ImageRendererTest {
     private final ImageRenderer renderer = new ImageRenderer(catalog);
 
     @Test
+    void deterministicCropUsesLargestTopCenteredRectangleAtEveryRequiredRatio() throws IOException {
+        for (int[] size : List.of(new int[] {240, 640}, new int[] {640, 240}, new int[] {320, 320})) {
+            int width = size[0], height = size[1];
+            var source = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    source.setRGB(x, y, new Color(x * 255 / width, y * 255 / height, 50).getRGB());
+                }
+            }
+            for (String id : List.of("conf-1", "conf-1-binome", "conf-1-trinome", "blog", "blog-2")) {
+                var spec = catalog.require(id);
+                var people = spec.photos().stream()
+                        .map(slot -> new RenderData.Person(
+                                "Cadrage sans IA", pngUnchecked(source), RenderData.Crop.topCentered()))
+                        .toList();
+                var actual = decode(renderer.render(data(id, people, null)).png());
+                for (var slot : spec.photos()) {
+                    var box = slot.box();
+                    double scale = Math.max(box.get(2) / width, box.get(3) / height);
+                    double cropWidth = box.get(2) / scale, cropHeight = box.get(3) / scale;
+                    for (double fraction : List.of(.15, .5, .85)) {
+                        var pixel = new Color(actual.getRGB((int) (box.get(0) + fraction * box.get(2)), (int)
+                                (box.get(1) + fraction * box.get(3))));
+                        double sourceX = (width - cropWidth) / 2 + fraction * cropWidth;
+                        double sourceY = fraction * cropHeight;
+                        assertEquals(sourceX * 255 / width, pixel.getRed(), 3, id + " horizontal center");
+                        assertEquals(sourceY * 255 / height, pixel.getGreen(), 3, id + " top edge, no extra zoom");
+                    }
+                }
+            }
+        }
+    }
+
+    private static byte[] pngUnchecked(BufferedImage image) {
+        try {
+            return png(image);
+        } catch (IOException error) {
+            throw new java.io.UncheckedIOException(error);
+        }
+    }
+
+    @Test
     void missingPhotosDisplayZenikaLogoInEachSlot() throws IOException {
         for (String id : List.of("conf-1", "conf-1-binome", "conf-1-trinome", "blog", "blog-2")) {
             var spec = catalog.require(id);
