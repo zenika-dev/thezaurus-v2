@@ -43,7 +43,7 @@ class VisualParticipantsServiceTest {
     }
 
     @Test
-    void discardsFirstPhotoWhenAiPhotoAuthorizationIsRevokedDuringSecondPhotoRead() throws Exception {
+    void disablesAiButKeepsFirstPhotoWhenAuthorizationIsRevokedDuringSecondPhotoRead() throws Exception {
         var revoked = new AtomicBoolean();
         when(users.findByEmail(alice.email()))
                 .thenAnswer(invocation ->
@@ -58,7 +58,9 @@ class VisualParticipantsServiceTest {
         var payload = participants.prepare(List.of(alice, bob));
 
         assertEquals("Alice", payload.get(0).name());
-        assertNull(payload.get(0).photo());
+        assertNotNull(payload.get(0).photo());
+        assertFalse(payload.get(0).autoCrop());
+        assertTrue(payload.get(1).autoCrop());
         assertNotNull(payload.get(1).photo());
     }
 
@@ -71,11 +73,14 @@ class VisualParticipantsServiceTest {
     }
 
     @Test
-    void refusedPhotoIsNeverRead() throws Exception {
+    void refusedAiPhotoIsStillReadForDeterministicRendering() throws Exception {
         when(users.findByEmail(alice.email()))
                 .thenReturn(alice.toBuilder().aiPhotoAllowed(false).build());
-        assertNull(participants.prepare(List.of(alice)).getFirst().photo());
-        verifyNoInteractions(storage);
+        when(storage.read("alice")).thenReturn(photo());
+        var person = participants.prepare(List.of(alice)).getFirst();
+        assertNotNull(person.photo());
+        assertFalse(person.autoCrop());
+        verify(storage).read("alice");
     }
 
     @Test
@@ -106,10 +111,28 @@ class VisualParticipantsServiceTest {
 
     @Test
     void blankEmbeddedNameUsesCurrentProfileName() throws Exception {
+        when(storage.read("alice")).thenThrow(new NotFoundException());
         when(users.findByEmail(alice.email()))
                 .thenReturn(alice.toBuilder().aiPhotoAllowed(false).build());
         var result = participants.prepare(List.of(alice.toBuilder().name(" ").build()));
         assertEquals("Alice", result.getFirst().name());
+    }
+
+    @Test
+    void doesNotEnableAiIfAuthorizationIsGrantedDuringAnotherPhotoRead() throws Exception {
+        var allowed = new AtomicBoolean(false);
+        when(users.findByEmail(alice.email()))
+                .thenAnswer(invocation ->
+                        alice.toBuilder().aiPhotoAllowed(allowed.get()).build());
+        when(storage.read("alice")).thenReturn(photo());
+        when(storage.read("bob")).thenAnswer(invocation -> {
+            allowed.set(true);
+            return photo();
+        });
+        var result = participants.prepare(List.of(alice, bob));
+        assertNotNull(result.getFirst().photo());
+        assertFalse(result.getFirst().autoCrop());
+        assertTrue(result.get(1).autoCrop());
     }
 
     @Test

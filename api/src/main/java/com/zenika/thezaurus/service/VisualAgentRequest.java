@@ -11,7 +11,11 @@ public sealed interface VisualAgentRequest {
     record Blog(String title, List<Person> writers, boolean autoCrop) implements VisualAgentRequest {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record Person(String name, Photo photo) {}
+    record Person(String name, Photo photo, boolean autoCrop) {
+        public Person(String name, Photo photo) {
+            this(name, photo, photo != null);
+        }
+    }
 
     record Photo(String base64) {}
 }

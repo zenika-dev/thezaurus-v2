@@ -4,7 +4,6 @@ import com.zenika.thezaurus.model.User;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -38,19 +37,23 @@ public class VisualParticipantsService {
             VisualAgentRequest.Photo photo = null;
             if (user != null) {
                 try {
-                    var image = photos.getForAgent(person.email());
+                    var image = photos.getForRendering(person.email());
                     photo = new VisualAgentRequest.Photo(Base64.getEncoder().encodeToString(image.bytes()));
-                } catch (ForbiddenException | NotFoundException noPhoto) {
+                } catch (NotFoundException noPhoto) {
                     // Omit the pixels: the renderer uses its local Zenika logo.
                 }
             }
-            result.add(new VisualAgentRequest.Person(name, photo));
+            result.add(new VisualAgentRequest.Person(name, photo, photo != null && user.allowsAiPhoto()));
         }
         for (int i = 0; i < people.size(); i++) {
             var user = profile(people.get(i).email(), allowFreeAuthors);
-            if (user == null || !user.allowsAiPhoto()) {
-                result.set(i, new VisualAgentRequest.Person(result.get(i).name(), null));
-            }
+            var person = result.get(i);
+            result.set(
+                    i,
+                    new VisualAgentRequest.Person(
+                            person.name(),
+                            user == null ? null : person.photo(),
+                            person.autoCrop() && user != null && user.allowsAiPhoto()));
         }
         return List.copyOf(result);
     }

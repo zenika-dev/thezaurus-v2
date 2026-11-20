@@ -48,7 +48,7 @@ public class ProfilePhotoService {
         return user;
     }
 
-    /** Point d’entrée des futurs agents, volontairement sans endpoint réseau pour l’instant. */
+    /** Returns a photo only when sending its pixels to AI is authorized. */
     public Photo getForAgent(String email) throws ExecutionException, InterruptedException {
         User user = requireUser(email);
         if (!user.allowsAiPhoto()) throw new ForbiddenException("Utilisation de la photo par l’IA refusée.");
@@ -56,6 +56,11 @@ public class ProfilePhotoService {
         // Relecture après le stockage distant : un retrait pendant le téléchargement s’applique aussi.
         if (!requireUser(email).allowsAiPhoto()) throw new ForbiddenException();
         return prepareForAgent(photo);
+    }
+
+    /** Private Java rendering copy; does not authorize any AI processing of these pixels. */
+    public Photo getForRendering(String email) throws ExecutionException, InterruptedException {
+        return prepareForAgent(read(requireUser(email)));
     }
 
     /** Bound the copy sent to agents; a normalized PNG can be larger than the original upload. */
