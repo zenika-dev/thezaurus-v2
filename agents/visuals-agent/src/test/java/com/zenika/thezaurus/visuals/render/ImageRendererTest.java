@@ -24,6 +24,25 @@ class ImageRendererTest {
     private final ImageRenderer renderer = new ImageRenderer(catalog);
 
     @Test
+    void fallbackLogoHasEnoughPixelsForEveryTemplate() throws IOException {
+        try (var input = ImageRenderer.class.getResourceAsStream("/branding/zenika-mark.png")) {
+            assertNotNull(input);
+            var mark = ImageIO.read(input);
+            assertNotNull(mark);
+            assertTrue(mark.getColorModel().hasAlpha());
+            for (String id :
+                    List.of("conf-1", "conf-1-binome", "conf-1-trinome", "blog", "blog-2", "nc", "nc-partenaire")) {
+                for (var slot : catalog.require(id).photos()) {
+                    double renderedSize = Math.min(slot.box().get(2), slot.box().get(3)) * .70;
+                    assertTrue(
+                            mark.getWidth() >= renderedSize && mark.getHeight() >= renderedSize,
+                            id + " must not upscale the fallback logo");
+                }
+            }
+        }
+    }
+
+    @Test
     void deterministicCropUsesLargestTopCenteredRectangleAtEveryRequiredRatio() throws IOException {
         for (int[] size : List.of(new int[] {240, 640}, new int[] {640, 240}, new int[] {320, 320})) {
             int width = size[0], height = size[1];
