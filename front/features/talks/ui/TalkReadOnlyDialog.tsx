@@ -11,6 +11,7 @@ import { type TalkData, agencyLabels, talkStatusConfig } from "@/entities/talk";
 import { SpeakerChip } from "@/entities/user";
 import { isValidUrl } from "@/shared/lib";
 import { StatusTag } from "./TalkTags";
+import { TalkVisualButton } from "./TalkVisualButton";
 
 interface TalkReadOnlyDialogProps {
   talk: TalkData;
@@ -22,7 +23,7 @@ interface TalkReadOnlyDialogProps {
 export function TalkReadOnlyDialog({ talk, onClose, success }: TalkReadOnlyDialogProps) {
   return (
     <FormDialog open onClose={onClose} maxWidth="sm" fullWidth title={talk.title}
-      headerAction={<StatusTag status={talk.status} />} cancelLabel="Fermer" actions={<CopyDetailLinkButton path="/talks" parameter="talk" id={talk.id} />}>
+      headerAction={<StatusTag status={talk.status} />} cancelLabel="Fermer" actions={<><TalkVisualButton talk={talk} /><CopyDetailLinkButton path="/talks" parameter="talk" id={talk.id} /></>}>
         {success && <Alert severity="success">{success}</Alert>}
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-text-muted">Détails du talk</p>

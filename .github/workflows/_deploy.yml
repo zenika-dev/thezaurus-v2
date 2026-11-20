@@ -42,6 +42,7 @@ jobs:
       SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE }}
       GCP_REGION: ${{ vars.GCP_REGION }}
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      VISUALS_SERVICE_NAME: ${{ vars.CLOUD_RUN_VISUALS_SERVICE }}
       TARGET_ENV: ${{ inputs.environment }}
     steps:
       # Échoue tout de suite si l'environnement GitHub est incomplet, plutôt que de
@@ -52,6 +53,8 @@ jobs:
             GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
             GCP_REGION=${{ vars.GCP_REGION }}
             CLOUD_RUN_SERVICE=${{ vars.CLOUD_RUN_SERVICE }}
+            CLOUD_RUN_VISUALS_SERVICE=${{ vars.CLOUD_RUN_VISUALS_SERVICE }}
+            WIF_PROVIDER=${{ vars.WIF_PROVIDER }}
             WIF_SERVICE_ACCOUNT=${{ vars.WIF_SERVICE_ACCOUNT }}
             RUNTIME_SERVICE_ACCOUNT=${{ vars.RUNTIME_SERVICE_ACCOUNT }}
             NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}
@@ -78,7 +81,21 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
-      # Service Cloud Run multi-conteneurs (front ingress + api sidecar), défini ici et appliqué
+      - name: Résoudre l’URL du service visuels indépendant
+        id: visuals
+        run: |
+          if ! URL=$(gcloud run services describe "$VISUALS_SERVICE_NAME" \
+            --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format='value(status.url)'); then
+            echo "::error::Impossible de résoudre le service visuels '$VISUALS_SERVICE_NAME' dans le projet '$GCP_PROJECT_ID' ($GCP_REGION). Déployez d’abord le Service indépendant de génération de visuels via Release, puis vérifiez le nom du service et les droits du compte de déploiement."
+            exit 1
+          fi
+          if [ -z "$URL" ]; then
+            echo "::error::Le service visuels '$VISUALS_SERVICE_NAME' ne fournit aucune URL dans le projet '$GCP_PROJECT_ID' ($GCP_REGION). Déployez d’abord le Service indépendant de génération de visuels via Release et attendez qu’il soit prêt avant de déployer l’application."
+            exit 1
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      # Service Cloud Run multi-conteneurs (front ingress + API sidecar), défini ici et appliqué
       # avec `gcloud run services replace` : ce bloc est la source de vérité de la config de prod.
       # Toute modification manuelle dans la console sera écrasée au déploiement suivant.
       - name: Rendre le manifeste Cloud Run
@@ -86,6 +103,9 @@ jobs:
           VERSION: ${{ inputs.version }}
           API_IMAGE: ${{ inputs.api_image }}
           FRONT_IMAGE: ${{ inputs.front_image }}
+          VISUALS_AGENT_URL: ${{ steps.visuals.outputs.url }}
+          VISUALS_AGENT_TIMEOUT: ${{ vars.VISUALS_AGENT_TIMEOUT || 'PT120S' }}
+          VISUALS_API_KEY_VERSION: ${{ vars.VISUALS_API_KEY_VERSION || '1' }}
           RUNTIME_SERVICE_ACCOUNT: ${{ vars.RUNTIME_SERVICE_ACCOUNT }}
           NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
@@ -107,7 +127,9 @@ jobs:
           export VERSION_LABEL
           # Heredoc non interprété par le shell, puis envsubst avec une liste explicite :
           # seules ces variables sont substituées
-          envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE}
+          # shellcheck disable=SC2016
+          envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE} ${VISUALS_AGENT_URL}
+                    ${VISUALS_AGENT_TIMEOUT} ${VISUALS_API_KEY_VERSION}
                     ${GCP_PROJECT_ID} ${RUNTIME_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
                     ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${PROFILE_PHOTOS_BUCKET}
                     ${SCHEDULER_SERVICE_ACCOUNT} ${FEEDBACK_REMINDER_AUDIENCE}
@@ -132,7 +154,6 @@ jobs:
                   autoscaling.knative.dev/maxScale: "1"
                   # Le JVM démarre plus vite avec du CPU supplémentaire pendant le boot
                   run.googleapis.com/startup-cpu-boost: "true"
-                  # Le front ne démarre qu'une fois l'API prête (startupProbe de l'api)
                   run.googleapis.com/container-dependencies: '{"front":["api"]}'
               spec:
                 # Identité de l'application, distincte du compte de la CI (WIF_SERVICE_ACCOUNT) :
@@ -220,6 +241,15 @@ jobs:
                           secretKeyRef:
                             name: thezaurus-slack-signing-secret
                             key: latest
+                      - name: VISUALS_AGENT_URL
+                        value: "${VISUALS_AGENT_URL}"
+                      - name: VISUALS_AGENT_TIMEOUT
+                        value: "${VISUALS_AGENT_TIMEOUT}"
+                      - name: VISUALS_API_KEY
+                        valueFrom:
+                          secretKeyRef:
+                            name: thezaurus-visuals-api-key
+                            key: "${VISUALS_API_KEY_VERSION}"
                     resources:
                       limits:
                         cpu: "1"
@@ -236,6 +266,7 @@ jobs:
                         path: /q/health/live
                         port: 8080
                       periodSeconds: 30
+
             traffic:
               - percent: 100
                 latestRevision: true

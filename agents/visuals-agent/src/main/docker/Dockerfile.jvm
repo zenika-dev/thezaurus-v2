@@ -1,0 +1,21 @@
+FROM maven:3.9.6-eclipse-temurin-21 AS build
+WORKDIR /build
+COPY pom.xml ./
+COPY src ./src
+RUN mvn -B package -DskipTests
+
+FROM eclipse-temurin:21-jre-jammy
+RUN sed -i 's|http://|https://|g' /etc/apt/sources.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends fontconfig libfreetype6 gosu \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 10001 app \
+    && useradd --uid 10001 --gid app --no-create-home app
+WORKDIR /work
+COPY --from=build --chown=10001:10001 /build/target/quarkus-app/ ./
+COPY --chmod=755 src/main/docker/entrypoint.sh /usr/local/bin/visuals-entrypoint
+ENV VISUALS_AGENT_HOST=0.0.0.0 VISUALS_AGENT_PORT=8087
+USER 10001:10001
+EXPOSE 8087
+ENTRYPOINT ["/usr/local/bin/visuals-entrypoint"]
+CMD ["java", "-Djava.awt.headless=true", "-jar", "quarkus-run.jar"]

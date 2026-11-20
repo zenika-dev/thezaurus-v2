@@ -27,11 +27,13 @@ Le projet s'articule autour des composants suivants :
 
 - **Frontend (`front/`)** : Application React / Next.js (App Router), stylisée avec TailwindCSS & Material UI (MUI), typée avec TypeScript et sécurisée avec NextAuth.
 - **Backend API (`api/`)** : API REST développée avec Java 21 et Quarkus, exposant les ressources et intégrant le SDK Bolt pour Slack.
+- **Agent de visuels (`agents/visuals-agent/`)** : service Quarkus autonome, reprenant l'architecture et les routes de la PR 190. Il assemble les templates en Java ; Gemini intervient uniquement pour le cadrage automatique des photos. Voir son [guide de lancement](agents/visuals-agent/README.md).
 - **Base de données** : Google Cloud Firestore (avec émulateur local Firebase pour le développement).
 
 ```
 thezaurus-v2/
 ├── api/             # Backend Java Quarkus (JAX-RS, Firestore, Slack Bot)
+├── agents/visuals-agent/ # Service indépendant de rendu et cadrage automatique
 ├── front/           # Frontend Next.js / React / TypeScript
 ├── docs/            # Documentation détaillée du projet
 ├── docker-compose.* # Orchestration des conteneurs locaux et Cloud
@@ -98,7 +100,7 @@ Pour approfondir, consultez les guides disponibles dans le dossier [`docs/`](doc
   - Job quotidien et conditions d'envoi
   - Modèles de messages administrables
 - 🚢 **[Guide de déploiement Cloud Run](docs/Deploiement.md)** :
-  - Architecture multi-conteneurs Cloud Run (Ingress & Backend)
+  - Architecture multi-conteneurs Cloud Run (front/API et service visuels indépendant)
   - Prérequis et variables d'environnement de production
   - Commandes de déploiement et consultation des logs
 - 🤝 **[Guide de contribution](CONTRIBUTING.md)** :
@@ -110,7 +112,7 @@ Pour approfondir, consultez les guides disponibles dans le dossier [`docs/`](doc
 
 ## 🚢 Déploiement
 
-Le déploiement en production s'effectue sur **Google Cloud Run** via `gcloud run compose`. Consultez le [Guide de déploiement détaillé](docs/Deploiement.md) pour les étapes complètes.
+Le déploiement en production s'effectue sur **Google Cloud Run** via le workflow **Release**, qui livre le front/API et le service visuels indépendant par digest. Consultez le [Guide de déploiement détaillé](docs/Deploiement.md) pour les étapes complètes.
 
 ---
 

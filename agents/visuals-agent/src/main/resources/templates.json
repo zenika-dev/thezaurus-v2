@@ -1,0 +1,724 @@
+[
+  {
+    "id": "conf-1",
+    "label": "Talk · 1 speaker",
+    "category": "TALK",
+    "width": 1080,
+    "height": 1080,
+    "background": "templates/conf-1.png",
+    "soloBackground": null,
+    "photos": [
+      {
+        "box": [
+          74,
+          462,
+          314,
+          314
+        ],
+        "radius": 40
+      }
+    ],
+    "logo": {
+      "box": [
+        608,
+        96,
+        408,
+        204
+      ],
+      "radius": 35
+    },
+    "typography": {
+      "names": [
+        {
+          "box": [
+            428,
+            566,
+            560,
+            58
+          ],
+          "size": 41,
+          "weight": 750,
+          "align": "left",
+          "color": "#ffffff",
+          "baseline": 608,
+          "lineHeight": 1.17
+        }
+      ],
+      "titles": [
+        {
+          "box": [
+            428,
+            626,
+            560,
+            100
+          ],
+          "size": 36,
+          "weight": 400,
+          "align": "left",
+          "color": "#f5cfdb",
+          "baseline": 658,
+          "lineHeight": 1.17,
+          "multiline": "down"
+        }
+      ]
+    }
+  },
+  {
+    "id": "conf-1-binome",
+    "label": "Talk · 2 speakers",
+    "category": "TALK",
+    "width": 1080,
+    "height": 1080,
+    "background": "templates/conf-1-binome.png",
+    "soloBackground": null,
+    "photos": [
+      {
+        "box": [
+          208,
+          405,
+          287,
+          287
+        ],
+        "radius": 20
+      },
+      {
+        "box": [
+          594,
+          405,
+          287,
+          287
+        ],
+        "radius": 20
+      }
+    ],
+    "logo": {
+      "box": [
+        295,
+        66,
+        458,
+        256
+      ],
+      "radius": 35
+    },
+    "typography": {
+      "names": [
+        {
+          "box": [
+            201,
+            708,
+            306,
+            56
+          ],
+          "size": 25.5,
+          "weight": 750,
+          "align": "center",
+          "color": "#ffffff",
+          "baseline": 742,
+          "lineHeight": 1.17
+        },
+        {
+          "box": [
+            577.5,
+            708,
+            320,
+            56
+          ],
+          "size": 25,
+          "weight": 800,
+          "align": "center",
+          "color": "#ffffff",
+          "baseline": 742,
+          "lineHeight": 1.17
+        }
+      ],
+      "titles": [
+        {
+          "box": [
+            70,
+            790,
+            960,
+            114
+          ],
+          "size": 44.5,
+          "weight": 350,
+          "align": "center",
+          "color": "#ffffff",
+          "baseline": 843,
+          "lineHeight": 1.17
+        }
+      ]
+    }
+  },
+  {
+    "id": "conf-1-trinome",
+    "label": "Talk · 3 speakers",
+    "category": "TALK",
+    "width": 1080,
+    "height": 1080,
+    "background": "templates/conf-1-trinome.png",
+    "soloBackground": null,
+    "photos": [
+      {
+        "box": [
+          73,
+          369,
+          265,
+          265
+        ],
+        "radius": 20
+      },
+      {
+        "box": [
+          418,
+          369,
+          265,
+          265
+        ],
+        "radius": 20
+      },
+      {
+        "box": [
+          763,
+          369,
+          265,
+          265
+        ],
+        "radius": 20
+      }
+    ],
+    "logo": {
+      "box": [
+        359,
+        49,
+        362,
+        204
+      ],
+      "radius": 35
+    },
+    "typography": {
+      "names": [
+        {
+          "box": [
+            66.5,
+            650,
+            276,
+            56
+          ],
+          "size": 25.5,
+          "weight": 700,
+          "align": "center",
+          "color": "#ffffff",
+          "baseline": 684,
+          "lineHeight": 1.17
+        },
+        {
+          "box": [
+            411.5,
+            650,
+            276,
+            56
+          ],
+          "size": 25.5,
+          "weight": 700,
+          "align": "center",
+          "color": "#ffffff",
+          "baseline": 684,
+          "lineHeight": 1.17
+        },
+        {
+          "box": [
+            756.5,
+            650,
+            276,
+            56
+          ],
+          "size": 25.5,
+          "weight": 700,
+          "align": "center",
+          "color": "#ffffff",
+          "baseline": 684,
+          "lineHeight": 1.17
+        }
+      ],
+      "titles": [
+        {
+          "box": [
+            70,
+            764,
+            960,
+            112
+          ],
+          "size": 44,
+          "weight": 400,
+          "align": "center",
+          "color": "#ffffff",
+          "baseline": 828,
+          "lineHeight": 1.17
+        }
+      ]
+    }
+  },
+  {
+    "id": "conf-2",
+    "label": "Conférence · 2 talks",
+    "category": "TALK",
+    "width": 1080,
+    "height": 1080,
+    "background": "templates/conf-2.png",
+    "soloBackground": null,
+    "photos": [
+      {
+        "box": [
+          80,
+          412,
+          246,
+          246
+        ],
+        "radius": 40
+      },
+      {
+        "box": [
+          80,
+          722,
+          246,
+          246
+        ],
+        "radius": 40
+      }
+    ],
+    "logo": {
+      "box": [
+        608,
+        96,
+        408,
+        204
+      ],
+      "radius": 35
+    },
+    "typography": {
+      "names": [
+        {
+          "box": [
+            366,
+            480,
+            622,
+            58
+          ],
+          "size": 41.5,
+          "weight": 650,
+          "align": "left",
+          "color": "#ffffff",
+          "baseline": 525,
+          "lineHeight": 1.17
+        },
+        {
+          "box": [
+            366,
+            790,
+            622,
+            58
+          ],
+          "size": 41.5,
+          "weight": 650,
+          "align": "left",
+          "color": "#ffffff",
+          "baseline": 835,
+          "lineHeight": 1.17
+        }
+      ],
+      "titles": [
+        {
+          "box": [
+            366,
+            542,
+            622,
+            100
+          ],
+          "size": 36,
+          "weight": 400,
+          "align": "left",
+          "color": "#f5cfdb",
+          "baseline": 574,
+          "lineHeight": 1.17,
+          "multiline": "down"
+        },
+        {
+          "box": [
+            366,
+            852,
+            622,
+            100
+          ],
+          "size": 36,
+          "weight": 400,
+          "align": "left",
+          "color": "#f5cfdb",
+          "baseline": 884,
+          "lineHeight": 1.17,
+          "multiline": "down"
+        }
+      ]
+    }
+  },
+  {
+    "id": "blog",
+    "label": "Blog · 1 auteur",
+    "category": "BLOG",
+    "width": 1080,
+    "height": 1350,
+    "background": "templates/blog.png",
+    "soloBackground": null,
+    "photos": [
+      {
+        "box": [
+          595,
+          503,
+          419,
+          334
+        ],
+        "radius": 23
+      }
+    ],
+    "logo": null,
+    "typography": {
+      "title": {
+        "box": [
+          139.45,
+          245,
+          790,
+          170
+        ],
+        "size": 95,
+        "weight": 650,
+        "align": "center",
+        "color": "#000000",
+        "baseline": 350,
+        "lineHeight": 1.17
+      },
+      "titles": [
+        {
+          "box": [
+            139.45,
+            245,
+            790,
+            170
+          ],
+          "size": 95,
+          "weight": 650,
+          "align": "center",
+          "color": "#000000",
+          "baseline": 350,
+          "lineHeight": 1.17
+        }
+      ],
+      "names": [
+        {
+          "box": [
+            130.25,
+            550,
+            430,
+            110
+          ],
+          "size": 80,
+          "weight": 300,
+          "align": "center",
+          "color": "#d51f51",
+          "baseline": 637,
+          "lineHeight": 1.17
+        },
+        {
+          "box": [
+            139.67,
+            670,
+            430,
+            130
+          ],
+          "size": 79.5,
+          "weight": 300,
+          "align": "center",
+          "color": "#000000",
+          "baseline": 757,
+          "lineHeight": 1.17
+        }
+      ]
+    }
+  },
+  {
+    "id": "blog-2",
+    "label": "Blog · 2 auteurs",
+    "category": "BLOG",
+    "width": 1080,
+    "height": 1350,
+    "background": "templates/blog-2.png",
+    "soloBackground": null,
+    "photos": [
+      {
+        "box": [
+          736,
+          372,
+          297,
+          279
+        ],
+        "radius": 19
+      },
+      {
+        "box": [
+          736,
+          685,
+          297,
+          279
+        ],
+        "radius": 19
+      }
+    ],
+    "logo": null,
+    "typography": {
+      "title": {
+        "box": [
+          139.56,
+          145,
+          790,
+          190
+        ],
+        "size": 94,
+        "weight": 700,
+        "align": "center",
+        "color": "#000000",
+        "baseline": 237,
+        "lineHeight": 1.17
+      },
+      "titles": [
+        {
+          "box": [
+            139.56,
+            145,
+            790,
+            190
+          ],
+          "size": 94,
+          "weight": 700,
+          "align": "center",
+          "color": "#000000",
+          "baseline": 237,
+          "lineHeight": 1.17
+        }
+      ],
+      "names": [
+        {
+          "box": [
+            255,
+            480,
+            445,
+            125
+          ],
+          "size": 79.5,
+          "weight": 300,
+          "align": "left",
+          "color": "#d51f51",
+          "baseline": 567,
+          "lineHeight": 1.17
+        },
+        {
+          "box": [
+            261,
+            770,
+            439,
+            125
+          ],
+          "size": 79.5,
+          "weight": 300,
+          "align": "left",
+          "color": "#d51f51",
+          "baseline": 856,
+          "lineHeight": 1.17
+        }
+      ]
+    }
+  },
+  {
+    "id": "nc",
+    "label": "NightClazz",
+    "category": "NIGHT_CLAZZ",
+    "width": 1080,
+    "height": 1080,
+    "background": "templates/nc.png",
+    "soloBackground": "templates/nc-solo.png",
+    "photos": [
+      {
+        "box": [
+          240,
+          459,
+          268,
+          268
+        ],
+        "radius": 23
+      },
+      {
+        "box": [
+          572,
+          459,
+          268,
+          268
+        ],
+        "radius": 23
+      }
+    ],
+    "logo": null,
+    "typography": {
+      "title": {
+        "box": [
+          160,
+          130,
+          760,
+          96
+        ],
+        "size": 52,
+        "weight": 700,
+        "align": "center",
+        "color": "#ffffff",
+        "baseline": 187,
+        "lineHeight": 1.17
+      },
+      "titles": [
+        {
+          "box": [
+            160,
+            130,
+            760,
+            96
+          ],
+          "size": 52,
+          "weight": 700,
+          "align": "center",
+          "color": "#ffffff",
+          "baseline": 187,
+          "lineHeight": 1.17
+        }
+      ],
+      "names": [
+        {
+          "box": [
+            244,
+            750,
+            264,
+            84
+          ],
+          "size": 28.5,
+          "weight": 800,
+          "align": "left",
+          "color": "#ffffff",
+          "baseline": 783,
+          "lineHeight": 1.17,
+          "multiline": "down"
+        },
+        {
+          "box": [
+            576,
+            750,
+            264,
+            84
+          ],
+          "size": 28.5,
+          "weight": 800,
+          "align": "left",
+          "color": "#ffffff",
+          "baseline": 783,
+          "lineHeight": 1.17,
+          "multiline": "down"
+        }
+      ]
+    }
+  },
+  {
+    "id": "nc-partenaire",
+    "label": "NightClazz · partenaire",
+    "category": "NIGHT_CLAZZ",
+    "width": 1080,
+    "height": 1080,
+    "background": "templates/nc-partenaire.png",
+    "soloBackground": null,
+    "photos": [
+      {
+        "box": [
+          164,
+          493,
+          268,
+          268
+        ],
+        "radius": 23
+      }
+    ],
+    "logo": {
+      "box": [
+        512,
+        614,
+        120,
+        132
+      ],
+      "radius": 0
+    },
+    "typography": {
+      "title": {
+        "box": [
+          160,
+          130,
+          760,
+          96
+        ],
+        "size": 52,
+        "weight": 700,
+        "align": "center",
+        "color": "#ffffff",
+        "baseline": 187,
+        "lineHeight": 1.17
+      },
+      "titles": [
+        {
+          "box": [
+            160,
+            130,
+            760,
+            96
+          ],
+          "size": 52,
+          "weight": 700,
+          "align": "center",
+          "color": "#ffffff",
+          "baseline": 187,
+          "lineHeight": 1.17
+        }
+      ],
+      "names": [
+        {
+          "box": [
+            168,
+            786,
+            264,
+            80
+          ],
+          "size": 29,
+          "weight": 700,
+          "align": "left",
+          "color": "#ffffff",
+          "baseline": 817,
+          "lineHeight": 1.17,
+          "multiline": "down"
+        }
+      ],
+      "partner": {
+        "box": [
+          645,
+          683,
+          390,
+          50
+        ],
+        "size": 31.5,
+        "weight": 750,
+        "align": "left",
+        "color": "#ffffff",
+        "baseline": 715,
+        "lineHeight": 1.17
+      }
+    }
+  }
+]

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.zenika.thezaurus</groupId>
+    <artifactId>visuals-agent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>TheZaurus Visuals Agent</name>
+    <description>Service autonome de rendu de templates et de cadrage assisté par Gemini</description>
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <quarkus.platform.version>3.40.1.1</quarkus.platform.version>
+        <compiler-plugin.version>3.16.0</compiler-plugin.version>
+        <surefire-plugin.version>3.6.1</surefire-plugin.version>
+        <spotless-plugin.version>3.10.4</spotless-plugin.version>
+        <palantir-java-format.version>2.97.0</palantir-java-format.version>
+    </properties>
+    <dependencyManagement><dependencies><dependency>
+        <groupId>io.quarkus.platform</groupId><artifactId>quarkus-bom</artifactId>
+        <version>${quarkus.platform.version}</version><type>pom</type><scope>import</scope>
+    </dependency></dependencies></dependencyManagement>
+    <dependencies>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-rest-jackson</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-hibernate-validator</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-smallrye-openapi</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-smallrye-health</artifactId></dependency>
+        <dependency><groupId>com.google.auth</groupId><artifactId>google-auth-library-oauth2-http</artifactId><version>1.48.0</version></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-junit</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-junit-mockito</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>io.rest-assured</groupId><artifactId>rest-assured</artifactId><scope>test</scope></dependency>
+    </dependencies>
+    <build><plugins>
+        <plugin><groupId>io.quarkus.platform</groupId><artifactId>quarkus-maven-plugin</artifactId><version>${quarkus.platform.version}</version><extensions>true</extensions><executions><execution><goals><goal>build</goal><goal>generate-code</goal><goal>generate-code-tests</goal></goals></execution></executions></plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>${compiler-plugin.version}</version><configuration><parameters>true</parameters></configuration></plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>${surefire-plugin.version}</version><configuration><systemPropertyVariables><java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager><java.awt.headless>true</java.awt.headless></systemPropertyVariables></configuration></plugin>
+        <plugin><groupId>com.diffplug.spotless</groupId><artifactId>spotless-maven-plugin</artifactId><version>${spotless-plugin.version}</version><configuration><java><palantirJavaFormat><version>${palantir-java-format.version}</version><style>PALANTIR</style></palantirJavaFormat><importOrder/><removeUnusedImports/><trimTrailingWhitespace/><endWithNewline/></java></configuration><executions><execution><id>spotless-check</id><phase>validate</phase><goals><goal>check</goal></goals></execution></executions></plugin>
+    </plugins></build>
+</project>
