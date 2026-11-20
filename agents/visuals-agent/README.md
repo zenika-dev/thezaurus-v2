@@ -10,9 +10,10 @@ Depuis l’application standard, `docker compose up --build` démarre aussi l’
 `docker-compose.override.yml`. Dans la fiche d’un talk enregistré avec un à trois
 intervenants et une conférence, le bouton **Télécharger le visuel** sélectionne le modèle
 adapté au nombre d’intervenants et télécharge son PNG. Enregistrer les modifications du talk
-avant de générer. L’API contrôle l’autorisation photo IA avant chaque envoi à l’agent.
-Si une personne refuse ou ne dispose pas de photo, seul son nom est transmis et le logo Zenika remplace
-sa photo, sans appel Gemini pour cet emplacement. Le cadrage automatique utilise la configuration Vertex/ADC ou
+avant de générer. L’API contrôle l’autorisation photo IA pour chaque personne.
+En cas de refus, sa photo reste utilisée par le rendu Java avec `autoCrop: false` :
+le plus grand rectangle au ratio requis est centré horizontalement et aligné en haut,
+sans zoom supplémentaire ni appel Gemini. Le logo Zenika remplace uniquement une photo absente. Le cadrage automatique utilise la configuration Vertex/ADC ou
 `GOOGLE_API_KEY` du Compose local. `VISUALS_AI_ENABLED=false` permet un rendu sans
 appel Gemini. En local, le service reste interne au réseau Compose. En production,
 il est déployé comme service Cloud Run indépendant par le workflow Release ; voir le
@@ -20,7 +21,7 @@ il est déployé comme service Cloud Run indépendant par le workflow Release ; 
 
 Le bouton est aussi disponible dans la fiche d’un article de blog enregistré avec
 un ou deux auteurs. Il appelle `/visuals/blogs/image` et télécharge un PNG
-1080 × 1350 avec le modèle correspondant au nombre d’auteurs. Le même remplacement par le logo Zenika s’applique aux auteurs sans autorisation photo IA.
+1080 × 1350 avec le modèle correspondant au nombre d’auteurs. Le même cadrage déterministe sans IA s’applique aux auteurs sans autorisation photo IA ; les auteurs sans photo utilisent le logo Zenika.
 
 Pour lancer uniquement l'agent, depuis la racine du dépôt, sur toute plateforme disposant de Docker Compose :
 
@@ -54,7 +55,7 @@ défaut sur `http://127.0.0.1:8087`.
 | `VISUALS_REQUIRE_API_KEY` | `true` en production : refuse de démarrer sans clés |
 | `VISUALS_AGENT_HOST`, `VISUALS_AGENT_PORT` | Adresse et port du service hors Compose |
 
-ADC doit permettre d’appeler Vertex AI dans le projet configuré. Sans configuration Gemini/Vertex, une demande de cadrage automatique retourne une erreur de configuration. `autoCrop: false` permet un rendu centré sans appel IA.
+ADC doit permettre d’appeler Vertex AI dans le projet configuré. Sans configuration Gemini/Vertex, une demande de cadrage automatique retourne une erreur de configuration. `autoCrop: false` permet un rendu sans appel IA, centré horizontalement et aligné en haut.
 
 ## API
 
@@ -80,12 +81,16 @@ Exemple de corps JSON :
 }
 ```
 
-Les entrées conservent les structures principales de la PR 190 : `speakers` pour talks/NightClazz, `writers` pour blogs ; `conference` et `partner` acceptent une chaîne ou un objet `{name, logoBase64}`. NightClazz accepte aussi `date`, `hour` et `location`. Les personnes peuvent être des noms simples (logo Zenika par défaut) ou des objets avec photo. Le base64 brut et les data URL PNG/JPEG sont acceptés ; les URL distantes sont refusées avec HTTP 400. `autoCrop` est optionnel, activé par défaut.
+Les entrées conservent les structures principales de la PR 190 : `speakers` pour talks/NightClazz, `writers` pour blogs ; `conference` et `partner` acceptent une chaîne ou un objet `{name, logoBase64}`. NightClazz accepte aussi `date`, `hour` et `location`. Les personnes peuvent être des noms simples (logo Zenika par défaut) ou des objets avec photo. Le base64 brut et les data URL PNG/JPEG sont acceptés ; les URL distantes sont refusées avec HTTP 400. `autoCrop` est optionnel, activé par défaut. Il peut aussi être défini par personne : `{"name":"Alice","photo":{"base64":"..."},"autoCrop":false}`. Un refus par personne reste prioritaire même si le `autoCrop` de la requête vaut `true` ; un refus global désactive le cadrage IA pour toutes les personnes. Les valeurs autres qu’un booléen sont refusées. Sans IA, le plus grand rectangle au bon ratio est centré horizontalement et aligné sur le haut de la source.
 
 Les anciens alias de personne `speakerName`, `authorName`, `speakerPhotoBase64` et
 `authorPhotoBase64` sont aussi acceptés. Les champs modernes `name` et `photo`
 ont priorité lorsqu’ils sont renseignés. Les URL distantes restent volontairement
 refusées : les applications clientes fournissent les pixels autorisés en base64.
+
+Lors d’une mise à jour, déployer cette version de l’agent avant l’API TheZaurus :
+les anciennes versions de l’agent refusent le nouveau champ `autoCrop` par personne.
+Les clients existants qui ne fournissent pas ce champ restent compatibles avec le nouvel agent.
 
 Le catalogue conserve les huit noms publics et leurs chemins d’images. Il ne
 reproduit pas le catalogue de prompts Gemini de la PR 190 : `description` décrit

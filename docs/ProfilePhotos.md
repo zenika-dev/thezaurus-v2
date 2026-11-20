@@ -51,16 +51,14 @@ Le remplacement et la réinitialisation échangent la référence de la photo da
 - `PUT /api/me/profile/ai-photo` : corps `{ "allowed": true|false }`. La cible vient exclusivement de l’identité authentifiée. Aucun endpoint admin ne permet de modifier cette autorisation pour autrui.
 - `GET /api/users/{email}/photo` : affichage ordinaire pour les utilisateurs authentifiés disposant d’un rôle ; indépendant de l’autorisation IA. L’URL Google et la clé GCS restent privées.
 
-`ProfilePhotoService.getForAgent(email)` est le point d’entrée interne utilisé pour préparer les photos destinées à l’agent visuels. Il relit l’utilisateur et refuse l’accès sans autorisation explicite (`ForbiddenException`), retourne la photo personnalisée en priorité, ou signale son absence (`NotFoundException`). Il revérifie l’autorisation après la lecture distante pour appliquer un retrait intervenu pendant celle-ci.
+`ProfilePhotoService.getForAgent(email)` reste réservé à l’accès aux pixels pour un traitement IA : il refuse sans autorisation explicite (`ForbiddenException`) et revérifie celle-ci après la lecture distante. `getForRendering(email)` prépare séparément une copie pour le rendu Java sans donner d’autorisation de traitement IA.
 
-L’API prépare les participants via `VisualParticipantsService`, puis transmet les photos autorisées en base64 à l’agent HTTP via `VisualAgentClient`. Si `VISUALS_API_KEY` est configurée, l’API la fournit dans l’en-tête `X-API-Key`, contrôlé par l’agent. Cette intégration est disponible localement dans Docker Compose. En production, le workflow déploie l’agent comme service Cloud Run indépendant ; TheZaurus utilise sa propre clé cliente, incluse dans le registre des clés de l’agent ; les prérequis sont décrits dans [Deploiement.md](Deploiement.md).
+`VisualParticipantsService` prépare les participants ensemble puis relit leurs autorisations après la dernière lecture de photo. Chaque personne est transmise au moteur de rendu avec son propre `autoCrop` : `true` uniquement si l’autorisation photo IA était accordée au début et l’est encore à la fin. Un retrait pendant la préparation désactive donc l’IA pour cette photo sans supprimer ses pixels ; un accord donné pendant la préparation ne réactive pas l’IA pour cet appel.
 
-L’autorisation couvre la photo courante même après remplacement par un admin. Le retrait concerne les récupérations futures ; les visuels existants et les copies déjà transmises sont conservés.
+Sans autorisation photo IA, la photo est utilisée par le service Java de rendu avec `autoCrop: false`, mais elle n’est envoyée ni à Gemini ni à son analyseur de cadrage, même si d’autres personnes du même visuel utilisent l’IA. Le service découpe le plus grand rectangle au ratio de l’emplacement du modèle, centré horizontalement et aligné sur le bord supérieur de la photo, sans zoom supplémentaire. Le choix s’applique aux talks et aux articles.
 
-Pour les visuels, les participants sont préparés ensemble. L’absence de photo ou
-le refus de son utilisation sélectionne le logo Zenika pour la personne concernée.
-Un auteur libre ou dont le profil n’existe plus utilise aussi le logo, avec son nom enregistré dans l’article. Pour un talk, un profil inexistant reste une erreur 404, comme un talk ou un article inexistant. Un nom embarqué vide est remplacé par le nom du profil courant ; sans aucun nom, la requête est refusée en 400.
-Après la dernière lecture distante, toutes les autorisations sont relues avant
-l’appel à l’agent ; les photos dont l’autorisation a été retirée sont omises. Les
-copies destinées à l’agent sont limitées à 1536 pixels sur leur plus grand côté,
-en conservant le JPEG ou la transparence PNG, sans modifier les originaux stockés.
+Le logo Zenika reste le remplacement d’une photo absente. Un auteur libre ou dont le profil n’existe plus utilise aussi le logo, avec son nom enregistré dans l’article. Pour un talk, un profil inexistant reste une erreur 404, comme un talk ou un article inexistant. Un nom embarqué vide est remplacé par le nom du profil courant ; sans aucun nom, la requête est refusée en 400.
+
+`VisualAgentClient` transmet ces copies en base64 au service visuels avec la clé `X-API-Key` du client lorsqu’elle est configurée. Le moteur Java peut donc recevoir une photo non autorisée à l’IA pour effectuer la composition déterministe, mais son indicateur `autoCrop: false` interdit l’appel Gemini. Le service est lancé localement dans Docker Compose ou déployé indépendamment sur Cloud Run ; voir [Deploiement.md](Deploiement.md).
+
+L’autorisation couvre la photo courante même après remplacement par un admin. Le retrait concerne les futurs envois à l’IA ; les visuels existants et les copies déjà transmises sont conservés. Les copies destinées au rendu sont limitées à 1536 pixels sur leur plus grand côté, en conservant le JPEG ou la transparence PNG, sans modifier les originaux stockés.

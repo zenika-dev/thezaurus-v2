@@ -120,6 +120,11 @@ son manifeste (`run.googleapis.com/invoker-iam-disabled: true`).
 
 ## Livrer
 
+Pour cette évolution du cadrage, livrer l’agent visuels avant l’API : celle-ci
+transmet désormais `autoCrop` par personne. Sélectionner les deux services lors
+de la première release ; le workflow respecte cet ordre. Les anciens clients
+restent compatibles avec le nouvel agent.
+
 1. Fusionner les PR nécessaires sur `main`, dans l’ordre de leur stack.
 2. Ouvrir **Actions → Release → Run workflow**, sur `main`.
 3. Cocher **Service indépendant de génération de visuels** pour construire et livrer
@@ -160,7 +165,8 @@ dans le [contrat de l’agent](../agents/visuals-agent/README.md#api).
 
 Depuis l’application avec un compte autorisé, télécharger un visuel de talk et
 un visuel d’article, dont un cas avec photo autorisée pour vérifier Vertex AI,
-puis un cas sans photo ou avec autorisation refusée pour vérifier le logo Zenika.
+puis un cas avec autorisation refusée pour vérifier le cadrage supérieur sans IA,
+et un cas sans photo pour vérifier le logo Zenika.
 Ce contrôle authentifié n’est pas couvert par le smoke test NextAuth ni par le
 test d’image sans IA. Ne pas envoyer de portrait réel sans autorisation photo IA.
 
