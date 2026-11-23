@@ -38,7 +38,7 @@ public enum Office {
     public static Office fromValue(String value) {
         if (value == null || value.isEmpty()) return null;
         return Arrays.stream(values())
-                .filter(office -> office.value().equals(value))
+                .filter(office -> office.value().equalsIgnoreCase(value))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Agence inconnue : " + value));
     }
