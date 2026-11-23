@@ -42,3 +42,14 @@ resource "google_service_account" "scheduler" {
     prevent_destroy = true
   }
 }
+
+resource "google_service_account" "terraform_sa" {
+  project      = var.project_id
+  account_id   = "thezaurus-terraform-sa"
+  display_name = "thezaurus-terraform-sa"
+  description  = "terraform"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}

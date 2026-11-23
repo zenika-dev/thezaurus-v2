@@ -6,7 +6,7 @@ locals {
   ]
 }
 
- 
+
 resource "google_secret_manager_secret" "shared" {
   for_each  = toset(local.secret_keys)
   project   = var.project_id
