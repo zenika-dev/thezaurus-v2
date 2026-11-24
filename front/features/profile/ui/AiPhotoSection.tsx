@@ -30,7 +30,7 @@ export function AiPhotoSection({ profile }: { profile: UserProfile }) {
     <SectionCard
       titleId="ai-photo-title"
       title="Utilisation de ma photo par l’IA"
-      description="Autorise les agents IA à utiliser ta photo de profil pour créer des visuels de talks et d’articles de blog."
+      description="Autorise l’envoi de ta photo de profil à l’IA pour ajuster son cadrage dans les visuels de talks et d’articles de blog."
     >
       <FormControlLabel
         label="Autoriser l’utilisation de ma photo par l’IA"
@@ -44,8 +44,10 @@ export function AiPhotoSection({ profile }: { profile: UserProfile }) {
       />
       <p className="text-sm text-text-muted">
         Ce choix reste valable si toi ou un admin changez ta photo. Le retrait bloque les
-        prochaines récupérations ; les visuels déjà créés sont conservés.
-        Sans ton accord, le logo Zenika remplace ta photo dans les nouveaux visuels.
+        prochains envois à l’IA ; les visuels déjà créés sont conservés.
+        Sans ton accord, ta photo reste utilisable avec un cadrage simple, centré
+        horizontalement et aligné en haut, sans envoi à l’IA.
+        Le logo Zenika est utilisé si aucune photo n’est disponible.
       </p>
       {mutation.isError && (
         <Alert severity="error">L’autorisation n’a pas pu être enregistrée. Réessaie.</Alert>

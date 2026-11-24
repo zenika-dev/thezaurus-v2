@@ -25,6 +25,30 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(VisualResourceTest.RenderingOnly.class)
 class VisualResourceTest {
+    @Test
+    void acceptsPerPersonAiOptOutAndRejectsAmbiguousValues() throws IOException {
+        var person = Map.of(
+                "name",
+                "Alice",
+                "photo",
+                Map.of("base64", Base64.getEncoder().encodeToString(photo())),
+                "autoCrop",
+                false);
+        given().contentType("application/json")
+                .body(Map.of("title", "Article", "writers", List.of(person)))
+                .post("/visuals/blogs")
+                .then()
+                .statusCode(200)
+                .body("crops[0].status", equalTo("disabled"))
+                .body("crops[0].crop.y", equalTo(1.0f))
+                .body("usage.calls", equalTo(0));
+        given().contentType("application/json")
+                .body(Map.of("title", "Article", "writers", List.of(Map.of("name", "Alice", "autoCrop", "false"))))
+                .post("/visuals/blogs")
+                .then()
+                .statusCode(400);
+    }
+
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.CsvSource({
         "talks,speakers,speakerName,speakerPhotoBase64",

@@ -55,5 +55,10 @@ public record RenderData(
         public static Crop centered() {
             return new Crop(1, 0, 0);
         }
+
+        /** Largest cover rectangle, centered horizontally and aligned with the source's top edge. */
+        public static Crop topCentered() {
+            return new Crop(1, 0, 1);
+        }
     }
 }

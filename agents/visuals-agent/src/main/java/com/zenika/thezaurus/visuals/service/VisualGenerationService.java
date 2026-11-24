@@ -137,8 +137,10 @@ public class VisualGenerationService {
         var logoImage = images.load(logo);
         for (int i = 0; i < inputs.size(); i++) {
             var photo = photos.get(i);
-            RenderData.Crop crop = RenderData.Crop.centered();
-            if (photo != null && !Boolean.FALSE.equals(autoCrop)) {
+            RenderData.Crop crop = RenderData.Crop.topCentered();
+            if (photo != null
+                    && !Boolean.FALSE.equals(autoCrop)
+                    && !Boolean.FALSE.equals(inputs.get(i).autoCrop())) {
                 var slot = spec.photos().get(i);
                 var result = cropper.analyze(
                         photo.bytes(),
@@ -155,7 +157,9 @@ public class VisualGenerationService {
                 if (result.cacheHit()) hits++;
             } else {
                 crops.add(new AutoCropService.CropResult(
-                        com.zenika.thezaurus.visuals.crop.CropGeometry.Crop.centered(),
+                        photo == null
+                                ? com.zenika.thezaurus.visuals.crop.CropGeometry.Crop.centered()
+                                : new com.zenika.thezaurus.visuals.crop.CropGeometry.Crop(1, 0, 1),
                         photo == null ? "placeholder" : "disabled",
                         null,
                         List.of(),
