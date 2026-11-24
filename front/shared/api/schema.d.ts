@@ -841,6 +841,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/profile/calendar-locale": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Calendar Locale */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CalendarLocalePreference"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Authorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/profile/contributions": {
         parameters: {
             query?: never;
@@ -2371,6 +2430,11 @@ export interface components {
         };
         /** @enum {string} */
         BlogPostStatus: "IDEA" | "DRAFT" | "REVIEW" | "READY_TO_PUBLISH" | "PUBLISHED";
+        /** @enum {string} */
+        CalendarLocale: "fr" | "en";
+        CalendarLocalePreference: {
+            calendarLocale?: components["schemas"]["CalendarLocale"];
+        };
         CityCount: {
             city: string;
             /** Format: int32 */
@@ -2517,6 +2581,7 @@ export interface components {
             notificationPreferences: components["schemas"]["NotificationPreferences"];
             slackAvailable?: boolean;
             office?: components["schemas"]["Office"];
+            calendarLocale: components["schemas"]["CalendarLocale"];
             aiPhotoAllowed?: boolean;
             customPhoto?: boolean;
         };

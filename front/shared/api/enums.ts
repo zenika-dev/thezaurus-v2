@@ -12,6 +12,9 @@
 export const BlogPostStatus = Object.assign(["IDEA", "DRAFT", "REVIEW", "READY_TO_PUBLISH", "PUBLISHED"] as const, { "IDEA": "IDEA", "DRAFT": "DRAFT", "REVIEW": "REVIEW", "READY_TO_PUBLISH": "READY_TO_PUBLISH", "PUBLISHED": "PUBLISHED" } as const);
 export type BlogPostStatus = (typeof BlogPostStatus)[number];
 
+export const CalendarLocale = Object.assign(["fr", "en"] as const, { "fr": "fr", "en": "en" } as const);
+export type CalendarLocale = (typeof CalendarLocale)[number];
+
 export const ConferenceReach = Object.assign(["Locale", "Régionale", "Nationale"] as const, { "Locale": "Locale", "Régionale": "Régionale", "Nationale": "Nationale" } as const);
 export type ConferenceReach = (typeof ConferenceReach)[number];
 

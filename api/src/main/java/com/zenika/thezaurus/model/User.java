@@ -33,6 +33,7 @@ public record User(
         @JsonIgnore Boolean emailNotificationsEnabled,
         @JsonIgnore Boolean slackNotificationsEnabled,
         @JsonIgnore String office,
+        @JsonIgnore CalendarLocale calendarLocale,
         @JsonIgnore Boolean aiPhotoAllowed,
         @JsonIgnore String customPhotoObject,
         @JsonIgnore String googlePhotoUrl) {

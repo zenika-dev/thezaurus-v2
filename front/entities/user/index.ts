@@ -1,4 +1,4 @@
-export type { NotificationPreferences, UserProfile } from "./model";
+export { defaultCalendarLocale, type CalendarLocale, type NotificationPreferences, type UserProfile } from "./model";
 export { adminUserApi, profileApi, userApi } from "./api";
 export { SpeakerChip, type SpeakerChipProps } from "./ui/SpeakerChip";
 export {

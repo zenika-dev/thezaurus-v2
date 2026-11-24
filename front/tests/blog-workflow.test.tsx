@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SessionProvider } from "next-auth/react";
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
+import { render } from "./render-with-calendar";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import dayjs from "dayjs";
@@ -80,7 +81,7 @@ it("permet de vider la date de création préremplie", async () => {
   const { onSubmit } = renderCreate();
   const date = screen.getByRole("group", { name: "Date de création" });
   await user.hover(date);
-  await user.click(within(date).getByRole("button", { name: /clear/i }));
+  await user.click(within(date).getByRole("button", { name: "Effacer la valeur" }));
   await user.type(screen.getByRole("textbox", { name: /Titre/ }), "Idée sans date");
   await user.click(screen.getByRole("button", { name: "Créer le post" }));
   await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ creationDate: "" })));

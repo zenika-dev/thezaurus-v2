@@ -9,7 +9,7 @@ import { ExternalLink } from "lucide-react";
 import { DatePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { DatePickerProvider, FormDialog } from "@/shared/ui";
+import { FormDialog } from "@/shared/ui";
 import { useUnsavedChanges } from "@/shared/lib/useUnsavedChanges";
 import { isValidUrl } from "@/shared/lib";
 import { agencyLabels } from "@/shared/lib/offices";
@@ -81,8 +81,7 @@ export function BlogPostFormDialog({ post, defaultAuthor, defaultOffice, onClose
     }
   });
 
-  return <DatePickerProvider>
-    <FormDialog open onClose={close} maxWidth="md" titleId={titleId}
+  return <FormDialog open onClose={close} maxWidth="md" titleId={titleId}
       title={post ? "Détails de l’article de blog" : "Nouvel article de blog"}
       showCloseButton={!pending} customActions actions={<>
         {post && onDelete && <Button color="error" disabled={pending} onClick={async () => {
@@ -143,6 +142,5 @@ export function BlogPostFormDialog({ post, defaultAuthor, defaultOffice, onClose
           </div>
           {saveError && <Alert severity="error">{saveError}</Alert>}
         </form>
-    </FormDialog>
-  </DatePickerProvider>;
+    </FormDialog>;
 }

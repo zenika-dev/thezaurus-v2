@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
-import { DatePickerProvider, FormDialog } from "@/shared/ui";
+import { FormDialog } from "@/shared/ui";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ConferencePeriod } from "@/entities/conference";
@@ -21,7 +21,6 @@ import Button from "@mui/material/Button";
 import { DatePicker } from "@mui/x-date-pickers";
 import { ExternalLinkIcon, Library } from "lucide-react";
 import dayjs, { type Dayjs } from "dayjs";
-import "dayjs/locale/fr";
 import { useUnsavedChanges } from "@/shared/lib/useUnsavedChanges";
 import { isValidUrl } from "@/shared/lib";
 import {
@@ -34,8 +33,6 @@ import {
 } from "@/entities/conference/schema";
 import { ConferenceReach, ConferenceType } from "@/shared/api";
 import { parseLocation } from "@/entities/conference/location-utils";
-
-dayjs.locale("fr");
 
 const DIALOG_TITLE_ID = "create-conference-dialog-title";
 
@@ -311,7 +308,6 @@ export function CreateConferenceDialog({
   };
 
   return (
-    <DatePickerProvider>
       <FormDialog
         open={open}
         onClose={() => requestClose(handleClose)}
@@ -731,6 +727,5 @@ export function CreateConferenceDialog({
             </div>
           </Box>
       </FormDialog>
-    </DatePickerProvider>
   );
 }

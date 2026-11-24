@@ -6,6 +6,7 @@ import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
+import com.zenika.thezaurus.model.CalendarLocale;
 import com.zenika.thezaurus.model.User;
 import com.zenika.thezaurus.util.SearchSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -71,6 +72,15 @@ public class UserRepository {
                 .collection(COLLECTION_NAME)
                 .document(email)
                 .update(Map.of("office", office))
+                .get();
+    }
+
+    public void updateCalendarLocale(String email, CalendarLocale calendarLocale)
+            throws ExecutionException, InterruptedException {
+        firestore
+                .collection(COLLECTION_NAME)
+                .document(email)
+                .update("calendarLocale", calendarLocale.name())
                 .get();
     }
 

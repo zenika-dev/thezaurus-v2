@@ -7,16 +7,13 @@ import { Box, Button, CircularProgress,
   FormControl, FormHelperText, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
-import "dayjs/locale/fr";
 import { Bot } from "lucide-react";
-import { DatePickerProvider, FormDialog } from "@/shared/ui";
+import { FormDialog } from "@/shared/ui";
 import { TalkStatus } from "@/shared/api";
 import { type TalkData, SpeakerAutocomplete, agencyLabels, formatLabels, languageLabels,
   visibilityLabels, talkStatusConfig } from "@/entities/talk";
 import { legacyFormatLabels } from "@/entities/talk/model";
 import { ConferenceAutocomplete } from "@/entities/conference/ui/ConferenceAutocomplete";
-
-dayjs.locale("fr");
 
 interface TalkFormDialogProps {
   open: boolean;
@@ -64,7 +61,7 @@ export function TalkFormDialog({ open, title, description, value, onChange, onCl
       {errors[field] && <FormHelperText>{errors[field]}</FormHelperText>}
     </FormControl>
   );
-  return <DatePickerProvider>
+  return (
     <FormDialog open={open} onClose={close} maxWidth="md" fullWidth
       titleId={`${id}-title`} title={title} showCloseButton={!pending} customActions
       actions={<>
@@ -132,5 +129,5 @@ export function TalkFormDialog({ open, title, description, value, onChange, onCl
           </>}
         </Box>
     </FormDialog>
-  </DatePickerProvider>;
+  );
 }
