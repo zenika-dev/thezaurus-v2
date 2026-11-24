@@ -55,11 +55,55 @@ public class ProfilePhotoService {
         Photo photo = read(user);
         // Relecture après le stockage distant : un retrait pendant le téléchargement s’applique aussi.
         if (!requireUser(email).allowsAiPhoto()) throw new ForbiddenException();
-        return photo;
+        return prepareForAgent(photo);
+    }
+
+    /** Bound the copy sent to agents; a normalized PNG can be larger than the original upload. */
+    static Photo prepareForAgent(Photo photo) {
+        try {
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(photo.bytes()));
+            if (image == null) throw new BadRequestException("Photo invalide.");
+            int longest = Math.max(image.getWidth(), image.getHeight());
+            if (longest <= 1536) return photo;
+            double scale = 1536.0 / longest;
+            BufferedImage resized = new BufferedImage(
+                    Math.max(1, (int) Math.round(image.getWidth() * scale)),
+                    Math.max(1, (int) Math.round(image.getHeight() * scale)),
+                    "image/jpeg".equals(photo.contentType())
+                            ? BufferedImage.TYPE_INT_RGB
+                            : BufferedImage.TYPE_INT_ARGB);
+            var graphics = resized.createGraphics();
+            try {
+                graphics.setRenderingHint(
+                        java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                graphics.drawImage(image, 0, 0, resized.getWidth(), resized.getHeight(), null);
+            } finally {
+                graphics.dispose();
+            }
+            return encode(resized, "image/jpeg".equals(photo.contentType()));
+        } catch (IOException e) {
+            throw new BadRequestException("Photo invalide.", e);
+        }
     }
 
     public Photo read(User user) {
-        if (user.hasCustomPhoto()) return new Photo(storage.read(user.customPhotoObject()), "image/png");
+        if (user.hasCustomPhoto()) {
+            byte[] bytes = storage.read(user.customPhotoObject());
+            // Detect the stored format, including historical PNGs without an extension.
+            try (var stream = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
+                var readers = ImageIO.getImageReaders(stream);
+                if (!readers.hasNext()) throw new BadRequestException("Photo invalide.");
+                var reader = readers.next();
+                try {
+                    return new Photo(
+                            bytes, "JPEG".equalsIgnoreCase(reader.getFormatName()) ? "image/jpeg" : "image/png");
+                } finally {
+                    reader.dispose();
+                }
+            } catch (IOException e) {
+                throw new BadRequestException("Photo invalide.", e);
+            }
+        }
         if (user.googlePhotoUrl() == null || user.googlePhotoUrl().isBlank()) throw new NotFoundException();
         URI uri = trustedGooglePhoto(user.googlePhotoUrl());
         try {
@@ -146,7 +190,7 @@ public class ProfilePhotoService {
         }
     }
 
-    /** Décode réellement les fichiers ; réencode en PNG sans métadonnées ni recadrage. */
+    /** Réencode les pixels seuls : JPEG pour les JPEG, PNG pour préserver la transparence des autres formats. */
     static Photo normalize(byte[] bytes) {
         if (bytes.length > MAX_BYTES) throw new WebApplicationException("La photo dépasse 5 Mo.", 413);
         try (var stream = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
@@ -161,14 +205,32 @@ public class ProfilePhotoService {
                 if (width <= 0 || height <= 0 || (long) width * height > 20_000_000)
                     throw new BadRequestException("Photo trop grande : maximum 20 mégapixels.");
                 BufferedImage image = reader.read(0);
-                ByteArrayOutputStream output = new ByteArrayOutputStream();
-                ImageIO.write(image, "png", output);
-                return new Photo(output.toByteArray(), "image/png");
+                return encode(image, "JPEG".equalsIgnoreCase(reader.getFormatName()));
             } finally {
                 reader.dispose();
             }
         } catch (IOException | IllegalArgumentException e) {
             throw new BadRequestException("Photo invalide.", e);
         }
+    }
+
+    private static Photo encode(BufferedImage image, boolean jpeg) throws IOException {
+        var output = new ByteArrayOutputStream();
+        if (!jpeg) {
+            ImageIO.write(image, "png", output);
+            return new Photo(output.toByteArray(), "image/png");
+        }
+        var writer = ImageIO.getImageWritersByFormatName("jpeg").next();
+        try (var stream = ImageIO.createImageOutputStream(output)) {
+            writer.setOutput(stream);
+            var parameters = writer.getDefaultWriteParam();
+            parameters.setCompressionMode(javax.imageio.ImageWriteParam.MODE_EXPLICIT);
+            parameters.setCompressionQuality(0.9f);
+            // No source metadata is passed to the writer (EXIF, GPS, comments, etc.).
+            writer.write(null, new javax.imageio.IIOImage(image, null, null), parameters);
+        } finally {
+            writer.dispose();
+        }
+        return new Photo(output.toByteArray(), "image/jpeg");
     }
 }

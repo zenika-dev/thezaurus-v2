@@ -23,6 +23,7 @@ import dynamic from "next/dynamic";
 import { useTalks } from "@/features/talks/model";
 import { usePaginationUrlParams } from "@/shared/lib";
 import { StatusTag, VisibilityTag } from "./TalkTags";
+import { TalkVisualButton } from "./TalkVisualButton";
 
 const TalkDetailsDialog = dynamic(
   () => import("./TalkDetailsDialog").then((m) => ({ default: m.TalkDetailsDialog })),
@@ -105,6 +106,9 @@ export function TalkTable() {
                     <dd className="m-0 wrap-anywhere">{talk.conference?.name || "—"}</dd>
                   </div>
                 </dl>
+                <div className="flex justify-end mt-3">
+                  <TalkVisualButton talk={talk} iconOnly />
+                </div>
               </Surface>
             ))}
           </ul>
@@ -170,6 +174,7 @@ export function TalkTable() {
                   <TableCell><StatusTag status={talk.status} /></TableCell>
                   <TableCell align="center"><VisibilityTag visibility={talk.visibility} /></TableCell>
                   <TableCell align="center">
+                    <TalkVisualButton talk={talk} iconOnly />
                     <CopyDetailLinkButton path="/talks" parameter="talk" id={talk.id} iconOnly label={`Copier le lien vers le talk : ${talk.title}`} />
                     {(talk.status === "ACCEPTED" || talk.status === "DONE") && (
                       <Link

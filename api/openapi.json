@@ -816,7 +816,8 @@
           "200" : {
             "description" : "OK",
             "content" : {
-              "image/png" : { }
+              "image/png" : { },
+              "image/jpeg" : { }
             }
           },
           "401" : {
@@ -1032,6 +1033,49 @@
         "tags" : [ "Blog Post Resource" ],
         "security" : [ {
           "SecurityScheme" : [ "ADMIN" ]
+        } ]
+      }
+    },
+    "/blog-posts/{id}/visual" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Visuel PNG",
+            "content" : {
+              "image/png" : { }
+            }
+          },
+          "400" : {
+            "description" : "Auteurs invalides"
+          },
+          "404" : {
+            "description" : "Article introuvable"
+          },
+          "502" : {
+            "description" : "Échec ou indisponibilité de l’agent visuel"
+          },
+          "503" : {
+            "description" : "Agent non configuré ou stockage indisponible"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "summary" : "Visual",
+        "tags" : [ "Blog Post Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN", "DT", "CONSULTANT" ]
         } ]
       }
     },
@@ -1695,6 +1739,49 @@
         "tags" : [ "Talk Resource" ],
         "security" : [ {
           "SecurityScheme" : [ "ADMIN" ]
+        } ]
+      }
+    },
+    "/talks/{id}/visual" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Visuel PNG",
+            "content" : {
+              "image/png" : { }
+            }
+          },
+          "400" : {
+            "description" : "Participants ou conférence invalides"
+          },
+          "404" : {
+            "description" : "Contenu ou profil introuvable"
+          },
+          "502" : {
+            "description" : "Échec ou indisponibilité de l’agent visuel"
+          },
+          "503" : {
+            "description" : "Agent non configuré ou stockage indisponible"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "summary" : "Visual",
+        "tags" : [ "Talk Resource" ],
+        "security" : [ {
+          "SecurityScheme" : [ "ADMIN", "DT", "CONSULTANT" ]
         } ]
       }
     }

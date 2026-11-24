@@ -1,6 +1,6 @@
 name: CI
 
-# Tests des trois services (l'aperçu des versions d'une PR est dans release-preview.yml).
+# Tests des services (l'aperçu des versions d'une PR est dans release-preview.yml).
 # release.yml appelle ce workflow (workflow_call) : les tests conditionnent la release
 # et le déploiement, et ne tournent pas deux fois par commit.
 on:
@@ -11,8 +11,12 @@ on:
         description: "Tester l'API et le front"
         type: boolean
         default: true
+      visuals:
+        description: "Tester l’agent visuels"
+        type: boolean
+        default: true
       agent:
-        description: "Tester l'agent (talks-agent)"
+        description: "Tester les agents"
         type: boolean
         default: true
   workflow_dispatch:
@@ -21,8 +25,12 @@ on:
         description: "API et front"
         type: boolean
         default: true
+      visuals:
+        description: "Tester l’agent visuels"
+        type: boolean
+        default: true
       agent:
-        description: "Agent (talks-agent)"
+        description: "Agents"
         type: boolean
         default: true
 
@@ -36,6 +44,42 @@ permissions:
   contents: read
 
 jobs:
+  deployment:
+    name: Contrat de déploiement Cloud Run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Vérifier le rendu et le câblage de la release
+        run: |
+          python3 -m venv /tmp/deployment-tests
+          /tmp/deployment-tests/bin/pip install --disable-pip-version-check PyYAML==6.0.3
+          /tmp/deployment-tests/bin/python -m unittest discover -s .github/tests -v
+
+  visuals-agent:
+    name: Agent visuels (Quarkus)
+    if: ${{ github.event_name == 'pull_request' || inputs.visuals }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: agents/visuals-agent
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup JDK 21
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+          cache-dependency-path: agents/visuals-agent/pom.xml
+      - name: Build et tests sans appel IA
+        run: ./mvnw -B -ntp verify
+
   # Sur une PR, pas d'inputs : tout est testé.
   api:
     name: API (Quarkus)

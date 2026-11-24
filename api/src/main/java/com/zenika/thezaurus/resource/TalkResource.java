@@ -9,7 +9,9 @@ import com.zenika.thezaurus.model.TalkReviewResponse;
 import com.zenika.thezaurus.model.TalkStatus;
 import com.zenika.thezaurus.service.TalkReviewService;
 import com.zenika.thezaurus.service.TalkService;
+import com.zenika.thezaurus.service.TalkVisualService;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -28,6 +30,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.jboss.resteasy.reactive.RestResponse;
 
 @Path("/talks")
@@ -44,6 +48,27 @@ public class TalkResource {
 
     @Inject
     SecurityIdentity identity;
+
+    @Inject
+    TalkVisualService visuals;
+
+    @POST
+    @Path("/{id}/visual")
+    @Produces("image/png")
+    @RunOnVirtualThread
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "Visuel PNG"),
+        @APIResponse(responseCode = "400", description = "Participants ou conférence invalides"),
+        @APIResponse(responseCode = "404", description = "Contenu ou profil introuvable"),
+        @APIResponse(responseCode = "502", description = "Échec ou indisponibilité de l’agent visuel"),
+        @APIResponse(responseCode = "503", description = "Agent non configuré ou stockage indisponible")
+    })
+    public Response visual(@PathParam("id") String id) throws ExecutionException, InterruptedException {
+        return Response.ok(visuals.generate(id), "image/png")
+                .header("Content-Disposition", "attachment; filename=\"talk-visual.png\"")
+                .header("Cache-Control", "no-store")
+                .build();
+    }
 
     @GET
     public PagedResult<Talk> list(

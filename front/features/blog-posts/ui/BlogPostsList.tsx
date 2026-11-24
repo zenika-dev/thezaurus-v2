@@ -15,6 +15,7 @@ import { usePosts } from "@/features/blog-posts/model";
 import { usePaginationUrlParams } from "@/shared/lib";
 import { StatusTag } from "./BlogPostTags";
 import { BlogPostWorkflowHelp } from "./BlogPostWorkflowHelp";
+import { BlogPostVisualButton } from "./BlogPostVisualButton";
 
 const BlogPostDetailsDialog = dynamic(
   () => import("./BlogPostDetailsDialog").then((m) => ({ default: m.BlogPostDetailsDialog })),
@@ -67,6 +68,7 @@ export function BlogPostsList() {
               <Link href={detail.href(post.id)} scroll={false} className="font-bold text-text text-left bg-transparent border-0 p-0 cursor-pointer wrap-anywhere">{post.title}</Link>
               <div className="shrink-0 flex items-center gap-1">
                 <StatusTag status={post.status} />
+                <BlogPostVisualButton post={post} iconOnly />
                 <CopyDetailLinkButton path="/blog-posts" parameter="post" id={post.id} iconOnly label={`Copier le lien vers l’article : ${post.title}`} />
               </div>
             </div>

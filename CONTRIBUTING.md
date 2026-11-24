@@ -50,7 +50,7 @@ Le **titre de la PR** doit respecter la convention : il est vérifié par le wor
 La release n'est pas automatique au merge : elle est lancée **manuellement, après décision de l'équipe**.
 
 1. Onglet **Actions** → workflow **Release** → **Run workflow** sur `main`.
-2. Cocher les services à livrer (**API et front**, **Agent**).
+2. Cocher les services à livrer : **API et front** (`api_front`), **Service indépendant de génération de visuels** (`visuals`) et **Agent (talks-agent)** (`agent`).
 3. Le workflow :
    - lance les tests ;
    - crée pour chaque service ayant des commits `feat`/`fix`/`perf` une release GitHub, un tag et une entrée dans son `CHANGELOG.md` ;

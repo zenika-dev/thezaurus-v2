@@ -1,0 +1,10 @@
+target/
+.git/
+.env
+.env.*
+*.json
+!src/**/*.json
+scripts/
+tools/
+.idea/
+.vscode/

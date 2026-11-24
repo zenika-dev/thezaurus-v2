@@ -27,6 +27,34 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ProfilePhotoServiceTest {
+    @Test
+    void agentPhotoFitsImageLimitEvenWhenStoredPngExpandedBeyondUploadLimit() throws Exception {
+        BufferedImage large = new BufferedImage(2400, 1800, BufferedImage.TYPE_INT_RGB);
+        var random = new java.util.Random(42);
+        for (int y = 0; y < large.getHeight(); y++) {
+            for (int x = 0; x < large.getWidth(); x++) large.setRGB(x, y, random.nextInt(0x1000000));
+        }
+        var output = new ByteArrayOutputStream();
+        ImageIO.write(large, "png", output);
+        byte[] original = output.toByteArray();
+        assertTrue(original.length > 10 * 1024 * 1024);
+        var user = User.builder()
+                .email("photo@zenika.com")
+                .aiPhotoAllowed(true)
+                .customPhotoObject("large-photo")
+                .build();
+        when(users.findByEmail(user.email())).thenReturn(user);
+        when(storage.read("large-photo")).thenReturn(original);
+
+        var photo = service.getForAgent(user.email());
+
+        assertTrue(photo.bytes().length < 10 * 1024 * 1024);
+        var resized = ImageIO.read(new ByteArrayInputStream(photo.bytes()));
+        assertEquals(1536, resized.getWidth());
+        assertEquals(1152, resized.getHeight());
+        verify(storage, never()).save(any(), any());
+    }
+
     @SuppressWarnings("unchecked")
     private HttpResponse<InputStream> googleResponse(int status, String location, byte[] bytes) {
         HttpResponse<InputStream> response = mock(HttpResponse.class);
@@ -151,11 +179,64 @@ class ProfilePhotoServiceTest {
             var decoded = ImageIO.read(new ByteArrayInputStream(photo.bytes()));
             assertEquals(3, decoded.getWidth());
             assertEquals(2, decoded.getHeight());
-            assertEquals("image/png", photo.contentType());
+            assertEquals(format.equals("jpeg") ? "image/jpeg" : "image/png", photo.contentType());
         }
         byte[] webp = Base64.getDecoder().decode("UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA");
         assertNotNull(ImageIO.read(
                 new ByteArrayInputStream(ProfilePhotoService.normalize(webp).bytes())));
+    }
+
+    @Test
+    void jpegKeepsItsFormatButDropsSourceMetadataThroughUploadAndRead() throws Exception {
+        byte[] jpeg = image("jpeg");
+        byte[] marker = "private EXIF GPS comment".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        var input = new ByteArrayOutputStream();
+        input.write(jpeg, 0, 2);
+        input.write(new byte[] {(byte) 0xff, (byte) 0xfe, 0, (byte) (marker.length + 2)});
+        input.write(marker);
+        input.write(jpeg, 2, jpeg.length - 2);
+        when(storage.save(any(), eq("image/jpeg"))).thenReturn("jpeg-photo");
+
+        service.upload(user, new ByteArrayInputStream(input.toByteArray()));
+
+        var bytes = org.mockito.ArgumentCaptor.forClass(byte[].class);
+        verify(storage).save(bytes.capture(), eq("image/jpeg"));
+        assertEquals(0xff, bytes.getValue()[0] & 0xff);
+        assertEquals(0xd8, bytes.getValue()[1] & 0xff);
+        assertFalse(new String(bytes.getValue(), java.nio.charset.StandardCharsets.ISO_8859_1)
+                .contains("private EXIF GPS comment"));
+        when(storage.read("jpeg-photo")).thenReturn(bytes.getValue());
+        assertEquals(
+                "image/jpeg",
+                service.read(user.toBuilder().customPhotoObject("jpeg-photo").build())
+                        .contentType());
+    }
+
+    @Test
+    void transparentPngPreservesAlphaAndPixels() throws Exception {
+        var image = new BufferedImage(3, 2, BufferedImage.TYPE_INT_ARGB);
+        image.setRGB(0, 0, 0x4080ff20);
+        var output = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", output);
+        var photo = ProfilePhotoService.normalize(output.toByteArray());
+        assertEquals("image/png", photo.contentType());
+        assertEquals(
+                0x4080ff20,
+                ImageIO.read(new ByteArrayInputStream(photo.bytes())).getRGB(0, 0));
+        assertEquals(0, ImageIO.read(new ByteArrayInputStream(photo.bytes())).getRGB(1, 0) >>> 24);
+    }
+
+    @Test
+    void resizedAgentCopyKeepsJpegFormat() throws Exception {
+        var output = new ByteArrayOutputStream();
+        ImageIO.write(new BufferedImage(2000, 1000, BufferedImage.TYPE_INT_RGB), "jpeg", output);
+        var photo =
+                ProfilePhotoService.prepareForAgent(new ProfilePhotoService.Photo(output.toByteArray(), "image/jpeg"));
+        assertEquals("image/jpeg", photo.contentType());
+        assertEquals(0xff, photo.bytes()[0] & 0xff);
+        var decoded = ImageIO.read(new ByteArrayInputStream(photo.bytes()));
+        assertEquals(1536, decoded.getWidth());
+        assertEquals(768, decoded.getHeight());
     }
 
     @Test

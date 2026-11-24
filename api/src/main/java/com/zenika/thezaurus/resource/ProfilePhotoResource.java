@@ -18,7 +18,7 @@ public class ProfilePhotoResource {
     ProfilePhotoService photos;
 
     @GET
-    @Produces("image/png")
+    @Produces({"image/png", "image/jpeg"})
     public Response read(@PathParam("email") String email) throws ExecutionException, InterruptedException {
         var photo = photos.read(photos.requireUser(email));
         return Response.ok(photo.bytes(), photo.contentType())
