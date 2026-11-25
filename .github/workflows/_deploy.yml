@@ -58,7 +58,9 @@ jobs:
           fi
           KEYS="GCP_PROJECT_ID GCP_REGION SERVICE_NAME WIF_PROVIDER WIF_SERVICE_ACCOUNT
                 RUNTIME_SERVICE_ACCOUNT NEXTAUTH_URL GOOGLE_CLIENT_ID FIRESTORE_DATABASE_ID
-                FIRESTORE_COLLECTION_PREFIX PROFILE_PHOTOS_BUCKET SECRET_PREFIX"
+                FIRESTORE_COLLECTION_PREFIX PROFILE_PHOTOS_BUCKET SECRET_PREFIX
+                SCHEDULER_SERVICE_ACCOUNT FEEDBACK_REMINDER_AUDIENCE FEEDBACK_REMINDER_ENABLED
+                MAILGUN_DOMAIN MAILGUN_BASE_URL SMTP_FROM"
           MISSING=0
           for key in $KEYS; do
             value=$(grep -E "^${key}=" "$CONFIG" | tail -n 1 | cut -d= -f2-)
@@ -95,7 +97,9 @@ jobs:
           envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE}
                     ${GCP_PROJECT_ID} ${RUNTIME_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
                     ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${PROFILE_PHOTOS_BUCKET}
-                    ${SECRET_PREFIX}' \
+                    ${SECRET_PREFIX} ${SCHEDULER_SERVICE_ACCOUNT} ${FEEDBACK_REMINDER_AUDIENCE}
+                    ${MAILGUN_DOMAIN} ${MAILGUN_BASE_URL} ${SMTP_FROM}
+                    ${FEEDBACK_REMINDER_ENABLED}' \
             > service.rendered.yaml <<'MANIFEST'
           apiVersion: serving.knative.dev/v1
           kind: Service
@@ -171,6 +175,28 @@ jobs:
                         value: "${PROFILE_PHOTOS_BUCKET}"
                       - name: GOOGLE_CLIENT_ID
                         value: "${GOOGLE_CLIENT_ID}"
+                      # URL publique de l'appli : liens absolus des emails ({{talksUrl}})
+                      - name: THEZAURUS_PUBLIC_URL
+                        value: "${NEXTAUTH_URL}"
+                      - name: FEEDBACK_REMINDER_ENABLED
+                        value: "${FEEDBACK_REMINDER_ENABLED}"
+                      - name: FEEDBACK_REMINDER_AUDIENCE
+                        value: "${FEEDBACK_REMINDER_AUDIENCE}"
+                      # Seul compte autorisé à déclencher les rappels post-talk (Cloud Scheduler)
+                      - name: FEEDBACK_REMINDER_INVOKER
+                        value: "${SCHEDULER_SERVICE_ACCOUNT}"
+                      # Envoi des emails de rappel post-talk via l'API HTTP Mailgun (région EU)
+                      - name: SMTP_FROM
+                        value: "${SMTP_FROM}"
+                      - name: MAILGUN_DOMAIN
+                        value: "${MAILGUN_DOMAIN}"
+                      - name: MAILGUN_BASE_URL
+                        value: "${MAILGUN_BASE_URL}"
+                      - name: MAILGUN_SENDING_KEY
+                        valueFrom:
+                          secretKeyRef:
+                            name: thezaurus-mailgun-sending-key
+                            key: latest
                       - name: SLACK_BOT_TOKEN
                         valueFrom:
                           secretKeyRef:

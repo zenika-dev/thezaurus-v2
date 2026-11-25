@@ -8,13 +8,11 @@ import com.zenika.thezaurus.repository.ReminderTemplateRepository;
 import com.zenika.thezaurus.repository.TalkRepository;
 import com.zenika.thezaurus.repository.UserRepository;
 import io.quarkus.mailer.MockMailbox;
-import io.quarkus.scheduler.Scheduler;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -26,22 +24,12 @@ class TalkFeedbackReminderDeliveryTest {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "thezaurus.feedback-reminder.enabled",
-                    "true",
-                    "quarkus.mailer.from",
-                    "thezaurus@example.com",
-                    "quarkus.scheduler.enabled",
-                    "true",
-                    "thezaurus.feedback-reminder.cron",
-                    "0 0 9 1 1 ? 2099");
+                    "thezaurus.feedback-reminder.enabled", "true", "quarkus.mailer.from", "thezaurus@example.com");
         }
     }
 
     @Inject
     TalkFeedbackReminderService service;
-
-    @Inject
-    Scheduler scheduler;
 
     @Inject
     MockMailbox mailbox;
@@ -54,13 +42,6 @@ class TalkFeedbackReminderDeliveryTest {
 
     @InjectMock
     UserRepository users;
-
-    @Test
-    void registersTheConfiguredScheduleInTheParisTimeZone() {
-        var trigger = scheduler.getScheduledJob("talk-feedback-reminder");
-        assertNotNull(trigger);
-        assertEquals(Instant.parse("2099-01-01T08:00:00Z"), trigger.getNextFireTime());
-    }
 
     @Test
     void deliversWithTheConfiguredSenderUsingTheRealQuarkusMailer() throws Exception {
