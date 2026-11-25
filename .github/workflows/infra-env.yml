@@ -140,7 +140,9 @@ jobs:
           esac
           terraform show -no-color tfplan > plan.txt
           # Contexte du plan, vérifié par le run apply
-          printf 'TARGET_ENV=%s\nCOMMIT=%s\nACTION=%s\n' "$TARGET_ENV" "$GITHUB_SHA" "$ACTION" > plan-meta.txt
+          # INFRA_TREE : empreinte du dossier infra/ (change dès qu'un fichier Terraform change)
+          printf 'TARGET_ENV=%s\nINFRA_TREE=%s\nCOMMIT=%s\nACTION=%s\n' \
+            "$TARGET_ENV" "$(git rev-parse HEAD:infra)" "$GITHUB_SHA" "$ACTION" > plan-meta.txt
 
       # Plan complet dans le résumé du run : c'est ce que l'on relit avant de lancer l'apply.
       - name: Résumé du plan
@@ -213,20 +215,22 @@ jobs:
           github-token: ${{ github.token }}
           path: infra/envs/${{ inputs.environment == 'production' && 'prod' || inputs.environment }}
 
-      # Le plan doit viser le même env et avoir été calculé sur ce commit de main :
-      # si main a bougé depuis, le code n'est plus celui qui a été relu → refaire un plan.
+      # Le plan doit viser le même env et avoir été calculé sur le même code Terraform :
+      # si infra/ a changé depuis, le code n'est plus celui qui a été relu → refaire un plan.
+      # (Un commit qui ne touche pas infra/ n'invalide pas le plan.)
       - name: Vérifier le plan
         env:
           TARGET_ENV: ${{ inputs.environment }}
         run: |
           PLAN_ENV=$(grep '^TARGET_ENV=' plan-meta.txt | cut -d= -f2)
-          PLAN_COMMIT=$(grep '^COMMIT=' plan-meta.txt | cut -d= -f2)
+          PLAN_TREE=$(grep '^INFRA_TREE=' plan-meta.txt | cut -d= -f2)
+          CURRENT_TREE=$(git rev-parse HEAD:infra)
           if [ "$PLAN_ENV" != "$TARGET_ENV" ]; then
             echo "::error::Ce plan vise '${PLAN_ENV}', pas '${TARGET_ENV}'"
             exit 1
           fi
-          if [ "$PLAN_COMMIT" != "$GITHUB_SHA" ]; then
-            echo "::error::main a changé depuis le plan (${PLAN_COMMIT:0:7} → ${GITHUB_SHA:0:7}) : relancer un plan"
+          if [ "$PLAN_TREE" != "$CURRENT_TREE" ]; then
+            echo "::error::Le code infra/ a changé depuis le plan : relancer un plan"
             exit 1
           fi
 
