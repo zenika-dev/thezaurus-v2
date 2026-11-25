@@ -32,7 +32,7 @@ concurrency:
 jobs:
   # Refuse la production hors de main, avant tout test ou publication.
   guard:
-    name: Garde-fous
+    name: Vérifier la branche (prod = main)
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
