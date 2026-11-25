@@ -22,7 +22,6 @@ jobs:
       id-token: write
     env:
       VERSION: ${{ inputs.version }}
-      IMAGE: ${{ vars.GCP_REGISTRY }}/front
     outputs:
       image: ${{ steps.digest.outputs.image }}
     steps:
@@ -30,11 +29,21 @@ jobs:
         with:
           persist-credentials: false
 
+      # Registry et identité CI communs à tous les envs : .github/envs/common.env
+      - name: Charger la configuration
+        uses: ./.github/actions/load-env
+        with:
+          files: .github/envs/common.env
+          keys: GCP_REGION GCP_REGISTRY WIF_PROVIDER WIF_SERVICE_ACCOUNT
+
+      - name: Nom de l'image
+        run: echo "IMAGE=${GCP_REGISTRY}/front" >> "$GITHUB_ENV"
+
       - uses: ./.github/actions/gcp-docker-login
         with:
-          region: ${{ vars.GCP_REGION }}
-          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+          region: ${{ env.GCP_REGION }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 

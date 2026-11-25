@@ -29,41 +29,29 @@ jobs:
       run:
         # pyproject.toml, le manifeste et le Dockerfile sont lus depuis ce dossier
         working-directory: agents/talks-agent
-    env:
-      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-      AGENT_ENGINE_REGION: ${{ vars.GCP_REGION }}
-      AGENT_ENGINE_ID: ${{ vars.AGENT_ENGINE_ID }}
     steps:
-      - name: Vérifier la configuration de l'environnement
-        working-directory: .
-        env:
-          REQUIRED: >-
-            GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
-            AGENT_ENGINE_REGION=${{ vars.GCP_REGION }}
-            AGENT_ENGINE_ID=${{ vars.AGENT_ENGINE_ID }}
-            WIF_PROVIDER=${{ vars.WIF_PROVIDER }}
-            WIF_AGENT_SERVICE_ACCOUNT=${{ vars.WIF_AGENT_SERVICE_ACCOUNT }}
-        run: |
-          MISSING=0
-          for pair in $REQUIRED; do
-            if [ -z "${pair#*=}" ]; then
-              echo "::error::Variable '${pair%%=*}' manquante dans l'environnement production"
-              MISSING=1
-            fi
-          done
-          exit $MISSING
-
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      # Projet, région, instance et identité CI de l'agent : .github/envs/common.env
+      - name: Charger la configuration
+        uses: ./.github/actions/load-env
+        with:
+          files: .github/envs/common.env
+          keys: GCP_PROJECT_ID GCP_REGION AGENT_ENGINE_ID WIF_PROVIDER WIF_AGENT_SERVICE_ACCOUNT
+
+      # L'agent est déployé dans la région commune
+      - name: Région de l'agent
+        run: echo "AGENT_ENGINE_REGION=${GCP_REGION}" >> "$GITHUB_ENV"
 
       - name: Installer uv
         uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
 
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
-          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.WIF_AGENT_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.WIF_AGENT_SERVICE_ACCOUNT }}
 
       - name: Installer le Cloud SDK
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1

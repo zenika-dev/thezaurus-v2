@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: Environnement cible (production, staging) — sa config est lue dans .github/envs/<environment>.env
+        description: Environnement cible (production, staging) — config lue dans .github/envs/common.env puis <environment>.env
         required: true
         type: string
       version:
@@ -25,8 +25,8 @@ jobs:
     name: Cloud Run (${{ inputs.environment }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # L'environnement GitHub ne sert qu'à l'historique des déploiements : la config vient du fichier
-    # .github/envs/<environment>.env. L'URL est celle renvoyée par le step de déploiement.
+    # L'environnement GitHub ne sert qu'à l'historique des déploiements : la config vient des fichiers
+    # .github/envs/common.env et <environment>.env. L'URL est celle renvoyée par le step de déploiement.
     environment:
       name: ${{ inputs.environment }}
       url: ${{ steps.deploy.outputs.url }}
@@ -41,37 +41,25 @@ jobs:
     env:
       TARGET_ENV: ${{ inputs.environment }}
     steps:
-      # Seul le dossier de config est nécessaire : pas besoin du code source.
+      # Seuls la config et l'action de chargement sont nécessaires : pas besoin du code source.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: .github/envs
+          sparse-checkout: |
+            .github/envs
+            .github/actions/load-env
           persist-credentials: false
 
-      # Charge la config de l'env dans $GITHUB_ENV. Liste blanche de clés : une clé inconnue est ignorée,
-      # une clé absente ou vide fait échouer le job avant tout déploiement.
+      # common.env puis <environment>.env (le second l'emporte en cas de doublon).
       - name: Charger la configuration de l'environnement
-        run: |
-          CONFIG=".github/envs/${TARGET_ENV}.env"
-          if ! [[ "$TARGET_ENV" =~ ^[a-z0-9-]+$ ]] || [ ! -f "$CONFIG" ]; then
-            echo "::error::Configuration introuvable : ${CONFIG}"
-            exit 1
-          fi
-          KEYS="GCP_PROJECT_ID GCP_REGION SERVICE_NAME WIF_PROVIDER WIF_SERVICE_ACCOUNT
-                RUNTIME_SERVICE_ACCOUNT NEXTAUTH_URL GOOGLE_CLIENT_ID FIRESTORE_DATABASE_ID
-                FIRESTORE_COLLECTION_PREFIX PROFILE_PHOTOS_BUCKET SECRET_PREFIX
-                SCHEDULER_SERVICE_ACCOUNT FEEDBACK_REMINDER_AUDIENCE FEEDBACK_REMINDER_ENABLED
-                MAILGUN_DOMAIN MAILGUN_BASE_URL SMTP_FROM"
-          MISSING=0
-          for key in $KEYS; do
-            value=$(grep -E "^${key}=" "$CONFIG" | tail -n 1 | cut -d= -f2-)
-            if [ -z "$value" ]; then
-              echo "::error::'${key}' manquant ou vide dans ${CONFIG}"
-              MISSING=1
-              continue
-            fi
-            echo "${key}=${value}" >> "$GITHUB_ENV"
-          done
-          exit $MISSING
+        uses: ./.github/actions/load-env
+        with:
+          files: .github/envs/common.env .github/envs/${{ inputs.environment }}.env
+          keys: >-
+            GCP_PROJECT_ID GCP_REGION SERVICE_NAME WIF_PROVIDER WIF_SERVICE_ACCOUNT
+            RUNTIME_SERVICE_ACCOUNT NEXTAUTH_URL GOOGLE_CLIENT_ID FIRESTORE_DATABASE_ID
+            FIRESTORE_COLLECTION_PREFIX PROFILE_PHOTOS_BUCKET SECRET_PREFIX
+            SCHEDULER_SERVICE_ACCOUNT FEEDBACK_REMINDER_AUDIENCE FEEDBACK_REMINDER_ENABLED
+            MAILGUN_DOMAIN MAILGUN_BASE_URL SMTP_FROM
 
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:

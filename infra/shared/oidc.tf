@@ -41,14 +41,18 @@ resource "google_iam_workload_identity_pool_provider" "github" {
 
 locals {
   # Seul le workflow infra-env.yml, sur main, peut obtenir un token de ce pool.
-  tf_admin_workflow_ref = "${var.github_repository}/.github/workflows/infra-env.yml@refs/heads/main"
+  tf_admin_workflow_refs = [
+    "${var.github_repository}/.github/workflows/infra-env.yml@refs/heads/main",
+    # TEMPORAIRE — test avant merge : à retirer (puis terraform apply) une fois le test fait
+    "${var.github_repository}/.github/workflows/infra-env.yml@refs/heads/feat/iac-terraform",
+  ]
 
   # Toutes les conditions doivent être vraies, sinon l'échange de token est refusé.
   tf_admin_conditions = [
     "assertion.repository == '${var.github_repository}'",
     # IDs numériques GitHub des personnes autorisées (gh api users/<login> --jq .id)
     "assertion.actor_id in ${jsonencode(var.tf_admin_actor_ids)}",
-    "assertion.job_workflow_ref == '${local.tf_admin_workflow_ref}'",
+    "assertion.job_workflow_ref in ${jsonencode(local.tf_admin_workflow_refs)}",
     # Un re-run garde l'actor d'origine : on n'accepte que la première tentative.
     "assertion.run_attempt == '1'",
   ]

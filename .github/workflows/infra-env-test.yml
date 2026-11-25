@@ -1,0 +1,25 @@
+# TEMPORAIRE — test de infra-env.yml avant merge. À SUPPRIMER une fois le test fait.
+# workflow_dispatch n'est possible que pour un workflow présent sur main : ce fichier
+# lance infra-env.yml (plan staging, sans rien modifier) à chaque push qui le touche.
+name: Infra Env (test avant merge)
+
+on:
+  push:
+    branches: [feat/iac-terraform]
+    paths:
+      - .github/workflows/infra-env.yml
+      - .github/workflows/infra-env-test.yml
+
+permissions:
+  contents: read
+
+jobs:
+  plan-staging:
+    uses: ./.github/workflows/infra-env.yml
+    permissions:
+      contents: read
+      id-token: write
+      actions: read
+    with:
+      environment: staging
+      action: plan

@@ -1,4 +1,6 @@
 name: Release
+# Titre de chaque run dans la liste Actions : "Release → staging (feat/x)" / "Release → production (main)"
+run-name: Release → ${{ inputs.environment }} (${{ github.ref_name }})
 
 # Chaîne de livraison : tests → release (tags, releases GitHub) → images / agent → déploiement.
 # Rien n'est publié ni déployé si un test du même commit échoue.
@@ -13,7 +15,7 @@ on:
         type: boolean
         default: true
       agent:
-        description: "Agent (talks-agent, production uniquement)"
+        description: "Agent (talks-agent) — ignoré en staging"
         type: boolean
         default: true
       environment:
@@ -47,13 +49,15 @@ jobs:
           fi
 
   # Tests des services cochés, en parallèle.
+  # L'agent n'a pas d'env staging : en staging il est ignoré (ni test, ni release, ni déploiement),
+  # même si la case est cochée.
   ci:
     needs: [guard]
-    if: ${{ inputs.api_front || inputs.agent }}
+    if: ${{ inputs.api_front || (inputs.agent && inputs.environment == 'production') }}
     uses: ./.github/workflows/ci.yml
     with:
       api_front: ${{ inputs.api_front }}
-      agent: ${{ inputs.agent }}
+      agent: ${{ inputs.agent && inputs.environment == 'production' }}
 
   # Une release par service (tags api-vX.Y.Z / front-vX.Y.Z / agents-vX.Y.Z) sur main,
   # une prerelease (api-vX.Y.Z-<branche>.N) sur les autres branches (cf. .releaserc.json).
@@ -79,7 +83,7 @@ jobs:
         id: services
         env:
           API_FRONT: ${{ inputs.api_front }}
-          AGENT: ${{ inputs.agent }}
+          AGENT: ${{ inputs.agent && inputs.environment == 'production' }}
         run: |
           services=()
           [ "${API_FRONT}" = "true" ] && services+=(api front)

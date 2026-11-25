@@ -1,0 +1,270 @@
+name: Infra Env (terraform)
+# Titre de chaque run : "Infra → plan staging (main)"
+run-name: Infra → ${{ inputs.action }} ${{ inputs.environment }} (${{ github.ref_name }})
+
+# Validation manuelle en deux runs (pas de GitHub Environments disponibles) :
+#   1. action "plan" (ou "plan-destroy") : calcule le plan, l'affiche en entier, le sauvegarde. Rien n'est modifié.
+#   2. relire le plan, puis action "apply" avec plan_run_id = ID du run 1 : applique EXACTEMENT ce plan.
+# Ne pas lancer le run 2 = refuser le plan.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environnement cible"
+        type: choice
+        options: [staging, production]
+        default: staging
+
+      action:
+        description: "plan / plan-destroy : calculer et afficher · apply : appliquer un plan déjà relu"
+        type: choice
+        options: [plan, plan-destroy, apply]
+        default: plan
+
+      plan_run_id:
+        description: "apply uniquement : ID du run plan à appliquer (le nombre dans l'URL …/actions/runs/<ID>)"
+        type: string
+        default: ""
+
+  # Appel par un autre workflow (utilisé par infra-env-test.yml pour tester avant merge)
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        default: staging
+      action:
+        type: string
+        default: plan
+      plan_run_id:
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+# Un seul run Terraform à la fois, jamais annulé en cours (un apply interrompu laisse l'infra à moitié créée).
+concurrency:
+  group: infra
+  cancel-in-progress: false
+
+jobs:
+  # Refuse les demandes invalides avant toute connexion à GCP.
+  guard:
+    name: Vérifier la demande
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Vérifier l'action et la branche
+        env:
+          ACTION: ${{ inputs.action }}
+          TARGET_ENV: ${{ inputs.environment }}
+          REF: ${{ github.ref }}
+          PLAN_RUN_ID: ${{ inputs.plan_run_id }}
+        run: |
+          if [ "${ACTION}" = "plan-destroy" ] && [ "${TARGET_ENV}" = "production" ]; then
+            echo "::error::La production ne doit pas être détruite"
+            exit 1
+          fi
+          # TEMPORAIRE — test avant merge : retirer "feat/iac-terraform" une fois le test fait
+          if [ "${REF}" != "refs/heads/main" ] && [ "${REF}" != "refs/heads/feat/iac-terraform" ]; then
+            echo "::error::Terraform ne s'exécute que depuis main (ref actuelle : ${REF})"
+            exit 1
+          fi
+          if [ "${ACTION}" = "apply" ] && ! [[ "${PLAN_RUN_ID}" =~ ^[0-9]+$ ]]; then
+            echo "::error::apply exige plan_run_id : l'ID numérique du run plan relu"
+            exit 1
+          fi
+
+  # Run 1 : calcule le plan, l'affiche en entier dans le résumé et le sauvegarde (artefact).
+  plan:
+    name: Plan (${{ inputs.environment }})
+    needs: [guard]
+    if: ${{ inputs.action != 'apply' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        # L'input vaut "production" mais le dossier s'appelle "prod"
+        working-directory: infra/envs/${{ inputs.environment == 'production' && 'prod' || inputs.environment }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Identité Terraform (pool WIF github-action-terraform), distincte de celle du déploiement
+      - name: Charger la configuration
+        uses: ./.github/actions/load-env
+        with:
+          files: .github/envs/common.env
+          keys: TF_WIF_PROVIDER TF_SERVICE_ACCOUNT
+
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.TF_WIF_PROVIDER }}
+          service_account: ${{ env.TF_SERVICE_ACCOUNT }}
+
+      # Même version que les postes locaux : une version plus récente pourrait migrer le format du state.
+      # terraform_wrapper: false → sortie brute de terraform (pas de stdout/stderr réinjectés par l'action).
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.1
+          terraform_wrapper: false
+
+      # Le backend GCS est déclaré dans terraform.tf : aucun paramètre à passer.
+      - name: terraform init
+        run: terraform init -input=false
+
+      # -destroy : le plan calcule la suppression de tout ce que contient le state de l'env.
+      # -detailed-exitcode : 0 = aucun changement, 2 = changements, autre = erreur.
+      - name: terraform plan
+        id: plan
+        env:
+          ACTION: ${{ inputs.action }}
+          TARGET_ENV: ${{ inputs.environment }}
+        run: |
+          ARGS=(-input=false -no-color -out=tfplan -detailed-exitcode)
+          if [ "$ACTION" = "plan-destroy" ]; then
+            ARGS+=(-destroy)
+          fi
+          set +e
+          terraform plan "${ARGS[@]}"
+          CODE=$?
+          set -e
+          case $CODE in
+            0) echo "changes=false" >> "$GITHUB_OUTPUT" ;;
+            2) echo "changes=true" >> "$GITHUB_OUTPUT" ;;
+            *) exit $CODE ;;
+          esac
+          terraform show -no-color tfplan > plan.txt
+          # Contexte du plan, vérifié par le run apply
+          printf 'TARGET_ENV=%s\nCOMMIT=%s\nACTION=%s\n' "$TARGET_ENV" "$GITHUB_SHA" "$ACTION" > plan-meta.txt
+
+      # Plan complet dans le résumé du run : c'est ce que l'on relit avant de lancer l'apply.
+      - name: Résumé du plan
+        if: always()
+        env:
+          ACTION: ${{ inputs.action }}
+          TARGET_ENV: ${{ inputs.environment }}
+          CHANGES: ${{ steps.plan.outputs.changes }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          {
+            echo "### ${ACTION} ${TARGET_ENV}"
+            if [ ! -f plan.txt ]; then
+              echo "Aucun plan produit : voir les logs du step terraform plan."
+            elif [ "$CHANGES" = "false" ]; then
+              echo "**Aucun changement** : rien à appliquer."
+            else
+              grep -E '^Plan:' plan.txt || true
+              echo
+              echo "> **Pour appliquer ce plan après relecture** : Run workflow → environment \`${TARGET_ENV}\`,"
+              echo "> action \`apply\`, plan_run_id **\`${RUN_ID}\`**"
+              echo
+              echo '<details open><summary>Plan complet</summary>'
+              echo
+              echo '```'
+              # Le résumé est limité à 1 Mo : le plan intégral reste dans l'artefact
+              head -c 900000 plan.txt
+              echo '```'
+              echo '</details>'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Plan transmis au run apply. Conservé 2 jours : un plan plus ancien est de toute façon périmé.
+      - name: Sauvegarder le plan
+        if: ${{ steps.plan.outputs.changes == 'true' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tfplan-${{ inputs.environment }}
+          path: |
+            infra/envs/${{ inputs.environment == 'production' && 'prod' || inputs.environment }}/tfplan
+            infra/envs/${{ inputs.environment == 'production' && 'prod' || inputs.environment }}/plan.txt
+            infra/envs/${{ inputs.environment == 'production' && 'prod' || inputs.environment }}/plan-meta.txt
+          retention-days: 2
+          if-no-files-found: error
+
+  # Run 2 : applique le plan relu, récupéré depuis le run plan_run_id. Aucun recalcul.
+  apply:
+    name: Apply (${{ inputs.environment }})
+    needs: [guard]
+    if: ${{ inputs.action == 'apply' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+      actions: read # lire l'artefact d'un autre run
+    defaults:
+      run:
+        working-directory: infra/envs/${{ inputs.environment == 'production' && 'prod' || inputs.environment }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Récupérer le plan relu
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: tfplan-${{ inputs.environment }}
+          run-id: ${{ inputs.plan_run_id }}
+          github-token: ${{ github.token }}
+          path: infra/envs/${{ inputs.environment == 'production' && 'prod' || inputs.environment }}
+
+      # Le plan doit viser le même env et avoir été calculé sur ce commit de main :
+      # si main a bougé depuis, le code n'est plus celui qui a été relu → refaire un plan.
+      - name: Vérifier le plan
+        env:
+          TARGET_ENV: ${{ inputs.environment }}
+        run: |
+          PLAN_ENV=$(grep '^TARGET_ENV=' plan-meta.txt | cut -d= -f2)
+          PLAN_COMMIT=$(grep '^COMMIT=' plan-meta.txt | cut -d= -f2)
+          if [ "$PLAN_ENV" != "$TARGET_ENV" ]; then
+            echo "::error::Ce plan vise '${PLAN_ENV}', pas '${TARGET_ENV}'"
+            exit 1
+          fi
+          if [ "$PLAN_COMMIT" != "$GITHUB_SHA" ]; then
+            echo "::error::main a changé depuis le plan (${PLAN_COMMIT:0:7} → ${GITHUB_SHA:0:7}) : relancer un plan"
+            exit 1
+          fi
+
+      - name: Charger la configuration
+        uses: ./.github/actions/load-env
+        with:
+          files: .github/envs/common.env
+          keys: TF_WIF_PROVIDER TF_SERVICE_ACCOUNT
+
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.TF_WIF_PROVIDER }}
+          service_account: ${{ env.TF_SERVICE_ACCOUNT }}
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.1
+          terraform_wrapper: false
+
+      - name: terraform init
+        run: terraform init -input=false
+
+      # Avec un fichier de plan, apply ne redemande pas de confirmation : le plan relu est la confirmation.
+      # Si l'infra a changé depuis le plan, Terraform refuse ("Saved plan is stale").
+      - name: terraform apply
+        run: terraform apply -input=false -no-color tfplan
+
+      - name: Résumé
+        if: always()
+        env:
+          TARGET_ENV: ${{ inputs.environment }}
+          PLAN_RUN_ID: ${{ inputs.plan_run_id }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          {
+            echo "### Apply ${TARGET_ENV} : ${JOB_STATUS}"
+            echo "Plan appliqué : run ${PLAN_RUN_ID}"
+            if [ -f plan.txt ]; then
+              grep -E '^Plan:' plan.txt || true
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
