@@ -18,9 +18,10 @@ resource "google_firestore_database" "app" {
 # Index requis par TalkRepository (rappels de feedback) : égalités sur feedbackReminderSent / visibility,
 # IN sur status, inégalité sur date. L'ordre des champs doit rester identique, sinon l'index est recréé.
 resource "google_firestore_index" "talks_feedback_reminder" {
-  project     = var.project_id
-  database    = google_firestore_database.app.name
-  collection  = "talks"
+  project  = var.project_id
+  database = google_firestore_database.app.name
+  # Même règle que FirestoreCollections.java : "<prefix>_talks", ou "talks" sans préfixe.
+  collection  = var.collection_prefix == "" ? "talks" : "${var.collection_prefix}_talks"
   query_scope = "COLLECTION"
   api_scope   = "ANY_API"
 

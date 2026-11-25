@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: Environnement GitHub cible (porte les vars et les règles d'approbation)
+        description: Environnement cible (production, staging) — sa config est lue dans .github/envs/<environment>.env
         required: true
         type: string
       version:
@@ -25,11 +25,11 @@ jobs:
     name: Cloud Run (${{ inputs.environment }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # L'environnement GitHub apporte : approbation manuelle, restriction de branches,
-    # vars spécifiques (projet, base Firestore, URL...) et historique des déploiements.
+    # L'environnement GitHub ne sert qu'à l'historique des déploiements : la config vient du fichier
+    # .github/envs/<environment>.env. L'URL est celle renvoyée par le step de déploiement.
     environment:
       name: ${{ inputs.environment }}
-      url: ${{ vars.NEXTAUTH_URL }}
+      url: ${{ steps.deploy.outputs.url }}
     # Jamais deux déploiements simultanés sur le même environnement, et jamais d'annulation
     # en plein vol (un déploiement interrompu laisse le service dans un état incertain).
     concurrency:
@@ -39,40 +39,42 @@ jobs:
       contents: read
       id-token: write
     env:
-      SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE }}
-      GCP_REGION: ${{ vars.GCP_REGION }}
-      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       TARGET_ENV: ${{ inputs.environment }}
     steps:
-      # Échoue tout de suite si l'environnement GitHub est incomplet, plutôt que de
-      # déployer un service avec une variable vide.
-      - name: Vérifier la configuration de l'environnement
-        env:
-          REQUIRED: >-
-            GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
-            GCP_REGION=${{ vars.GCP_REGION }}
-            CLOUD_RUN_SERVICE=${{ vars.CLOUD_RUN_SERVICE }}
-            WIF_SERVICE_ACCOUNT=${{ vars.WIF_SERVICE_ACCOUNT }}
-            RUNTIME_SERVICE_ACCOUNT=${{ vars.RUNTIME_SERVICE_ACCOUNT }}
-            NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}
-            GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
-            FIRESTORE_DATABASE_ID=${{ vars.FIRESTORE_DATABASE_ID }}
-            FIRESTORE_COLLECTION_PREFIX=${{ vars.FIRESTORE_COLLECTION_PREFIX }}
-            PROFILE_PHOTOS_BUCKET=${{ vars.PROFILE_PHOTOS_BUCKET }}
+      # Seul le dossier de config est nécessaire : pas besoin du code source.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/envs
+          persist-credentials: false
+
+      # Charge la config de l'env dans $GITHUB_ENV. Liste blanche de clés : une clé inconnue est ignorée,
+      # une clé absente ou vide fait échouer le job avant tout déploiement.
+      - name: Charger la configuration de l'environnement
         run: |
+          CONFIG=".github/envs/${TARGET_ENV}.env"
+          if ! [[ "$TARGET_ENV" =~ ^[a-z0-9-]+$ ]] || [ ! -f "$CONFIG" ]; then
+            echo "::error::Configuration introuvable : ${CONFIG}"
+            exit 1
+          fi
+          KEYS="GCP_PROJECT_ID GCP_REGION SERVICE_NAME WIF_PROVIDER WIF_SERVICE_ACCOUNT
+                RUNTIME_SERVICE_ACCOUNT NEXTAUTH_URL GOOGLE_CLIENT_ID FIRESTORE_DATABASE_ID
+                FIRESTORE_COLLECTION_PREFIX PROFILE_PHOTOS_BUCKET SECRET_PREFIX"
           MISSING=0
-          for pair in $REQUIRED; do
-            if [ -z "${pair#*=}" ]; then
-              echo "::error::Variable '${pair%%=*}' manquante dans l'environnement ${TARGET_ENV}"
+          for key in $KEYS; do
+            value=$(grep -E "^${key}=" "$CONFIG" | tail -n 1 | cut -d= -f2-)
+            if [ -z "$value" ]; then
+              echo "::error::'${key}' manquant ou vide dans ${CONFIG}"
               MISSING=1
+              continue
             fi
+            echo "${key}=${value}" >> "$GITHUB_ENV"
           done
           exit $MISSING
 
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
-          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
 
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
@@ -84,12 +86,6 @@ jobs:
           VERSION: ${{ inputs.version }}
           API_IMAGE: ${{ inputs.api_image }}
           FRONT_IMAGE: ${{ inputs.front_image }}
-          RUNTIME_SERVICE_ACCOUNT: ${{ vars.RUNTIME_SERVICE_ACCOUNT }}
-          NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
-          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
-          FIRESTORE_DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID }}
-          FIRESTORE_COLLECTION_PREFIX: ${{ vars.FIRESTORE_COLLECTION_PREFIX }}
-          PROFILE_PHOTOS_BUCKET: ${{ vars.PROFILE_PHOTOS_BUCKET }}
         run: |
           # Une valeur de label n'accepte ni points ni majuscules
           VERSION_LABEL=$(echo "$VERSION" | tr '.' '-' | tr '[:upper:]' '[:lower:]')
@@ -98,7 +94,8 @@ jobs:
           # seules ces variables sont substituées
           envsubst '${SERVICE_NAME} ${GCP_REGION} ${VERSION_LABEL} ${API_IMAGE} ${FRONT_IMAGE}
                     ${GCP_PROJECT_ID} ${RUNTIME_SERVICE_ACCOUNT} ${NEXTAUTH_URL} ${GOOGLE_CLIENT_ID}
-                    ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${PROFILE_PHOTOS_BUCKET}' \
+                    ${FIRESTORE_DATABASE_ID} ${FIRESTORE_COLLECTION_PREFIX} ${PROFILE_PHOTOS_BUCKET}
+                    ${SECRET_PREFIX}' \
             > service.rendered.yaml <<'MANIFEST'
           apiVersion: serving.knative.dev/v1
           kind: Service
@@ -142,12 +139,12 @@ jobs:
                       - name: GOOGLE_CLIENT_SECRET
                         valueFrom:
                           secretKeyRef:
-                            name: thezaurus-google-client-secret
+                            name: "${SECRET_PREFIX}-google-client-secret"
                             key: latest
                       - name: NEXTAUTH_SECRET
                         valueFrom:
                           secretKeyRef:
-                            name: thezaurus-nextauth-secret
+                            name: "${SECRET_PREFIX}-nextauth-secret"
                             key: latest
                     resources:
                       limits:
@@ -258,7 +255,6 @@ jobs:
         if: always()
         env:
           VERSION: ${{ inputs.version }}
-          NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
           API_IMAGE: ${{ inputs.api_image }}
           FRONT_IMAGE: ${{ inputs.front_image }}
           PREVIOUS_REVISION: ${{ steps.previous.outputs.revision || 'aucune' }}

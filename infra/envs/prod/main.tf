@@ -16,9 +16,9 @@ module "app" {
   project_id                      = var.project_id
   region                          = var.region
   data_location                   = var.data_location
-  secret_prefix                   = "thezaurus"
   firestore_database_id           = local.firestore_database_id
-  firestore_delete_protection     = false # état actuel de la base de prod
+  collection_prefix               = "prod" # = FIRESTORE_COLLECTION_PREFIX
+  firestore_delete_protection     = false  # état actuel de la base de prod
   profile_photos_bucket           = local.profile_photos_bucket
   runtime_service_account_email   = local.runtime_service_account_email
   service_name                    = local.service_name
@@ -27,3 +27,4 @@ module "app" {
   feedback_reminder_paused        = false
   protect                         = true
 }
+ 

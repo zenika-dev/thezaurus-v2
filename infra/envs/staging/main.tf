@@ -20,8 +20,8 @@ module "app" {
   region        = var.region
   data_location = var.region # tout dans la même région (la prod garde ses données en europe-west9)
 
-  secret_prefix                   = "thezaurus-staging"
   firestore_database_id           = local.firestore_database_id
+  collection_prefix               = "staging" # = FIRESTORE_COLLECTION_PREFIX
   firestore_delete_protection     = false
   profile_photos_bucket           = local.profile_photos_bucket
   runtime_service_account_email   = local.runtime_service_account_email
@@ -35,3 +35,4 @@ module "app" {
   # Staging doit pouvoir être détruit puis recréé
   protect = false
 }
+ 

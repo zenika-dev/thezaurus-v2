@@ -11,11 +11,6 @@ variable "data_location" {
   type        = string
 }
 
-variable "secret_prefix" {
-  description = "Préfixe des secrets propres à l'env : thezaurus (prod), thezaurus-staging (staging)"
-  type        = string
-}
-
 variable "runtime_service_account_email" {
   description = "Email du SA runtime Cloud Run (créé dans shared)"
   type        = string
@@ -63,4 +58,9 @@ variable "scheduler_service_account_email" {
 variable "feedback_reminder_paused" {
   description = "true pour suspendre le job (staging : évite d'envoyer de vrais rappels Slack / email)"
   type        = bool
+}
+
+variable "collection_prefix" {
+  description = "Même valeur que FIRESTORE_COLLECTION_PREFIX : prod, staging (vide = collections sans préfixe)"
+  type        = string
 }

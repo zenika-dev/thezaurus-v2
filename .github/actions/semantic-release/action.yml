@@ -74,7 +74,13 @@ runs:
             version=$(<"${service}/.next-version")
           else
             # Pas de nouvelle release : on garde la dernière version publiée (tag api-vX.Y.Z → X.Y.Z).
-            tag=$(git describe --tags --abbrev=0 --match "${service}-v*" 2>/dev/null || true)
+            # Sur main, on ignore les prereleases de branche (api-vX.Y.Z-<branche>.N) devenues
+            # atteignables après un merge : seule une version stable part en production.
+            exclude=()
+            if [ "${GITHUB_REF_NAME}" = "main" ]; then
+              exclude=(--exclude "${service}-v*-*")
+            fi
+            tag=$(git describe --tags --abbrev=0 --match "${service}-v*" "${exclude[@]}" 2>/dev/null || true)
             version="${tag#"${service}-v"}"
           fi
 

@@ -1,7 +1,9 @@
 name: Release
 
-# Chaîne de prod : tests → release (tags, releases GitHub) → images / agent → déploiement.
+# Chaîne de livraison : tests → release (tags, releases GitHub) → images / agent → déploiement.
 # Rien n'est publié ni déployé si un test du même commit échoue.
+# - main : release stable (1.5.0), déployable en staging puis promue en production (même version, même image).
+# - autre branche : prerelease (1.5.0-feat-x.1), déployable en staging uniquement.
 on:
   workflow_dispatch:
     # Cocher les deux pour tout livrer.
@@ -11,9 +13,14 @@ on:
         type: boolean
         default: true
       agent:
-        description: "Agent (talks-agent)"
+        description: "Agent (talks-agent, production uniquement)"
         type: boolean
         default: true
+      environment:
+        description: "Environnement cible (production : depuis main uniquement)"
+        type: choice
+        options: [staging, production]
+        default: staging
 
 permissions:
   contents: read
@@ -23,15 +30,33 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Refuse la production hors de main, avant tout test ou publication.
+  guard:
+    name: Garde-fous
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Production depuis main uniquement
+        env:
+          TARGET_ENV: ${{ inputs.environment }}
+          REF: ${{ github.ref }}
+        run: |
+          if [ "${TARGET_ENV}" = "production" ] && [ "${REF}" != "refs/heads/main" ]; then
+            echo "::error::La production ne se déploie que depuis main (ref actuelle : ${REF})"
+            exit 1
+          fi
+
   # Tests des services cochés, en parallèle.
   ci:
+    needs: [guard]
     if: ${{ inputs.api_front || inputs.agent }}
     uses: ./.github/workflows/ci.yml
     with:
       api_front: ${{ inputs.api_front }}
       agent: ${{ inputs.agent }}
 
-  # Une release par service (tags api-vX.Y.Z / front-vX.Y.Z / agents-vX.Y.Z), sur main uniquement (cf. .releaserc.json).
+  # Une release par service (tags api-vX.Y.Z / front-vX.Y.Z / agents-vX.Y.Z) sur main,
+  # une prerelease (api-vX.Y.Z-<branche>.N) sur les autres branches (cf. .releaserc.json).
   release:
     name: Semantic release
     needs: [ci]
@@ -94,22 +119,24 @@ jobs:
 
   # Images référencées par digest (immuables) : ce qui est déployé est exactement
   # ce qui a été construit, même si un tag est réécrit entre-temps.
-  deploy-production:
+  # La config de l'env vient de .github/envs/<environment>.env.
+  deploy:
     needs: [version, image-api, image-front]
     uses: ./.github/workflows/_deploy.yml
     permissions:
       contents: read
       id-token: write
     with:
-      environment: production
+      environment: ${{ inputs.environment }}
       version: ${{ needs.version.outputs.version }}
       api_image: ${{ needs.image-api.outputs.image }}
       front_image: ${{ needs.image-front.outputs.image }}
 
   # En parallèle des images et du déploiement Cloud Run.
+  # L'agent n'a pas d'env staging : il n'est déployé qu'en production.
   deploy-agent:
     needs: [release]
-    if: ${{ inputs.agent && needs.release.outputs.agents_version != '' }}
+    if: ${{ inputs.agent && inputs.environment == 'production' && needs.release.outputs.agents_version != '' }}
     uses: ./.github/workflows/_deploy-agent.yml
     permissions:
       contents: read
@@ -120,11 +147,12 @@ jobs:
   # Release GitHub globale (vAAAA.MM.JJ-<sha>) qui regroupe les notes api/front/agents.
   # Seulement une fois la prod à jour : au moins un déploiement réussi, aucun en échec.
   umbrella-release:
-    needs: [version, release, deploy-production, deploy-agent]
+    needs: [version, release, deploy, deploy-agent]
     if: >-
       ${{ !cancelled()
+        && inputs.environment == 'production'
         && !contains(needs.*.result, 'failure')
-        && (needs.deploy-production.result == 'success' || needs.deploy-agent.result == 'success') }}
+        && (needs.deploy.result == 'success' || needs.deploy-agent.result == 'success') }}
     uses: ./.github/workflows/_umbrella-release.yml
     permissions:
       contents: write

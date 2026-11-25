@@ -38,12 +38,7 @@ resource "google_project_iam_member" "sa" {
   member   = each.value.member # "serviceAccount:<email du SA>"
 }
 
-# Reprise de l'existant. Format de l'id : "<projet> <rôle> <member>"
-import {
-  for_each = local.project_roles
-  to       = google_project_iam_member.sa[each.key]
-  id       = "${var.project_id} ${each.value.role} ${each.value.member}"
-}
+
 
 # ============================================================================
 # PARTIE 2 — Lien WIF : qui a le droit de se faire passer pour un SA
@@ -69,12 +64,7 @@ resource "google_service_account_iam_member" "wif_github" {
   member             = local.github_repo_principal
 }
 
-# Format de l'id : "<SA> <rôle> <member>"
-import {
-  for_each = local.wif_sas
-  to       = google_service_account_iam_member.wif_github[each.key]
-  id       = "${each.value} roles/iam.workloadIdentityUser ${local.github_repo_principal}"
-}
+
 
 # ============================================================================
 # PARTIE 3 — SA Terraform (thezaurus-terraform-sa), utilisé par infra-env.yml
