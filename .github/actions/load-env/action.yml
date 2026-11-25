@@ -33,7 +33,8 @@ runs:
         for key in $KEYS; do
           value=""
           for file in $FILES; do
-            found=$(grep -E "^${key}=" "$file" | tail -n 1 | cut -d= -f2-)
+            # Clé absente de ce fichier : grep renvoie 1, ce qui arrêterait le step (bash -e -o pipefail)
+            found=$(grep -E "^${key}=" "$file" | tail -n 1 | cut -d= -f2- || true)
             [ -n "$found" ] && value="$found"
           done
           if [ -z "$value" ]; then
