@@ -43,8 +43,6 @@ locals {
   # Seul le workflow infra-env.yml, sur main, peut obtenir un token de ce pool.
   tf_admin_workflow_refs = [
     "${var.github_repository}/.github/workflows/infra-env.yml@refs/heads/main",
-    # TEMPORAIRE — test avant merge : à retirer (puis terraform apply) une fois le test fait
-    "${var.github_repository}/.github/workflows/infra-env.yml@refs/heads/feat/iac-terraform",
   ]
 
   # Toutes les conditions doivent être vraies, sinon l'échange de token est refusé.

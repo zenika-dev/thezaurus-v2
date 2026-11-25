@@ -26,19 +26,6 @@ on:
         type: string
         default: ""
 
-  # Appel par un autre workflow (utilisé par infra-env-test.yml pour tester avant merge)
-  workflow_call:
-    inputs:
-      environment:
-        type: string
-        default: staging
-      action:
-        type: string
-        default: plan
-      plan_run_id:
-        type: string
-        default: ""
-
 permissions:
   contents: read
 
@@ -65,8 +52,7 @@ jobs:
             echo "::error::La production ne doit pas être détruite"
             exit 1
           fi
-          # TEMPORAIRE — test avant merge : retirer "feat/iac-terraform" une fois le test fait
-          if [ "${REF}" != "refs/heads/main" ] && [ "${REF}" != "refs/heads/feat/iac-terraform" ]; then
+          if [ "${REF}" != "refs/heads/main" ]; then
             echo "::error::Terraform ne s'exécute que depuis main (ref actuelle : ${REF})"
             exit 1
           fi
