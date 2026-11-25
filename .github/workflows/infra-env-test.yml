@@ -22,4 +22,5 @@ jobs:
       actions: read
     with:
       environment: staging
-      action: plan-destroy
+      action: apply
+      plan_run_id: "45634361685"
