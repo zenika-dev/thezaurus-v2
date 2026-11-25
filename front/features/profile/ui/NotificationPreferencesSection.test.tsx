@@ -14,6 +14,7 @@ vi.mock("../model/useProfileMutations", () => ({
 }));
 
 const baseProfile: UserProfile = {
+  calendarLocale: "fr",
   name: "Jane Doe",
   email: "jane@zenika.com",
   office: "nantes",

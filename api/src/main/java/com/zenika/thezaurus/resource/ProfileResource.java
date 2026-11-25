@@ -1,5 +1,6 @@
 package com.zenika.thezaurus.resource;
 
+import com.zenika.thezaurus.model.CalendarLocale;
 import com.zenika.thezaurus.model.ContributionStatistics;
 import com.zenika.thezaurus.model.Office;
 import com.zenika.thezaurus.model.Role;
@@ -120,6 +121,17 @@ public class ProfileResource {
 
     public record OfficePreference(Office office) {}
 
+    @PUT
+    @Path("/calendar-locale")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public void updateCalendarLocale(CalendarLocalePreference preference)
+            throws ExecutionException, InterruptedException {
+        if (preference == null || preference.calendarLocale() == null) throw new BadRequestException();
+        userRepository.updateCalendarLocale(me().email(), preference.calendarLocale());
+    }
+
+    public record CalendarLocalePreference(CalendarLocale calendarLocale) {}
+
     @GET
     @RolesAllowed({Role.Names.ADMIN, Role.Names.DT, Role.Names.CONSULTANT})
     public RestResponse<ProfileView> getProfile() throws ExecutionException, InterruptedException {
@@ -154,6 +166,7 @@ public class ProfileResource {
                 new NotificationPreferences(user.notifiesByEmail(), user.notifiesOnSlack()),
                 slackAvailable,
                 Office.fromValue(user.office()),
+                Optional.ofNullable(user.calendarLocale()).orElse(CalendarLocale.fr),
                 user.allowsAiPhoto(),
                 user.hasCustomPhoto());
     }
@@ -168,6 +181,7 @@ public class ProfileResource {
             @NotNull NotificationPreferences notificationPreferences,
             boolean slackAvailable,
             Office office,
+            @NotNull CalendarLocale calendarLocale,
             boolean aiPhotoAllowed,
             boolean customPhoto) {}
 

@@ -16,14 +16,19 @@ export function useProfileMutations() {
       updateNotificationPreferencesAction(preferences),
     onMutate: async (preferences) => {
       await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<UserProfile>(queryKey);
+      const previous = queryClient.getQueryData<UserProfile>(queryKey)?.notificationPreferences;
       queryClient.setQueryData<UserProfile>(queryKey, (old) =>
         old ? { ...old, notificationPreferences: preferences } : old,
       );
       return { previous };
     },
     onError: (_err, _preferences, ctx) => {
-      queryClient.setQueryData(queryKey, ctx?.previous);
+      const previous = ctx?.previous;
+      if (previous) {
+        queryClient.setQueryData<UserProfile>(queryKey, (old) =>
+          old ? { ...old, notificationPreferences: previous } : old,
+        );
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey });

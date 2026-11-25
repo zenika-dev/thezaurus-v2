@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import { render } from "./render-with-calendar";
 import { SessionProvider } from "next-auth/react";
 import { queryKeys } from "@/shared/api";
 import { CreateTalkDialog } from "@/features/talks/ui/CreateTalkDialog";

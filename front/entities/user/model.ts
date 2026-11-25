@@ -6,6 +6,9 @@ import type { BackendNotificationPreferences, BackendProfileView, Office } from 
  */
 export type NotificationPreferences = Required<BackendNotificationPreferences>;
 
+export type CalendarLocale = NonNullable<BackendProfileView["calendarLocale"]>;
+export const defaultCalendarLocale: CalendarLocale = "fr";
+
 /**
  * Profil de la personne connectée. `name` et `email` viennent du SSO, en lecture seule.
  * `slackAvailable` et non le `slackUserId` : le backend ne publie pas l'identifiant Slack.

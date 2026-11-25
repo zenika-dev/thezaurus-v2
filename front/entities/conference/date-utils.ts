@@ -2,8 +2,6 @@ import dayjs from "dayjs";
 import "dayjs/locale/fr";
 import type { ConferencePeriod } from "./model";
 
-dayjs.locale("fr");
-
 /**
  * Pas de champ discriminant : `MONTH` masque les bornes (mois entier faute de dates arrêtées),
  * sinon `start === end` désigne une journée et le reste un intervalle.

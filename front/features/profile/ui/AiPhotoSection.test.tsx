@@ -10,6 +10,7 @@ vi.mock("@/shared/api", async (original) => ({
 }));
 
 const profile: UserProfile = {
+  calendarLocale: "fr",
   name: "Jane", email: "jane@zenika.com", office: "", slackAvailable: false,
   notificationPreferences: { email: false, slack: false }, aiPhotoAllowed: false, customPhoto: false,
 };

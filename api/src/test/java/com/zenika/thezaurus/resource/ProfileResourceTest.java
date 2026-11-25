@@ -6,6 +6,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.zenika.thezaurus.model.CalendarLocale;
 import com.zenika.thezaurus.model.ContributionStatistics;
 import com.zenika.thezaurus.model.ContributionStatistics.AnnualContributions;
 import com.zenika.thezaurus.model.Role;
@@ -126,6 +127,40 @@ public class ProfileResourceTest {
     @TestSecurity(
             user = "jane@zenika.com",
             roles = {Role.Names.CONSULTANT})
+    void userCanChangeTheirCalendarLocale() throws Exception {
+        User user = jane(null, false, false);
+        Mockito.when(userRepository.findByEmail(user.email())).thenReturn(user);
+
+        given().contentType(ContentType.JSON)
+                .body("{\"calendarLocale\":\"en\"}")
+                .when()
+                .put("/api/me/profile/calendar-locale")
+                .then()
+                .statusCode(204);
+        Mockito.verify(userRepository).updateCalendarLocale(user.email(), CalendarLocale.en);
+
+        Mockito.when(userRepository.findByEmail(user.email()))
+                .thenReturn(user.toBuilder().calendarLocale(CalendarLocale.en).build());
+        given().when().get("/api/me/profile").then().statusCode(200).body("calendarLocale", is("en"));
+    }
+
+    @Test
+    @TestSecurity(
+            user = "jane@zenika.com",
+            roles = {Role.Names.CONSULTANT})
+    void unsupportedCalendarLocaleIsRejected() {
+        given().contentType(ContentType.JSON)
+                .body("{\"calendarLocale\":\"unknown\"}")
+                .when()
+                .put("/api/me/profile/calendar-locale")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @TestSecurity(
+            user = "jane@zenika.com",
+            roles = {Role.Names.CONSULTANT})
     public void profileReturnsOfficeForTalkPrefill() throws Exception {
         Mockito.when(userRepository.findByEmail("jane@zenika.com"))
                 .thenReturn(User.builder()
@@ -208,6 +243,7 @@ public class ProfileResourceTest {
                 .get("/api/me/profile")
                 .then()
                 .statusCode(200)
+                .body("calendarLocale", is("fr"))
                 .body("notificationPreferences.email", is(false))
                 .body("notificationPreferences.slack", is(false));
     }

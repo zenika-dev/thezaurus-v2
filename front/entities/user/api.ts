@@ -7,13 +7,14 @@ import {
   type Role,
   type Office,
 } from "@/shared/api";
-import type { NotificationPreferences, UserProfile } from "./model";
+import { defaultCalendarLocale, type CalendarLocale, type NotificationPreferences, type UserProfile } from "./model";
 
 function mapBackendToFrontend(profile: BackendProfileView): UserProfile {
   return {
     name: profile.name ?? "",
     email: profile.email ?? "",
     office: profile.office ?? "",
+    calendarLocale: profile.calendarLocale ?? defaultCalendarLocale,
     notificationPreferences: {
       // Un canal ne doit jamais s'activer tout seul.
       email: profile.notificationPreferences?.email ?? false,
@@ -36,6 +37,14 @@ export const profileApi = {
       method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ office }),
     });
     if (!res.ok) throw new Error("Impossible de modifier l’agence");
+  },
+  updateCalendarLocale: async (calendarLocale: CalendarLocale): Promise<void> => {
+    const res = await apiFetch("/api/me/profile/calendar-locale", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ calendarLocale }),
+    });
+    if (!res.ok) throw new Error("Impossible de modifier la langue des calendriers");
   },
   getProfile: async (): Promise<UserProfile> => {
     const res = await apiFetch("/api/me/profile");
