@@ -9,7 +9,7 @@ resource "google_firestore_database" "app" {
   concurrency_mode            = "PESSIMISTIC"
   app_engine_integration_mode = "DISABLED"
 
-  # Côté GCP : bloque toute suppression (console comprise). Désactivé en prod pour ne rien changer à l'existant.
+  # Côté GCP : bloque toute suppression (console comprise). Activé en prod, désactivé en staging.
   delete_protection_state = var.firestore_delete_protection ? "DELETE_PROTECTION_ENABLED" : "DELETE_PROTECTION_DISABLED"
   # Côté Terraform : en prod, un destroy retire la base du state sans la supprimer.
   deletion_policy = var.protect ? "ABANDON" : "DELETE"

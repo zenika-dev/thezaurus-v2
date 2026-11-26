@@ -27,7 +27,7 @@ variable "firestore_database_id" {
 }
 
 variable "firestore_delete_protection" {
-  description = "Protection GCP contre la suppression de la base (false en prod pour garder l'état actuel)"
+  description = "Protection GCP contre la suppression de la base (true en prod, false en staging)"
   type        = bool
 }
 

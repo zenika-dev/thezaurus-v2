@@ -35,4 +35,3 @@ module "app" {
   # Staging doit pouvoir être détruit puis recréé
   protect = false
 }
- 

@@ -1,6 +1,5 @@
-# Droits IAM des SAs, créés à la main avant l'IaC et repris ici dans Terraform.
-# Ce fichier ne crée AUCUN nouveau droit : les blocs "import" disent à Terraform
-# "ces droits existent déjà dans GCP, ajoute-les au state au lieu de les créer".
+# Droits IAM des SAs. Parties 1 et 2 : droits créés à la main avant l'IaC, importés dans le state,
+# puis réduits au strict nécessaire (moindre privilège). Partie 3 : droits du SA Terraform.
 
 # ============================================================================
 # PARTIE 1 — Rôles des SAs sur le PROJET
@@ -15,19 +14,26 @@ locals {
     "runtime-datastore-user"         = { member = google_service_account.runtime.member, role = "roles/datastore.user" }
     "runtime-secretmanager-accessor" = { member = google_service_account.runtime.member, role = "roles/secretmanager.secretAccessor" }
 
-    # SA ci_deploy (thezurus-sa) : utilisé par GitHub Actions pour builder et déployer
+    # SA ci_deploy (thezurus-sa) : utilisé par GitHub Actions pour builder et déployer.
+    # Pas de cloudscheduler.admin : le job de rappel est géré par Terraform (modules/environment).
+    # Pas de iam.serviceAccountUser au niveau projet : il permettait d'agir en tant que N'IMPORTE
+    # QUEL SA (dont terraform_sa) depuis n'importe quelle branche. actAs limité au SA runtime, plus bas.
     "ci_deploy-artifactregistry-writer" = { member = google_service_account.ci_deploy.member, role = "roles/artifactregistry.createOnPushWriter" }
-    "ci_deploy-cloudscheduler-admin"    = { member = google_service_account.ci_deploy.member, role = "roles/cloudscheduler.admin" }
-    "ci_deploy-serviceaccount-user"     = { member = google_service_account.ci_deploy.member, role = "roles/iam.serviceAccountUser" }
     "ci_deploy-run-developer"           = { member = google_service_account.ci_deploy.member, role = "roles/run.developer" }
 
     # SA ci_agent : utilisé par GitHub Actions pour déployer l'agent
     "ci_agent-aiplatform-editor" = { member = google_service_account.ci_agent.member, role = "roles/aiplatform.editor" }
 
-    # SA scheduler : signe le token OIDC du job de rappel
-    "scheduler-cloudscheduler-admin"     = { member = google_service_account.scheduler.member, role = "roles/cloudscheduler.admin" }
-    "scheduler-cloudscheduler-jobrunner" = { member = google_service_account.scheduler.member, role = "roles/cloudscheduler.jobRunner" }
+    # SA scheduler : aucun rôle projet. Il ne fait que porter l'identité du token OIDC du job de rappel,
+    # signé par l'agent de service Cloud Scheduler ; l'API vérifie son email (FEEDBACK_REMINDER_INVOKER).
   }
+}
+
+# Le déploiement Cloud Run (_deploy.yml) attache le SA runtime au service : actAs sur ce SA uniquement.
+resource "google_service_account_iam_member" "ci_deploy_act_as_runtime" {
+  service_account_id = google_service_account.runtime.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = google_service_account.ci_deploy.member
 }
 
 # Terraform crée une ressource par ligne de la map ci-dessus.
@@ -78,8 +84,9 @@ locals {
     "run-admin"            = "roles/run.admin"            # service Cloud Run + binding allUsers invoker
     "datastore-owner"      = "roles/datastore.owner"      # base Firestore + index
     "cloudscheduler-admin" = "roles/cloudscheduler.admin" # job de rappel
-    "secretmanager-admin"  = "roles/secretmanager.admin"  # conteneurs de secrets (pas les valeurs)
-    "storage-admin"        = "roles/storage.admin"        # bucket photos + son IAM + bucket de state
+    # Pas de secretmanager.admin : les secrets sont gérés dans shared (appliqué en local),
+    # et ce rôle donnerait aussi accès aux VALEURS des secrets.
+    "storage-admin" = "roles/storage.admin" # bucket photos + son IAM + bucket de state
   }
 
   # actAs limité aux SAs que les envs attachent à leurs ressources (pas au niveau projet)
