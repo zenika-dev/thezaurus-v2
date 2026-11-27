@@ -1,0 +1,47 @@
+name: Charger la configuration
+description: >-
+  Lit des clés dans un ou plusieurs fichiers .github/envs/*.env et les exporte dans $GITHUB_ENV.
+  Liste blanche : seules les clés demandées sont exportées. Une clé absente ou vide fait échouer
+  le job avant toute action. Si une clé est dans plusieurs fichiers, le dernier fichier l'emporte.
+
+inputs:
+  files:
+    description: Fichiers à lire, séparés par des espaces (ex. ".github/envs/common.env .github/envs/staging.env")
+    required: true
+  keys:
+    description: Clés obligatoires à exporter, séparées par des espaces ou des retours à la ligne
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Charger la configuration
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        FILES: ${{ inputs.files }}
+        KEYS: ${{ inputs.keys }}
+      run: |
+        for file in $FILES; do
+          # Seuls les fichiers de .github/envs sont acceptés (le nom d'env vient d'un input)
+          if ! [[ "$file" =~ ^\.github/envs/[a-z0-9-]+\.env$ ]] || [ ! -f "$file" ]; then
+            echo "::error::Configuration introuvable : ${file}"
+            exit 1
+          fi
+        done
+        MISSING=0
+        for key in $KEYS; do
+          value=""
+          for file in $FILES; do
+            # Clé absente de ce fichier : grep renvoie 1, ce qui arrêterait le step (bash -e -o pipefail)
+            found=$(grep -E "^${key}=" "$file" | tail -n 1 | cut -d= -f2- || true)
+            [ -n "$found" ] && value="$found"
+          done
+          if [ -z "$value" ]; then
+            echo "::error::'${key}' manquant ou vide dans : ${FILES}"
+            MISSING=1
+            continue
+          fi
+          echo "${key}=${value}" >> "$GITHUB_ENV"
+        done
+        exit $MISSING

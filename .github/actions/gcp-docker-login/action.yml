@@ -5,13 +5,13 @@ description: >-
 
 inputs:
   region:
-    description: Région Artifact Registry (ex. europe-west9)
+    description: Région Artifact Registry (ex. europe-west1)
     required: true
   workload_identity_provider:
-    description: Provider Workload Identity Federation (vars.WIF_PROVIDER)
+    description: Provider Workload Identity Federation (WIF_PROVIDER de .github/envs/common.env)
     required: true
   service_account:
-    description: Compte de service à impersonner (vars.WIF_SERVICE_ACCOUNT)
+    description: Compte de service à impersonner (WIF_SERVICE_ACCOUNT de .github/envs/common.env)
     required: true
 
 runs:

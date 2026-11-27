@@ -162,8 +162,9 @@ dans la base de développement : utiliser une base isolée.
 
 ## Exécution en production
 
-Le batch est déclenché par **Cloud Scheduler** (job `talk-feedback-reminder`, créé ou mis à
-jour par `.github/workflows/_gcp_scheduler.yaml` à chaque release). Le job appelle
+Le batch est déclenché par **Cloud Scheduler** (job `talk-feedback-reminder` en prod,
+`talk-feedback-reminder-staging` en staging), géré par Terraform dans
+`infra/modules/environment/scheduler.tf`. Le job appelle
 `POST <NEXTAUTH_URL>/api/internal/feedback-reminders` avec un token OIDC signé pour
 `SCHEDULER_SERVICE_ACCOUNT` ; la route du front le relaie à l'API, qui vérifie la signature,
 l'audience (`FEEDBACK_REMINDER_AUDIENCE`) et l'email du compte (`FEEDBACK_REMINDER_INVOKER`).
