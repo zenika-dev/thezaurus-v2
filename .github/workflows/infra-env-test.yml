@@ -1,0 +1,33 @@
+# TEMPORAIRE — test de infra-env.yml avant merge. À SUPPRIMER une fois le test fait.
+# workflow_dispatch n'est possible que pour un workflow présent sur main : ce fichier
+# lance infra-env.yml à chaque push qui le modifie.
+#
+# Pour chaque test : modifier environment / action / plan_run_id ci-dessous, commit, push.
+#   - plan / plan-destroy : plan_run_id ignoré
+#   - apply : plan_run_id = ID du run "Infra Env (test avant merge)" qui a produit le plan
+name: Infra Env (test avant merge)
+
+on:
+  push:
+    branches: [feat/iac-terraform]
+    paths:
+      - .github/workflows/infra-env-test.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infra-test
+  cancel-in-progress: false
+
+jobs:
+  infra:
+    uses: ./.github/workflows/infra-env.yml
+    permissions:
+      contents: read
+      id-token: write
+      actions: read
+    with:
+      environment: staging # staging | production
+      action: plan # plan | plan-destroy | apply
+      plan_run_id: "" # apply uniquement

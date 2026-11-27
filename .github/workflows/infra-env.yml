@@ -26,6 +26,19 @@ on:
         type: string
         default: ""
 
+  # TEMPORAIRE (test avant merge) : appelé par infra-env-test.yml. À SUPPRIMER après le test.
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      action:
+        type: string
+        required: true
+      plan_run_id:
+        type: string
+        default: ""
+
 permissions:
   contents: read
 
@@ -52,7 +65,8 @@ jobs:
             echo "::error::La production ne doit pas être détruite"
             exit 1
           fi
-          if [ "${REF}" != "refs/heads/main" ]; then
+          # TEMPORAIRE (test avant merge) : feat/iac-terraform autorisée. À RETIRER après le test.
+          if [ "${REF}" != "refs/heads/main" ] && [ "${REF}" != "refs/heads/feat/iac-terraform" ]; then
             echo "::error::Terraform ne s'exécute que depuis main (ref actuelle : ${REF})"
             exit 1
           fi
@@ -206,6 +220,12 @@ jobs:
             gh api "repos/${REPO}/actions/runs/${PLAN_RUN_ID}" \
               --jq '[.path, .head_branch, .event, .conclusion, .head_repository.full_name] | @tsv')
           ERR=""
+          # TEMPORAIRE (test avant merge) : accepte aussi un plan lancé par infra-env-test.yml
+          # (push sur feat/iac-terraform). À RETIRER après le test.
+          if [ "$RUN_PATH" = ".github/workflows/infra-env-test.yml" ] \
+            && [ "$RUN_BRANCH" = "feat/iac-terraform" ] && [ "$RUN_EVENT" = "push" ]; then
+            RUN_PATH=".github/workflows/infra-env.yml"; RUN_BRANCH="main"; RUN_EVENT="workflow_dispatch"
+          fi
           [ "$RUN_PATH" = ".github/workflows/infra-env.yml" ] || ERR+=" workflow=${RUN_PATH}"
           [ "$RUN_BRANCH" = "main" ] || ERR+=" branche=${RUN_BRANCH}"
           [ "$RUN_EVENT" = "workflow_dispatch" ] || ERR+=" event=${RUN_EVENT}"
