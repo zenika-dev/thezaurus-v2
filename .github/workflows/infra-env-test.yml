@@ -29,5 +29,5 @@ jobs:
       actions: read
     with:
       environment: staging # staging | production
-      action: apply  # plan | plan-destroy | apply
-      plan_run_id: "45971148437" # apply uniquement
+      action: plan  # plan | plan-destroy | apply
+      plan_run_id: "" # apply uniquement
